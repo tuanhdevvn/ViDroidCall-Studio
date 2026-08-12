@@ -5,12 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.example.emma_vidroidcall.feature.onboarding.OnboardingScreen
 import com.example.emma_vidroidcall.ui.theme.EmmaViDroidCallTheme
 
 class MainActivity : ComponentActivity() {
@@ -18,30 +14,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            EmmaViDroidCallTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+            EmmaViDroidCallTheme(dynamicColor = false) {
+                OnboardingScreen(
+                    onFinished = {
+                        // TODO: Điều hướng sang màn hình Home ở đây.
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    EmmaViDroidCallTheme {
-        Greeting("Android")
     }
 }
