@@ -81,27 +81,14 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(40.dp),
-            horizontalArrangement = if (currentPage == 1) {
-                Arrangement.Center
-            } else {
-                Arrangement.End
-            },
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (currentPage == 1) {
-                PageIndicator(
-                    pageCount = PAGE_COUNT,
-                    selectedPage = currentPage,
-                )
-            } else {
+            if (currentPage < PAGE_COUNT - 1) {
                 TextButton(onClick = onFinished) {
                     Text(
                         text = "Bỏ qua",
-                        color = if (currentPage == PAGE_COUNT - 1) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        },
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -133,17 +120,13 @@ fun OnboardingScreen(
             }
         }
 
-        if (currentPage != 1) {
-            PageIndicator(
-                pageCount = PAGE_COUNT,
-                selectedPage = currentPage,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(bottom = 18.dp),
-            )
-        } else {
-            Spacer(Modifier.height(25.dp))
-        }
+        PageIndicator(
+            pageCount = PAGE_COUNT,
+            selectedPage = currentPage,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 18.dp),
+        )
 
         Button(
             onClick = {
