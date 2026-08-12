@@ -1,8 +1,14 @@
 package com.example.emma_vidroidcall.feature.onboarding
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,13 +21,18 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-//import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,23 +40,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.emma_vidroidcall.ui.theme.EmmaViDroidCallTheme
+import com.example.emma_vidroidcall.ui.theme.IllustrationRing
+import com.example.emma_vidroidcall.ui.theme.IndicatorInactive
+import com.example.emma_vidroidcall.ui.theme.MicrophoneGlowInner
+import com.example.emma_vidroidcall.ui.theme.MicrophoneGlowMiddle
+import com.example.emma_vidroidcall.ui.theme.MicrophoneGlowOuter
 import kotlinx.coroutines.launch
 
-private val OnboardingPurple = Color(0xFF4C49E3)
-private val OnboardingViolet = Color(0xFF7B61FF)
-private val OnboardingBackground = Color(0xFFF8F8FF)
-private val IndicatorInactive = Color(0xFFDDE4F5)
 private const val PAGE_COUNT = 3
 
 /**
@@ -65,7 +72,7 @@ fun OnboardingScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(OnboardingBackground)
+            .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 12.dp),
@@ -74,18 +81,29 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(40.dp),
-            horizontalArrangement = Arrangement.End,
+            horizontalArrangement = if (currentPage == 1) {
+                Arrangement.Center
+            } else {
+                Arrangement.End
+            },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onFinished) {
-                Text(
-                    text = "Bỏ qua",
-                    color = if (currentPage == PAGE_COUNT - 1) {
-                        Color(0xFF5E6170)
-                    } else {
-                        OnboardingPurple
-                    },
+            if (currentPage == 1) {
+                PageIndicator(
+                    pageCount = PAGE_COUNT,
+                    selectedPage = currentPage,
                 )
+            } else {
+                TextButton(onClick = onFinished) {
+                    Text(
+                        text = "Bỏ qua",
+                        color = if (currentPage == PAGE_COUNT - 1) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                    )
+                }
             }
         }
 
@@ -115,13 +133,17 @@ fun OnboardingScreen(
             }
         }
 
-        PageIndicator(
-            pageCount = PAGE_COUNT,
-            selectedPage = currentPage,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(bottom = 18.dp),
-        )
+        if (currentPage != 1) {
+            PageIndicator(
+                pageCount = PAGE_COUNT,
+                selectedPage = currentPage,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(bottom = 18.dp),
+            )
+        } else {
+            Spacer(Modifier.height(25.dp))
+        }
 
         Button(
             onClick = {
@@ -134,13 +156,11 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
-            shape = RoundedCornerShape(26.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = OnboardingPurple),
+            shape = MaterialTheme.shapes.large,
         ) {
             Text(
                 text = if (currentPage == PAGE_COUNT - 1) "Bắt đầu  →" else "Tiếp tục",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelLarge,
             )
         }
 
@@ -151,7 +171,7 @@ fun OnboardingScreen(
                 },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
-                Text("Quay lại", color = OnboardingPurple)
+                Text("Quay lại", color = MaterialTheme.colorScheme.primary)
             }
         } else {
             Spacer(Modifier.height(48.dp))
@@ -174,18 +194,15 @@ private fun OnboardingPage(
         Spacer(Modifier.height(58.dp))
         Text(
             text = title,
-            color = Color(0xFF15182A),
-            fontSize = 25.sp,
-            lineHeight = 30.sp,
-            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(12.dp))
         Text(
             text = description,
-            color = Color(0xFF555767),
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
     }
@@ -211,7 +228,11 @@ private fun PageIndicator(
                 modifier = Modifier
                     .size(width = width.dp, height = 7.dp)
                     .background(
-                        color = if (index == selectedPage) OnboardingPurple else IndicatorInactive,
+                        color = if (index == selectedPage) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            IndicatorInactive
+                        },
                         shape = CircleShape,
                     ),
             )
@@ -221,101 +242,197 @@ private fun PageIndicator(
 
 @Composable
 private fun VoicePhoneIllustration() {
-    Canvas(modifier = Modifier.size(220.dp, 170.dp)) {
-        drawRoundRect(
-            color = Color.White,
-            topLeft = Offset(size.width * .20f, 0f),
-            size = Size(size.width * .60f, size.height),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(28f, 28f),
-        )
-        drawRoundRect(
-            color = Color(0xFFE6E8F8),
-            topLeft = Offset(size.width * .20f, 0f),
-            size = Size(size.width * .60f, size.height),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(28f, 28f),
-            style = Stroke(width = 3f),
-        )
-        drawCircle(OnboardingViolet, radius = 32f, center = center)
-        drawLine(Color.White, center + Offset(0f, -13f), center + Offset(0f, 8f), 5f)
-        drawArc(
-            color = Color.White,
-            startAngle = 0f,
-            sweepAngle = 180f,
-            useCenter = false,
-            topLeft = center + Offset(-13f, -3f),
-            size = Size(26f, 22f),
-            style = Stroke(4f),
-        )
-        drawLine(Color.White, center + Offset(0f, 17f), center + Offset(0f, 25f), 4f)
+    Box(
+        modifier = Modifier
+            .size(width = 132.dp, height = 170.dp)
+            .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline,
+                MaterialTheme.shapes.medium,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(92.dp)
+                .background(MaterialTheme.colorScheme.primary, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Mic,
+                contentDescription = "Biểu tượng microphone",
+                modifier = Modifier.size(52.dp),
+                tint = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
     }
 }
 
 @Composable
 private fun AiUnderstandingIllustration() {
-    Canvas(modifier = Modifier.size(220.dp)) {
-        val ringColor = Color(0xFF8994FF)
-        listOf(1f, .82f, .63f).forEachIndexed { index, scale ->
+    val infiniteTransition = rememberInfiniteTransition(label = "AI wave")
+    val waveProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2200),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "Wave progress",
+    )
+    val breatheScale by infiniteTransition.animateFloat(
+        initialValue = 0.96f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "Center breathing",
+    )
+
+    Box(
+        modifier = Modifier.size(250.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // Màu nền nhẹ ở trung tâm giống thiết kế.
             drawCircle(
-                color = ringColor.copy(alpha = .28f + index * .16f),
-                radius = size.minDimension * .42f * scale,
-                style = Stroke(width = 2.5f),
+                color = IllustrationRing.copy(alpha = 0.10f),
+                radius = size.minDimension * 0.34f,
+            )
+
+            // Ba vòng sóng lệch pha, liên tục lan ra rồi mờ dần.
+            repeat(3) { index ->
+                val progress = (waveProgress + index / 3f) % 1f
+                val radius = size.minDimension * (0.30f + progress * 0.18f)
+                val alpha = (1f - progress) * 0.48f
+                drawCircle(
+                    color = IllustrationRing.copy(alpha = alpha),
+                    radius = radius,
+                    style = Stroke(width = 2.5f),
+                )
+            }
+
+            // Vòng chính luôn hiển thị để hình không bị trống giữa chu kỳ.
+            drawCircle(
+                color = IllustrationRing.copy(alpha = 0.70f),
+                radius = size.minDimension * 0.34f,
+                style = Stroke(width = 3f),
             )
         }
-        drawRoundRect(
-            color = Color.White,
-            topLeft = Offset(size.width * .18f, size.height * .38f),
-            size = Size(size.width * .64f, size.height * .24f),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(50f, 50f),
-        )
-        val x = size.width * .34f
-        repeat(5) { i ->
-            val h = (12 + (i % 3) * 8).toFloat()
-            drawLine(
-                color = OnboardingPurple,
-                start = Offset(x + i * 7f, center.y - h / 2),
-                end = Offset(x + i * 7f, center.y + h / 2),
-                strokeWidth = 4f,
-            )
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.68f)
+                .height(68.dp)
+                .graphicsLayer {
+                    scaleX = breatheScale
+                    scaleY = breatheScale
+                },
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 8.dp,
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.GraphicEq,
+                    contentDescription = "Phân tích giọng nói",
+                    modifier = Modifier.size(34.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Icon(
+                    imageVector = Icons.Rounded.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(25.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Icon(
+                    imageVector = Icons.Rounded.Bolt,
+                    contentDescription = "Chuyển thành hành động",
+                    modifier = Modifier.size(38.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
-        drawLine(Color(0xFF4A4D5D), center + Offset(-2f, 0f), center + Offset(20f, 0f), 3f)
-        drawLine(Color(0xFF4A4D5D), center + Offset(14f, -7f), center + Offset(21f, 0f), 3f)
-        drawLine(Color(0xFF4A4D5D), center + Offset(14f, 7f), center + Offset(21f, 0f), 3f)
-        val bolt = Path().apply {
-            moveTo(center.x + 48f, center.y - 20f)
-            lineTo(center.x + 35f, center.y + 2f)
-            lineTo(center.x + 47f, center.y + 2f)
-            lineTo(center.x + 39f, center.y + 22f)
-            lineTo(center.x + 61f, center.y - 5f)
-            lineTo(center.x + 49f, center.y - 5f)
-            close()
-        }
-        drawPath(bolt, Color(0xFF8429D9))
     }
 }
 
 @Composable
 private fun ReadyMicrophoneIllustration() {
-    Canvas(modifier = Modifier.size(220.dp)) {
-        drawCircle(Color(0xFFF0EFFF), radius = 100f)
-        drawCircle(Color(0xFFDEDCFF), radius = 82f)
-        drawCircle(Color(0xFFC8C4FF), radius = 63f)
-        drawCircle(Color(0xFFB1ABFF), radius = 45f)
-        drawRoundRect(
-            color = Color.White,
-            topLeft = center + Offset(-8f, -25f),
-            size = Size(16f, 38f),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f, 8f),
-        )
-        drawArc(
-            color = Color.White,
-            startAngle = 0f,
-            sweepAngle = 180f,
-            useCenter = false,
-            topLeft = center + Offset(-18f, -5f),
-            size = Size(36f, 32f),
-            style = Stroke(6f),
-        )
-        drawLine(Color.White, center + Offset(0f, 27f), center + Offset(0f, 38f), 6f)
+    val infiniteTransition = rememberInfiniteTransition(label = "Ready microphone")
+    val waveProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "Microphone wave",
+    )
+    val microphoneScale by infiniteTransition.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1100),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "Microphone breathing",
+    )
+
+    Box(
+        modifier = Modifier.size(220.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // Ánh sáng cố định phía sau giúp microphone luôn nổi bật.
+            drawCircle(
+                color = MicrophoneGlowOuter.copy(alpha = 0.72f),
+                radius = size.minDimension * 0.34f,
+            )
+            drawCircle(
+                color = MicrophoneGlowMiddle.copy(alpha = 0.64f),
+                radius = size.minDimension * 0.27f,
+            )
+            drawCircle(
+                color = MicrophoneGlowInner.copy(alpha = 0.56f),
+                radius = size.minDimension * 0.20f,
+            )
+
+            // Ba vòng sóng lệch pha lan ra từ microphone.
+            repeat(3) { index ->
+                val progress = (waveProgress + index / 3f) % 1f
+                val radius = size.minDimension * (0.22f + progress * 0.25f)
+                val alpha = (1f - progress) * 0.42f
+                drawCircle(
+                    color = IllustrationRing.copy(alpha = alpha),
+                    radius = radius,
+                    style = Stroke(width = 3f),
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .size(74.dp)
+                .graphicsLayer {
+                    scaleX = microphoneScale
+                    scaleY = microphoneScale
+                }
+                .background(MaterialTheme.colorScheme.primary, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Mic,
+                contentDescription = "Microphone sẵn sàng",
+                modifier = Modifier.size(42.dp),
+                tint = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
     }
 }
 

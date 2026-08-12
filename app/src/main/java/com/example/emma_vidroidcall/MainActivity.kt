@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             EmmaViDroidCallTheme(dynamicColor = false) {
+                // Màn hình Onbraoding
                 OnboardingScreen(
                     onFinished = {
                         // TODO: Điều hướng sang màn hình Home ở đây.

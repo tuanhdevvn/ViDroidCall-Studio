@@ -1,6 +1,5 @@
 package com.example.emma_vidroidcall.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -12,33 +11,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = AppPrimaryLight,
+    onPrimary = AppBackgroundDark,
+    primaryContainer = AppPrimaryDark,
+    onPrimaryContainer = AppOnPrimary,
+    secondary = AppPrimaryLight,
+    background = AppBackgroundDark,
+    onBackground = TextPrimaryDark,
+    surface = AppSurfaceDark,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = AppSurfaceVariantDark,
+    onSurfaceVariant = TextSecondaryDark,
+    outline = AppBorderDark,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = AppPrimary,
+    onPrimary = AppOnPrimary,
+    primaryContainer = AppPrimaryLight,
+    onPrimaryContainer = TextPrimary,
+    secondary = AppPrimaryDark,
+    background = AppBackground,
+    onBackground = TextPrimary,
+    surface = AppSurface,
+    onSurface = TextPrimary,
+    surfaceVariant = AppSurfaceVariant,
+    onSurfaceVariant = TextSecondary,
+    outline = AppBorder,
 )
 
 @Composable
 fun EmmaViDroidCallTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    // Mặc định tắt để màu thương hiệu #0866FF không bị thiết bị thay thế.
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -53,6 +60,7 @@ fun EmmaViDroidCallTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content
+        shapes = AppShapes,
+        content = content,
     )
 }
