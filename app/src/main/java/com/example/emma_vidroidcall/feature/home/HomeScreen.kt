@@ -75,6 +75,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.emma_vidroidcall.R
+import com.example.emma_vidroidcall.feature.speech.rememberSpeechToText
 import com.example.emma_vidroidcall.ui.component.CustomBottomMenuBar
 import com.example.emma_vidroidcall.ui.component.NavTab
 import com.example.emma_vidroidcall.ui.component.bounceClick
@@ -96,8 +97,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(NavTab.ASSISTANT) }
-    var isListening by remember { mutableStateOf(false) }
-    var speechText by remember { mutableStateOf("") }
+    val speechToText = rememberSpeechToText()
 
     // Dữ liệu mẫu Lịch sử câu lệnh
     val historyItems = remember {
@@ -119,11 +119,8 @@ fun HomeScreen(
             CustomBottomMenuBar(
                 selectedTab = selectedTab,
                 onTabSelected = { tab -> selectedTab = tab },
-                onMicClick = {
-                    isListening = !isListening
-                    speechText = if (isListening) "Đang lắng nghe..." else ""
-                },
-                isListening = isListening,
+                onMicClick = speechToText.toggleListening,
+                isListening = speechToText.isListening,
                 modifier = Modifier.navigationBarsPadding()
             )
         }
@@ -135,12 +132,9 @@ fun HomeScreen(
         ) {
             when (selectedTab) {
                 NavTab.ASSISTANT -> AssistantContent(
-                    isListening = isListening,
-                    speechText = speechText,
-                    onToggleListening = {
-                        isListening = !isListening
-                        speechText = if (isListening) "Đang lắng nghe..." else ""
-                    }
+                    isListening = speechToText.isListening,
+                    speechText = speechToText.speechText,
+                    onToggleListening = speechToText.toggleListening
                 )
 
                 NavTab.HISTORY -> HistoryContent(
@@ -550,12 +544,6 @@ private fun SuggestionChipItem(text: String) {
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF15182A),
                 modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = Icons.Rounded.AutoAwesome,
-                contentDescription = null,
-                tint = AppPrimary,
-                modifier = Modifier.size(18.dp)
             )
         }
     }
