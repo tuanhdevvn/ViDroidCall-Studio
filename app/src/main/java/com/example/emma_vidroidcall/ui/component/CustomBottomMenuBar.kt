@@ -195,7 +195,7 @@ fun CustomBottomMenuBar(
             shape = notchShape,
             color = Color.White,
             border = androidx.compose.foundation.BorderStroke(1.dp, AppPrimary.copy(alpha = 0.15f)),
-            tonalElevation = 6.dp
+            tonalElevation = 0.dp
         ) {
             Row(
                 modifier = Modifier
@@ -385,7 +385,7 @@ private fun CenterMicButton(
                     ),
                     shape = CircleShape
                 )
-                .bounceClick(scaleDown = 0.85f, onClick = onMicClick),
+                .bounceClick(scaleDown = 0.65f, onClick = onMicClick),
             contentAlignment = Alignment.Center
         ) {
             Icon(

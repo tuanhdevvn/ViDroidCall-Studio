@@ -11,7 +11,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -55,16 +60,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.delay
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.emma_vidroidcall.R
 import com.example.emma_vidroidcall.ui.component.CustomBottomMenuBar
 import com.example.emma_vidroidcall.ui.component.NavTab
 import com.example.emma_vidroidcall.ui.component.bounceClick
@@ -85,7 +95,7 @@ data class CommandHistoryItem(
 fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableStateOf(NavTab.HISTORY) }
+    var selectedTab by remember { mutableStateOf(NavTab.ASSISTANT) }
     var isListening by remember { mutableStateOf(false) }
     var speechText by remember { mutableStateOf("") }
 
@@ -153,6 +163,14 @@ private fun AssistantContent(
     speechText: String,
     onToggleListening: () -> Unit
 ) {
+    val suggestions = listOf(
+        "📞 Gọi cho Mẹ",
+        "💬 Nhắn Zalo",
+        "⏰ Báo thức 06:30",
+        "🎵 Phát nhạc",
+        "🗺️ Chỉ đường"
+    )
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -176,7 +194,7 @@ private fun AssistantContent(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // 3. Các câu lệnh mẫu gợi ý nhanh
+        // 3. Tiêu đề Gợi ý câu lệnh nhanh
         item {
             Text(
                 text = "Gợi ý câu lệnh nhanh",
@@ -184,24 +202,13 @@ private fun AssistantContent(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF15182A)
             )
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
+        // Danh sách gợi ý xếp dọc
+        items(suggestions) { suggestion ->
+            SuggestionChipItem(text = suggestion)
             Spacer(modifier = Modifier.height(10.dp))
-
-            val suggestions = listOf(
-                "📞 Gọi cho Mẹ",
-                "💬 Nhắn Zalo",
-                "⏰ Báo thức 06:30",
-                "🎵 Phát nhạc",
-                "🗺️ Chỉ đường"
-            )
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(suggestions) { suggestion ->
-                    SuggestionChipItem(text = suggestion)
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -254,30 +261,101 @@ private fun HistoryContent(
  */
 @Composable
 private fun HeaderSection() {
+    val infiniteTransition = rememberInfiniteTransition(label = "EmmaFloat")
+    val offsetY by infiniteTransition.animateFloat(
+        initialValue = -6f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "emmaOffset"
+    )
+
+    // Animation state cho Bong bóng chat
+    var isBubbleVisible by remember { mutableStateOf(false) }
+    val bubbleScale by animateFloatAsState(
+        targetValue = if (isBubbleVisible) 1f else 0.5f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "bubbleScale"
+    )
+    val bubbleAlpha by animateFloatAsState(
+        targetValue = if (isBubbleVisible) 1f else 0f,
+        animationSpec = tween(500),
+        label = "bubbleAlpha"
+    )
+
+    // Hiệu ứng gõ chữ
+    val fullText = "Tôi có thể giúp gì cho bạn?"
+    var displayedText by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        isBubbleVisible = true
+        delay(300) // Đợi bong bóng hiện ra
+        for (i in fullText.indices) {
+            displayedText += fullText[i]
+            delay(40) // Tốc độ gõ chữ
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(top = 16.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = "Xin chào 👋",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF15182A)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Tôi có thể giúp gì cho bạn?",
-                fontSize = 15.sp,
-                color = Color(0xFF555767),
-                fontWeight = FontWeight.Medium
-            )
+        // Ảnh Mascot Emma có hiệu ứng lơ lửng
+        Image(
+            painter = painterResource(id = R.drawable.emma_mascot),
+            contentDescription = "Emma Mascot",
+            modifier = Modifier
+                .size(100.dp)
+                .offset(y = offsetY.dp)
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Bong bóng chat
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .graphicsLayer {
+                    scaleX = bubbleScale
+                    scaleY = bubbleScale
+                    alpha = bubbleAlpha
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+                },
+            shape = RoundedCornerShape(
+                topStart = 24.dp,
+                topEnd = 24.dp,
+                bottomEnd = 24.dp,
+                bottomStart = 4.dp
+            ),
+            color = AppPrimary.copy(alpha = 0.08f)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Xin chào! Mình là Emma",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF15182A)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = displayedText,
+                    fontSize = 15.sp,
+                    color = Color(0xFF555767),
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 22.sp
+                )
+            }
         }
-
-
     }
 }
 
@@ -456,18 +534,30 @@ private fun VoiceAssistantCard(
 private fun SuggestionChipItem(text: String) {
     Surface(
         modifier = Modifier
-            .bounceClick(scaleDown = 0.90f, onClick = {})
+            .fillMaxWidth()
+            .bounceClick(scaleDown = 0.96f, onClick = {})
             .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = AppPrimary.copy(alpha = 0.1f)),
         shape = RoundedCornerShape(16.dp),
         color = Color.White
     ) {
-        Text(
-            text = text,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF15182A),
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = text,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF15182A),
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Rounded.AutoAwesome,
+                contentDescription = null,
+                tint = AppPrimary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 
