@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -75,7 +76,8 @@ fun ThemeSelectionScreen(
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .bounceClick(scaleDown = 0.85f, onClick = onBack),
                 contentAlignment = Alignment.Center
             ) {
@@ -161,19 +163,16 @@ private fun ThemeSelectionCard(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
         label = "themeCardBorder"
     )
-    val cardBackground by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface,
-        label = "themeCardBackground"
-    )
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .bounceClick(scaleDown = 0.98f, onClick = onSelect),
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onSelect),
         shape = RoundedCornerShape(20.dp),
-        color = cardBackground,
+        color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
-        shadowElevation = if (isSelected) 8.dp else 2.dp
+        shadowElevation = if (isSelected) 4.dp else 1.dp
     ) {
         Row(
             modifier = Modifier
@@ -186,11 +185,12 @@ private fun ThemeSelectionCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
+                // Icon tròn
                 Box(
                     modifier = Modifier
                         .size(46.dp)
                         .background(
-                            color = option.accentColor.copy(alpha = 0.15f),
+                            color = option.accentColor.copy(alpha = 0.12f),
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -205,6 +205,7 @@ private fun ThemeSelectionCard(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
+                // Text mô tả
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = option.title,
@@ -215,15 +216,16 @@ private fun ThemeSelectionCard(
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = option.description,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 16.sp
+                        lineHeight = 18.sp
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
+            // Checkbox / Radio indicator
             Box(
                 modifier = Modifier
                     .size(26.dp)
@@ -233,7 +235,7 @@ private fun ThemeSelectionCard(
                     )
                     .border(
                         width = 2.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
