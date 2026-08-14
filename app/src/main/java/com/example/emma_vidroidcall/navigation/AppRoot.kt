@@ -3,6 +3,7 @@ package com.example.emma_vidroidcall.navigation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -11,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.example.emma_vidroidcall.data.local.OnboardingPreferences
-import com.example.emma_vidroidcall.ui.theme.AppBackground
 
 @Composable
 fun AppRoot(
@@ -27,7 +27,7 @@ fun AppRoot(
             Box(
                 modifier = modifier
                     .fillMaxSize()
-                    .background(AppBackground),
+                    .background(MaterialTheme.colorScheme.background),
             )
         }
 

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -160,7 +161,7 @@ class BottomNavCutoutShape(
 
 /**
  * Thanh menu điều hướng phía dưới (Custom Bottom Navigation Bar)
- * - Tông màu chủ đạo: 0xFF0866FF & Trắng
+ * - Tông màu chủ đạo: 0xFF0866FF & Theme Surface
  * - Phần hình tròn ở giữa là Nút Micro nổi bật
  * - Bên trái: Lịch sử lệnh
  * - Bên phải: Cài đặt
@@ -174,6 +175,8 @@ fun CustomBottomMenuBar(
     isListening: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val surfaceColor = MaterialTheme.colorScheme.surface
+
     Box(
         modifier = modifier
             .fillMaxWidth(),
@@ -181,7 +184,7 @@ fun CustomBottomMenuBar(
     ) {
         val notchShape = remember { BottomNavCutoutShape() }
         
-        // Thanh Nền Menu chính (Màu trắng với viền có chỗ lõm mềm mại và đổ bóng cao cấp)
+        // Thanh Nền Menu chính
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -193,8 +196,8 @@ fun CustomBottomMenuBar(
                     ambientColor = Color(0xFF0866FF).copy(alpha = 0.15f)
                 ),
             shape = notchShape,
-            color = Color.White,
-            border = androidx.compose.foundation.BorderStroke(1.dp, AppPrimary.copy(alpha = 0.15f)),
+            color = surfaceColor,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
             tonalElevation = 0.dp
         ) {
             Row(
@@ -226,7 +229,6 @@ fun CustomBottomMenuBar(
         }
 
         // NÚT PHẦN TRÒN Ở GIỮA (MICROPHONE FAB)
-        // Nhô cao nổi bật giữa thanh menu bar, đẩy cao hơn
         CenterMicButton(
             isListening = isListening && selectedTab == NavTab.ASSISTANT,
             onMicClick = { onTabSelected(NavTab.ASSISTANT) },
@@ -245,8 +247,8 @@ private fun NavItem(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val activeColor = AppPrimary // 0xFF0866FF
-    val inactiveColor = Color(0xFF8A94A6)
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     val iconScale by animateFloatAsState(
         targetValue = if (isSelected) 1.12f else 1f,
@@ -319,6 +321,7 @@ private fun CenterMicButton(
     onMicClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val surfaceColor = MaterialTheme.colorScheme.surface
     val infiniteTransition = rememberInfiniteTransition(label = "MicPulse")
     val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = 0.2f,
@@ -359,7 +362,7 @@ private fun CenterMicButton(
                 )
             } else {
                 drawCircle(
-                    color = Color.White,
+                    color = surfaceColor,
                     radius = size.minDimension / 2 + 3.dp.toPx()
                 )
             }
