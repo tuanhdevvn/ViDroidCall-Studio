@@ -1,158 +1,158 @@
-# GIẢI THÍCH CÁC TẬP DỮ LIỆU
+# Giải thích các tập dữ liệu cho người mới
 
-CHO NGƯỜI MỚI
+> **Cách nhớ nhanh:** TRAIN = học · VALIDATION = thi thử · TEST = thi thật
 
-Train • Validation • Test • Test OOD • Test Ambiguous
+## 1. Tổng quan
 
-Tài liệu này giải thích theo cách đơn giản các loại tập dữ liệu được
-dùng trong bộ dữ liệu ViDroidCall. Hãy hình dung AI giống như một sinh
-viên: cần có tài liệu để học, bài thi thử để điều chỉnh, và bài thi thật
-để đánh giá năng lực.
+| Tập dữ liệu | Số câu | Ý nghĩa dễ nhớ |
+|---|---:|---|
+| Train | 350 | Cho AI học từ các ví dụ |
+| Validation | 50 | Thi thử để điều chỉnh hệ thống |
+| Test | 60 | Thi thật để báo cáo kết quả |
+| Test OOD | 20 | Kiểm tra với tình huống lạ / ngoài miền |
+| Test Ambiguous | 20 | Kiểm tra khi câu nói mơ hồ hoặc thiếu thông tin |
 
-## 1. Bức tranh tổng thể
+Tổng cộng: **500 câu**.
 
-## 2. Train - tập để học
+---
 
-Train là tập dữ liệu mà AI được phép nhìn thấy và học từ đó. Nếu muốn AI
-nhận biết câu nào là đặt báo thức, gọi điện hay mở ứng dụng, ta cung cấp
-nhiều ví dụ đúng trong tập train.
+## 2. Train — tập để AI học
 
-Hãy coi train giống như sách giáo khoa và bài tập ôn luyện. Trong kế
-hoạch 500 câu, train có 350 câu.
+`Train` là tập dữ liệu mà AI được phép học từ đó.
 
-Ghi nhớ: TRAIN = HỌC.
+Ví dụ:
 
-## 3. Validation - tập để thi thử
+- `"Đặt báo thức lúc 6 giờ"` → `set_alarm`
+- `"Mai gọi tôi dậy lúc 7 giờ"` → `set_alarm`
+- `"Mở YouTube cho tôi"` → `open_app`
 
-Sau khi AI học từ train, ta cần kiểm tra xem cách xây dựng hệ thống có
-đang đi đúng hướng hay không. Validation là tập dùng trong quá trình
-phát triển để thử nghiệm và điều chỉnh.
+Có thể hiểu đơn giản:
 
--   Có thể dùng kết quả validation để chọn cấu hình hoặc ngưỡng phù hợp.
+> **Train = tài liệu học + bài tập luyện tập.**
 
--   Nếu hệ thống làm chưa tốt, có thể quay lại điều chỉnh rồi kiểm tra
-    tiếp.
+Trong bộ dữ liệu này có **350 câu train**.
 
--   Không nên dùng validation làm kết quả cuối cùng để công bố hiệu
-    năng.
+---
 
-Ghi nhớ: VALIDATION = THI THỬ.
+## 3. Validation — tập thi thử
 
-## 4. Test - tập để thi thật
+`Validation` dùng để kiểm tra hệ thống trong quá trình phát triển.
 
-Test là tập dùng để đánh giá chính thức sau khi quá trình phát triển đã
-hoàn thành. AI không được học trước các câu test.
+Sau khi AI học từ tập train, ta đưa cho AI những câu khác để xem hệ thống hoạt động tốt hay chưa.
 
-Nếu AI đã nhìn thấy câu test trong lúc học, kết quả sẽ không còn phản
-ánh đúng năng lực thật. Điều này giống như sinh viên được xem trước đề
-thi cuối kỳ rồi mới đi thi.
+Ví dụ:
 
-Ghi nhớ: TEST = THI THẬT.
+> `"6 giờ sáng mai nhớ đánh thức tôi nhé"`
 
-## 5. Test OOD - kiểm tra tình huống lạ
+Nếu AI nhận đúng là `set_alarm` thì tốt. Nếu nhận sai nhiều, ta có thể điều chỉnh cấu hình, ngưỡng hoặc quy trình.
 
-OOD là viết tắt của Out-of-Distribution. Với người mới, chỉ cần hiểu đây
-là những tình huống khác hoặc nằm ngoài phạm vi mà hệ thống thường xử
-lý.
+Có thể hiểu:
 
-Ví dụ ViDroidCall hỗ trợ gọi điện, SMS, báo thức, hẹn giờ, bản đồ và mở
-ứng dụng. Nếu người dùng nói:
+> **Validation = thi thử để xem cần điều chỉnh gì.**
 
-Đây không phải chức năng được hỗ trợ. Một hệ thống tốt cần nhận ra yêu
-cầu ngoài phạm vi thay vì cố thực hiện. Test OOD giúp kiểm tra khả năng
-xử lý các tình huống như vậy.
+Trong bộ dữ liệu này có **50 câu validation**.
 
-Ghi nhớ: TEST OOD = THI VỚI TÌNH HUỐNG LẠ.
+---
 
-## 6. Test Ambiguous - kiểm tra câu mơ hồ
+## 4. Test — tập thi thật
 
-Ambiguous nghĩa là mơ hồ hoặc thiếu thông tin. Tập này kiểm tra xem AI
-có biết nhận ra rằng mình chưa có đủ dữ liệu để thực hiện yêu cầu hay
-không.
+`Test` là tập dùng để đánh giá chính thức sau khi hệ thống đã được phát triển xong.
 
-AI không nên tự bịa nội dung tin nhắn. Nó cần hỏi lại hoặc đánh dấu phần
-thông tin còn thiếu.
+Ví dụ câu test:
 
-Ghi nhớ: TEST AMBIGUOUS = THI XEM AI CÓ BIẾT "CHƯA ĐỦ THÔNG TIN" HAY
-KHÔNG.
+> `"Gọi cho mẹ giúp tôi"`
 
-## 7. Cách nhớ bằng ví dụ đi học
+Kết quả mong đợi:
 
-## 8. Data leakage - lỗi người mới cần tránh
+```text
+intent = call_contact
+contact = Mẹ
+```
 
-Data leakage (rò rỉ dữ liệu) xảy ra khi thông tin từ tập test vô tình
-lọt vào quá trình train hoặc điều chỉnh mô hình. Khi đó điểm test có thể
-rất cao nhưng không đáng tin cậy.
+Trong bộ dữ liệu này có **60 câu test**.
 
--   Không đưa câu test hoặc câu paraphrase gần giống của test vào train.
+Điều quan trọng:
 
--   Không nhìn lỗi trên test rồi sửa mô hình riêng để vượt qua chính các
-    câu đó.
+> **AI không được học trước các câu test.**
 
--   Nên tách và khóa tập test trước khi augmentation hoặc huấn luyện.
+Nếu AI đã nhìn thấy câu test trong lúc học, kết quả đánh giá sẽ không còn đáng tin cậy.
 
-| Cách nhớ nhanh: TRAIN = học • VALIDATION = thi thử • TEST = thi thật
-  \|
+---
 
-| --- \|
+## 5. Test OOD — kiểm tra tình huống lạ
 
-| Tập dữ liệu \| Số câu \| Ý nghĩa dễ nhớ \|
+`OOD` là viết tắt của **Out-of-Distribution**.
 
-| --- \| --- \| --- \|
+Hiểu đơn giản:
 
-| Train \| 350 \| Cho AI học từ các ví dụ \|
+> **Test OOD = kiểm tra AI khi gặp tình huống lạ hoặc ngoài phạm vi quen thuộc.**
 
-| Validation \| 50 \| Thi thử để điều chỉnh hệ thống \|
+Ví dụ hệ thống hỗ trợ:
 
-| Test \| 60 \| Thi thật để báo cáo kết quả \|
+- đặt báo thức;
+- hẹn giờ;
+- gọi điện;
+- gửi SMS;
+- mở bản đồ;
+- mở ứng dụng.
 
-| Test OOD \| 20 \| Kiểm tra với tình huống lạ / ngoài miền \|
+Nhưng người dùng nói:
 
-| Test Ambiguous \| 20 \| Kiểm tra khi câu nói mơ hồ hoặc thiếu thông
-  tin \|
+> `"Chuyển cho Nam 5 triệu đồng."`
 
-| "Đặt báo thức lúc 6 giờ" -\> set_alarm "Mai gọi tôi dậy lúc 7 giờ" -\>
-  set_alarm "Mở YouTube cho tôi" -\> open_app \|
+Đây không phải chức năng hệ thống hỗ trợ. Một hệ thống tốt phải nhận ra yêu cầu này là ngoài phạm vi thay vì cố thực hiện.
 
-| --- \|
+Trong bộ dữ liệu này có **20 câu test OOD**.
 
-| Ví dụ câu test: "Gọi cho mẹ giúp tôi" Kết quả mong đợi: intent =
-  call_contact, contact = Mẹ \|
+---
 
-| --- \|
+## 6. Test Ambiguous — kiểm tra câu mơ hồ
 
-| Nguyên tắc quan trọng nhất: Train được phép cho AI học. Test thì
-  không. \|
+`Ambiguous` nghĩa là **mơ hồ hoặc thiếu thông tin**.
 
-| --- \|
+Ví dụ:
 
-| "Chuyển cho Nam 5 triệu đồng." \|
+> `"Nhắn cho Nam"`
 
-| --- \|
+Hệ thống biết người nhận là Nam nhưng chưa biết nội dung tin nhắn.
 
-| Người dùng: "Nhắn cho Nam" Đã biết: contact = Nam Còn thiếu: message
-  (nội dung tin nhắn) Kết quả đúng: intent = clarify, missing =
-  \["message"\] \|
+Thay vì tự bịa nội dung, hệ thống nên nhận ra còn thiếu `message`.
 
-| --- \|
+Ví dụ kết quả:
 
-| Bước \| Tập \| Ví dụ đi học \|
+```json
+{
+  "intent": "clarify",
+  "arguments": {
+    "missing": ["message"]
+  }
+}
+```
 
-| --- \| --- \| --- \|
+Có thể hiểu:
 
-| 1 \| TRAIN \| Học bài từ tài liệu và ví dụ. \|
+> **Test Ambiguous = kiểm tra xem AI có biết rằng mình chưa có đủ thông tin hay không.**
 
-| 2 \| VALIDATION \| Thi thử để biết cần điều chỉnh gì. \|
+Trong bộ dữ liệu này có **20 câu test ambiguous**.
 
-| 3 \| TEST \| Thi thật để đánh giá kết quả chính thức. \|
+---
 
-| 4 \| TEST OOD \| Gặp câu hỏi lạ để xem phản ứng có an toàn/hợp lý
-  không. \|
+## 7. Cách nhớ nhanh
 
-| 5 \| TEST AMBIGUOUS \| Gặp câu hỏi thiếu dữ kiện để xem có biết hỏi
-  lại không. \|
+| Tập | Cách nhớ |
+|---|---|
+| Train | Học |
+| Validation | Thi thử |
+| Test | Thi thật |
+| Test OOD | Thi với tình huống lạ |
+| Test Ambiguous | Thi với câu mơ hồ / thiếu thông tin |
 
-| Tóm tắt 1 dòng: Train để học -\> Validation để điều chỉnh -\> Test để
-  đánh giá -\> OOD và Ambiguous để kiểm tra các tình huống khó hơn. \|
+---
 
-| --- \|
+## 8. Nguyên tắc quan trọng nhất
+
+> **Train được phép cho AI học. Test thì không.**
+
+Nếu dữ liệu test bị đưa vào train, hiện tượng này được gọi là **data leakage** — rò rỉ dữ liệu.
+
+Khi đó, kết quả test có thể rất cao nhưng không phản ánh đúng khả năng thực tế của mô hình.
