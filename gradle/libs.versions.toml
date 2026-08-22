@@ -29,6 +29,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+llamacpp-kotlin = { group = "io.github.ljcamargo", name = "llamacpp-kotlin", version = "0.4.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

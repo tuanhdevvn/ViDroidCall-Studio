@@ -14,6 +14,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.example.emma_vidroidcall.data.nlu.NluEngineManager
 import com.example.emma_vidroidcall.feature.assistant.AssistantScreen
 import com.example.emma_vidroidcall.feature.history.HistoryScreen
 import com.example.emma_vidroidcall.feature.history.model.CommandHistoryItem
@@ -27,8 +30,20 @@ import com.example.emma_vidroidcall.ui.theme.EmmaViDroidCallTheme
 fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var selectedTab by remember { mutableStateOf(NavTab.ASSISTANT) }
-    val speechToText = rememberSpeechToText()
+
+    // Quản lý NLU Engine
+    val nluEngineManager = remember { NluEngineManager(context.applicationContext) }
+    val nluResult by nluEngineManager.lastResult.collectAsState()
+    val isNluProcessing by nluEngineManager.isGenerating.collectAsState()
+    val modelState by nluEngineManager.modelState.collectAsState()
+
+    val speechToText = rememberSpeechToText(
+        onSpeechResult = { recognizedText ->
+            nluEngineManager.processQuery(recognizedText)
+        }
+    )
 
     // Dữ liệu mẫu Lịch sử câu lệnh
     val historyItems = remember {
@@ -65,7 +80,13 @@ fun HomeScreen(
                 NavTab.ASSISTANT -> AssistantScreen(
                     isListening = speechToText.isListening,
                     speechText = speechToText.speechText,
-                    onToggleListening = speechToText.toggleListening
+                    onToggleListening = speechToText.toggleListening,
+                    nluResult = nluResult,
+                    isNluProcessing = isNluProcessing,
+                    modelState = modelState,
+                    onSuggestionClick = { prompt ->
+                        nluEngineManager.processQuery(prompt)
+                    }
                 )
 
                 NavTab.HISTORY -> HistoryScreen(

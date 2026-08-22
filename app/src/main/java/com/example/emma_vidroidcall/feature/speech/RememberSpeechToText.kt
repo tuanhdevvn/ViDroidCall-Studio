@@ -21,21 +21,29 @@ data class SpeechToTextState(
 )
 
 @Composable
-fun rememberSpeechToText(): SpeechToTextState {
-    var isListening by remember { mutableStateOf(false) }
-    var speechText by remember { mutableStateOf("") }
+fun rememberSpeechToText(
+    onSpeechResult: (String) -> Unit = {}
+): SpeechToTextState {
+    var isListeningState by remember { mutableStateOf(false) }
+    var speechTextState by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     val manager = remember {
         SpeechToTextManager(
             context = context,
             callbacks = object : SpeechToTextManager.Callbacks {
-                override fun onListeningChanged(listening: Boolean) {
-                    isListening = listening
+                override fun onListeningChanged(isListening: Boolean) {
+                    isListeningState = isListening
                 }
 
                 override fun onTextChanged(text: String) {
-                    speechText = text
+                    speechTextState = text
+                }
+
+                override fun onFinalResult(text: String) {
+                    if (text.isNotBlank() && text != SpeechToTextManager.LISTENING_PLACEHOLDER && text != SpeechToTextManager.ERROR_MESSAGE) {
+                        onSpeechResult(text)
+                    }
                 }
             }
         )
@@ -55,14 +63,14 @@ fun rememberSpeechToText(): SpeechToTextState {
         if (isGranted) {
             startListening()
         } else {
-            speechText = SpeechToTextManager.PERMISSION_DENIED_MESSAGE
+            speechTextState = SpeechToTextManager.PERMISSION_DENIED_MESSAGE
         }
     }
 
     val toggleListening: () -> Unit = {
-        if (isListening) {
+        if (isListeningState) {
             manager.stopListening()
-            isListening = false
+            isListeningState = false
         } else {
             val hasPermission = ContextCompat.checkSelfPermission(
                 context,
@@ -79,12 +87,12 @@ fun rememberSpeechToText(): SpeechToTextState {
 
     val stopListening: () -> Unit = {
         manager.stopListening()
-        isListening = false
+        isListeningState = false
     }
 
     return SpeechToTextState(
-        isListening = isListening,
-        speechText = speechText,
+        isListening = isListeningState,
+        speechText = speechTextState,
         toggleListening = toggleListening,
         stopListening = stopListening
     )

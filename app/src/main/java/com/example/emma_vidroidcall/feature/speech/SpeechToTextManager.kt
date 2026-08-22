@@ -17,6 +17,7 @@ class SpeechToTextManager(
     interface Callbacks {
         fun onListeningChanged(isListening: Boolean)
         fun onTextChanged(text: String)
+        fun onFinalResult(text: String) {}
     }
 
     private val speechRecognizer: SpeechRecognizer? =
@@ -50,7 +51,9 @@ class SpeechToTextManager(
         override fun onResults(results: Bundle?) {
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             if (!matches.isNullOrEmpty()) {
-                callbacks.onTextChanged(matches[0])
+                val recognized = matches[0]
+                callbacks.onTextChanged(recognized)
+                callbacks.onFinalResult(recognized)
             }
             callbacks.onListeningChanged(false)
         }
