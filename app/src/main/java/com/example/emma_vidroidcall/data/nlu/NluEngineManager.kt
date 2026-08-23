@@ -89,30 +89,45 @@ class NluEngineManager(
         scope.launch(Dispatchers.IO) {
             _modelState.value = NluModelState.Loading
 
-            val candidates = listOf(
-                File(context.filesDir, NluConstants.MODEL_FILE_NAME),
-                File(context.filesDir, "models/${NluConstants.MODEL_FILE_NAME}"),
-                File(context.getExternalFilesDir(null), NluConstants.MODEL_FILE_NAME),
-                File(context.getExternalFilesDir("models"), NluConstants.MODEL_FILE_NAME),
-                File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), NluConstants.MODEL_FILE_NAME),
-                File("/sdcard/Download/${NluConstants.MODEL_FILE_NAME}"),
-                File("/sdcard/Documents/${NluConstants.MODEL_FILE_NAME}")
+            val searchDirs = listOfNotNull(
+                context.filesDir,
+                File(context.filesDir, "models"),
+                context.getExternalFilesDir(null),
+                context.getExternalFilesDir("models"),
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                File("/sdcard/Download"),
+                File("/sdcard/Documents")
             )
 
-            val existingFile = candidates.firstOrNull { it.exists() && it.canRead() && it.length() > 0 }
+            // 1. Ưu tiên tìm file theo tên chuẩn MODEL_FILE_NAME
+            var targetFile: File? = searchDirs.map { File(it, NluConstants.MODEL_FILE_NAME) }
+                .firstOrNull { it.exists() && it.canRead() && it.length() > 0 }
 
-            if (existingFile != null) {
+            // 2. Nếu chưa thấy, quét tìm file bất kỳ có đuôi .gguf trong các thư mục
+            if (targetFile == null) {
+                for (dir in searchDirs) {
+                    if (dir.exists() && dir.isDirectory) {
+                        val ggufFile = dir.listFiles()?.firstOrNull { 
+                            it.isFile && it.name.endsWith(".gguf", ignoreCase = true) && it.length() > 0 
+                        }
+                        if (ggufFile != null) {
+                            targetFile = ggufFile
+                            break
+                        }
+                    }
+                }
+            }
+
+            if (targetFile != null) {
                 try {
-                    loadNativeModel(existingFile.absolutePath)
+                    Log.i(TAG, "Đã phát hiện file GGUF tại: ${targetFile.absolutePath} (${targetFile.length() / 1024 / 1024} MB)")
+                    loadNativeModel(targetFile)
                 } catch (e: Exception) {
-                    Log.w(TAG, "Không thể nạp file GGUF qua LlamaHelper: ${e.message}. Sử dụng Spec Fallback Engine.", e)
-                    _modelState.value = NluModelState.Ready(
-                        modelPath = "Fallback Simulation (${existingFile.name})",
-                        isUsingNativeEngine = false
-                    )
+                    Log.e(TAG, "Lỗi khi nạp file GGUF qua LlamaHelper: ${e.message}", e)
+                    _modelState.value = NluModelState.Error("Lỗi nạp GGUF: ${e.localizedMessage}")
                 }
             } else {
-                Log.i(TAG, "Chưa tìm thấy file ${NluConstants.MODEL_FILE_NAME} trong máy. Khởi chạy chế độ NLU Spec Simulator.")
+                Log.i(TAG, "Chưa tìm thấy file .gguf trong thiết bị. Khởi chạy chế độ NLU Spec Simulator.")
                 _modelState.value = NluModelState.Ready(
                     modelPath = "Embedded NLU Spec Engine",
                     isUsingNativeEngine = false
@@ -128,7 +143,7 @@ class NluEngineManager(
         scope.launch(Dispatchers.IO) {
             _modelState.value = NluModelState.Loading
             try {
-                loadNativeModel(filePath)
+                loadNativeModel(File(filePath))
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi khi nạp model từ path: ${e.message}", e)
                 _modelState.value = NluModelState.Error("Không thể nạp mô hình: ${e.localizedMessage}")
@@ -136,23 +151,36 @@ class NluEngineManager(
         }
     }
 
-    private suspend fun loadNativeModel(pathDesc: String) = withContext(Dispatchers.IO) {
+    private suspend fun loadNativeModel(targetFile: File) = withContext(Dispatchers.IO) {
+        val fileUri = try {
+            androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                targetFile
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "FileProvider error: ${e.message}, dùng Uri.fromFile")
+            android.net.Uri.fromFile(targetFile)
+        }
+        val fileUriString = fileUri.toString()
+        Log.i(TAG, "Khởi tạo LlamaHelper với URI: $fileUriString")
+
         val helper = LlamaHelper(
             contentResolver = context.contentResolver,
             scope = scope,
             sharedFlow = llmEventFlow
         )
         helper.load(
-            path = pathDesc,
+            path = fileUriString,
             contextLength = 2048,
             mmprojPath = null
         ) { _ ->
             isNativeReady = true
             _modelState.value = NluModelState.Ready(
-                modelPath = pathDesc,
+                modelPath = targetFile.name,
                 isUsingNativeEngine = true
             )
-            Log.i(TAG, "Native GGUF Model Loaded Successfully from $pathDesc")
+            Log.i(TAG, "✅ Native GGUF Model Loaded Successfully from ${targetFile.name}")
         }
         llamaHelper = helper
     }
@@ -171,6 +199,7 @@ class NluEngineManager(
         val state = _modelState.value
         if (state is NluModelState.Ready && state.isUsingNativeEngine && isNativeReady && llamaHelper != null) {
             val formattedChatMl = NluConstants.buildChatMlPrompt(cleanQuery)
+            Log.i(TAG, "🚀 Đang gửi prompt vào Native GGUF Engine:\n$formattedChatMl")
             try {
                 llamaHelper?.predict(formattedChatMl)
             } catch (e: Exception) {
@@ -179,6 +208,7 @@ class NluEngineManager(
             }
         } else {
             // Sử dụng bộ mô phỏng NLU chuẩn 8 intent theo đặc tả spec
+            Log.i(TAG, "ℹ️ Chạy Fallback Spec Engine cho query: $cleanQuery (state: $state, nativeReady: $isNativeReady)")
             executeFallbackNlu(cleanQuery)
         }
     }
@@ -299,31 +329,32 @@ class NluEngineManager(
                 }
                 """.trimIndent()
             }
-            if (message.isBlank()) {
-                return """
+            return if (message.isNotBlank()) {
+                """
                 {
-                  "intent": "clarify",
+                  "intent": "send_sms",
                   "arguments": {
-                    "missing": ["message"]
+                    "contact": "$contact",
+                    "message": "$message"
                   },
                   "risk_level": "medium",
-                  "status": "needs_clarification",
-                  "requires_confirmation": false
+                  "status": "success",
+                  "requires_confirmation": true
+                }
+                """.trimIndent()
+            } else {
+                """
+                {
+                  "intent": "send_sms",
+                  "arguments": {
+                    "contact": "$contact"
+                  },
+                  "risk_level": "medium",
+                  "status": "success",
+                  "requires_confirmation": true
                 }
                 """.trimIndent()
             }
-            return """
-            {
-              "intent": "send_sms",
-              "arguments": {
-                "contact": "$contact",
-                "message": "$message"
-              },
-              "risk_level": "medium",
-              "status": "success",
-              "requires_confirmation": true
-            }
-            """.trimIndent()
         }
 
         // 3. open_map (destination)
