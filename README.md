@@ -1,125 +1,195 @@
-# 🎙 ViDroidCall - Trợ Lý Giọng Nói Thông Minh
+# 🎙️ ViDroidCall - Trợ Lý Giọng Nói Tiếng Việt & On-Device AI NLU
 
-[![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-purple.svg)](https://kotlinlang.org)
-[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20(Material%203)-blue.svg)](https://developer.android.com/jetpack/compose)
-[![DataStore](https://img.shields.io/badge/Storage-Jetpack%20DataStore-orange.svg)](https://developer.android.com/topic/libraries/architecture/datastore)
-[![MinSDK](https://img.shields.io/badge/Min%20SDK-26-brightgreen.svg)](https://android.com)
+<p align="center">
+  <img src="app/src/main/res/drawable/logo_app.png" width="120" height="120" alt="ViDroidCall Logo"/>
+</p>
 
-**ViDroidCall** là ứng dụng trợ lý giọng nói ảo tiếng Việt hiện đại dành cho hệ điều hành Android, được xây dựng hoàn toàn bằng **Jetpack Compose** và **Material 3**. Ứng dụng cung cấp khả năng nhận diện giọng nói, thực thi các tác vụ rảnh tay (gọi điện, mở ứng dụng, đặt báo thức, nhắn tin) cùng giao diện người dùng mượt mà, hỗ trợ chuyển đổi chủ đề Sáng / Tối (Light & Dark theme) tức thì.
+<p align="center">
+  <b>Trợ lý ảo ra lệnh giọng nói tiếng Việt thông minh, tích hợp mô hình AI NLU (Natural Language Understanding) xử lý Offline On-Device, giao diện Jetpack Compose trực quan, dễ dùng cho mọi lứa tuổi và người cao tuổi.</b>
+</p>
 
----
-
-## ✨ Tính Năng Nổi Bật
-
-### 1. 🎤 Trợ Lý Ảo Giọng Nói
-- Nhận diện giọng nói tiếng Việt thời gian thực thông qua `rememberSpeechToText`.
-- Hiệu ứng hoạt họa sóng âm thanh (pulse / breathing wave) và vòng hào quang phản hồi theo trạng thái lắng nghe.
-- Danh sách gợi ý câu lệnh nhanh (Gọi điện, Nhắn tin, Báo thức, Phát nhạc, Chỉ đường).
-
-### 2. 📜 Lịch Sử Câu Lệnh (Command History)
-- Quản lý và theo dõi nhật ký các câu lệnh đã thực hiện (Cuộc gọi, Tin nhắn, Ứng dụng, Hệ thống).
-- Nút bấm chạy lại lệnh nhanh chỉ với 1 chạm.
-
-### 3. 🎨 Cài Đặt Giao Diện & Theme Động (DataStore Backed)
-- Hỗ trợ 3 chế độ chủ đề:
-  - ☀️ **Giao diện Sáng (Trắng)**: Tông màu sáng thanh lịch, rõ nét.
-  - 🌙 **Giao diện Tối (Đen)**: Tông màu tối dịu mắt, tiết kiệm pin cho màn hình OLED/AMOLED.
-  - 📱 **Theo hệ thống**: Tự động đồng bộ theo cài đặt chế độ của thiết bị.
-- Lưu trữ cấu hình bằng **Jetpack DataStore Preferences** và tự động đồng bộ tức thì trên toàn bộ ứng dụng.
-
-### 4. 🧭 Thanh Điều Hướng Tùy Biến (Custom Bottom Navigation Bar)
-- Thanh menu phía dưới với thiết kế đường cong lõm độc đáo (Custom Cutout Notch Shape).
-- Nút Micro FAB trung tâm nhô cao với hiệu ứng chạm co giãn (`bounceClick`) và hào quang phát sáng.
-
-### 5. 🚀 Luồng Giới Thiệu (Onboarding Flow)
-- Hướng dẫn người dùng các tính năng cốt lõi với `HorizontalPager` mượt mà.
-- Lưu trạng thái đã hoàn thành onboarding vào DataStore để chỉ hiển thị ở lần đầu mở app.
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Platform"/>
+  <img src="https://img.shields.io/badge/Package-com.example.ViDroidCall__Studio-blueviolet?style=for-the-badge" alt="Package"/>
+  <img src="https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"/>
+  <img src="https://img.shields.io/badge/UI-Jetpack%20Compose%20(M3)-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Compose"/>
+  <img src="https://img.shields.io/badge/AI%20Engine-Llama.cpp%20GGUF-FF6F00?style=for-the-badge" alt="AI Engine"/>
+  <img src="https://img.shields.io/badge/Storage-Jetpack%20DataStore-F4B400?style=for-the-badge" alt="DataStore"/>
+  <img src="https://img.shields.io/badge/Min%20SDK-26%20(Android%208.0)-00C853?style=for-the-badge" alt="MinSDK"/>
+</p>
 
 ---
 
-## 🛠️ Công Nghệ & Thư Viện Sử Dụng
+## 📖 Giới Thiệu (Overview)
 
-- **Ngôn ngữ**: [Kotlin](https://kotlinlang.org/)
-- **Giao diện (UI)**: [Jetpack Compose](https://developer.android.com/jetpack/compose) + [Material Design 3](https://m3.material.io/)
-- **Quản lý trạng thái & Phản ứng (State & Reactivity)**: Kotlin Coroutines & StateFlow / Flow
-- **Điều hướng (Navigation)**: [Jetpack Navigation Compose](https://developer.android.com/guide/navigation/navigation-compose)
-- **Lưu trữ cục bộ (Local Storage)**: [Jetpack DataStore Preferences](https://developer.android.com/topic/libraries/architecture/datastore)
-- **Nhận diện giọng nói (Speech Recognition)**: Android SpeechRecognizer API
-- **Hiệu ứng đồ họa (Animations)**: Compose Animation API (Springs, Transitions, Infinite Transitions, GraphicsLayers)
+**ViDroidCall** là ứng dụng trợ lý điều khiển điện thoại bằng giọng nói tiếng Việt thế hệ mới. Ứng dụng kết hợp giữa công nghệ nhận diện giọng nói thời gian thực (**Speech-to-Text**) và bộ xử lý ngôn ngữ tự nhiên **NLU AI chạy On-Device (GGUF Offline)**, cho phép người dùng điều khiển các chức năng trên điện thoại mà không cần chạm tay và không phụ thuộc vào kết nối mạng.
+
+Giao diện được thiết kế theo ngôn ngữ **Material 3** tối giản, trực diện, cỡ chữ lớn và có khả năng tùy biến kích thước linh hoạt, đặc biệt thân thiện với **người lớn tuổi**.
 
 ---
 
-## 📁 Cấu Trúc Dự Án (Project Structure)
+## ✨ Tính Năng Nổi Bật (Key Features)
 
-```text
-com.example.emma_vidroidcall/
-│
-├── MainActivity.kt                      # Activity chính, quan sát Theme từ DataStore
-│
-├── data/
-│   └── local/
-│       ├── OnboardingPreferences.kt     # Lưu trạng thái onboarding vào DataStore
-│       └── ThemePreferences.kt          # Lưu cấu hình Theme (Light/Dark/System)
-│
-├── feature/
-│   ├── assistant/
-│   │   └── AssistantScreen.kt           # Tab Hỏi đáp & Giao diện Trợ lý ảo
-│   ├── history/
-│   │   ├── HistoryScreen.kt             # Tab Lịch sử câu lệnh
-│   │   └── model/
-│   │       └── CommandHistoryItem.kt    # Model dữ liệu câu lệnh lịch sử
-│   ├── home/
-│   │   └── HomeScreen.kt                # Màn hình chính điều phối các tab
-│   ├── onboarding/
-│   │   └── OnbroadingScreen.kt          # Màn hình Onboarding giới thiệu ứng dụng
-│   ├── settings/
-│   │   ├── SettingsScreen.kt            # Tab Cài đặt tổng quan
-│   │   └── ThemeSelectionScreen.kt      # Trang chọn Theme Sáng / Tối
-│   └── speech/
-│       └── SpeechToTextManager.kt       # Xử lý nhận diện giọng nói
-│
-├── navigation/
-│   ├── AppNavHost.kt                    # Điều hướng Onboarding <-> Home
-│   ├── AppRoot.kt                       # Gốc ứng dụng kiểm tra trạng thái khởi chạy
-│   └── AppRoute.kt                      # Định nghĩa các Route điều hướng
-│
-└── ui/
-    ├── component/
-    │   └── CustomBottomMenuBar.kt       # Custom Bottom Bar với rãnh lõm và nút Mic FAB
-    └── theme/
-        ├── Color.kt                     # Định nghĩa bảng màu thương hiệu & giao diện
-        ├── Shape.kt                     # Định nghĩa bo góc hình học
-        ├── Theme.kt                     # Định nghĩa ColorScheme (Light & Dark Theme)
-        └── Type.kt                      # Cấu hình Typography
+### 1. 🤖 Động Cơ AI NLU Kép (Dual-Engine NLU Architecture)
+* **Native Offline GGUF Engine**: Tự động phát hiện và nạp mô hình ngôn ngữ lớn (LLM - *Qwen2.5-1.5B-Instruct-Q4_K_M*) trong bộ nhớ máy, chạy suy luận hoàn toàn ngoại tuyến qua thư viện `LlamaHelper` (llama.cpp C++ JNI).
+* **Fallback Spec Simulator**: Bộ phân tích quy tắc (Rule-based NLU) tuân thủ 100% đặc tả 8 Intent chuẩn, giúp ứng dụng luôn phản hồi tức thì ngay cả khi thiết bị chưa tải file mô hình nặng.
+* **Huy hiệu trạng thái AI trực quan**: Hiển thị rõ ràng tình trạng mô hình (`Trợ lý AI ngoại tuyến: Sẵn sàng`, `Trợ lý AI: Sẵn sàng nhận lệnh`, `Đang tải`) bằng tiếng Việt dễ hiểu.
+
+### 2. ⚡ 8 Nhóm Ý Định & Hành Động Chuẩn (Standard Intents)
+| Intent | Mô Tả | Tham Số Trích Xuất |
+| :--- | :--- | :--- |
+| `call_contact` | Gọi điện thoại / Cuộc gọi khẩn cấp (113, 114, 115) | `contact` |
+| `send_sms` | Soạn và gửi tin nhắn SMS | `contact`, `message` |
+| `set_alarm` | Cài đặt chuông báo thức | `hour`, `minute`, `label` |
+| `set_timer` | Hẹn giờ đếm ngược | `duration`, `unit`, `label` |
+| `open_map` | Mở bản đồ / Chỉ đường điểm đến | `destination` |
+| `open_app` | Khởi chạy ứng dụng cài sẵn | `app_name` |
+| `clarify` | Yêu cầu người dùng bổ sung thông tin khi thiếu dữ liệu | `missing` |
+| `unsupported`| Phản hồi khi câu lệnh nằm ngoài phạm vi | — |
+
+### 3. 👓 Thân Thiện Với Người Cao Tuổi & Trợ Năng (Accessibility & Senior Friendly)
+* **Cài đặt cỡ chữ dạng thanh trượt (Font Size Slider)**: Tùy chỉnh tỷ lệ chữ linh hoạt (`85%` đến `135%`) với 4 nấc chọn nhanh (`Nhỏ` • `Vừa` • `Lớn` • `Rất lớn`).
+* **Co giãn toàn diện thời gian thực**: Sử dụng `CompositionLocalProvider(LocalDensity)` giúp thay đổi kích thước toàn bộ văn bản trên tất cả các màn hình ngay lập tức.
+* **Giao diện Full-Screen trực diện**: Nút Micro trung tâm cực lớn (126dp), vòng sóng âm động lan tỏa, thẻ hiển thị giọng nói to rõ nét (20sp Bold).
+
+### 4. 📜 Quản Lý Lịch Sử Câu Lệnh Ngoại Tuyến (Offline History & Clear All)
+* **Lưu trữ SQLite nội bộ**: Tự động lưu mọi câu lệnh giọng nói, phân loại theo Intent (`Cuộc gọi`, `Tin nhắn`, `Báo thức`, `Hẹn giờ`, `Bản đồ`, `Ứng dụng`), thời gian thực thi và trạng thái.
+* **Thực thi lại nhanh (Rerun Action)**: Nhấn nút Play trên thẻ lịch sử để ra lệnh lại ngay lập tức mà không cần nói lại.
+* **Xóa linh hoạt**: Hỗ trợ xóa từng mục đơn lẻ hoặc **Xóa toàn bộ lịch sử (Clear All)** kèm hộp thoại xác nhận an toàn.
+* **Empty State**: Trạng thái rỗng trực quan khi chưa có câu lệnh hoặc sau khi xóa sạch.
+
+### 5. 🎨 Quản Lý Giao Diện & Theme Động (Jetpack DataStore)
+* Hỗ trợ 3 chế độ hiển thị: **Sáng (Light)**, **Tối (Dark - tiết kiệm pin)** và **Theo hệ thống (System)**.
+* **Custom Bottom Navigation Bar**: Thiết kế đường cắt notch mềm mại với Logo App nổi bật ở trung tâm, loại bỏ trùng lặp biểu tượng và tăng nhận diện thương hiệu.
+
+---
+
+## 🏗️ Kiến Trúc Hệ Thống (System Architecture)
+
+```mermaid
+flowchart TD
+    A["Giọng nói người dùng"] --> B["Speech-to-Text (STT)"]
+    B --> C["Văn bản câu lệnh (Clean Query)"]
+    C --> D["NluEngineManager"]
+    
+    subgraph AI_Engine ["Bộ Xử Lý Ý Định (NLU Processing)"]
+        D --> E{"File .GGUF sẵn sàng?"}
+        E -- "CÓ" --> F["Native GGUF LLM (LlamaHelper)<br/>Qwen2.5-1.5B On-Device"]
+        E -- "CHƯA CÓ" --> G["Fallback Spec Engine<br/>8-Intent Regex Parser"]
+    end
+    
+    F --> H["JSON Kết quả NLU"]
+    G --> H
+    H --> I["NluJsonParser"]
+    I --> J["NluResult StateFlow"]
+    J --> K["AssistantScreen (UI hiển thị)"]
+    J --> L["NluActionDispatcher (Thực thi hệ thống: Gọi điện, Báo thức, Bản đồ...)"]
+    J --> M["CommandHistoryRepository (Lưu SQLite Lịch sử)"]
+    M --> N["HistoryScreen (Xem, Chạy lại & Xóa)"]
 ```
 
 ---
 
-## 🚀 Cài Đặt & Chạy Ứng Dụng (Getting Started)
+## 📁 Cấu Trúc Thư Mục (Project Structure)
 
-### Yêu cầu môi trường
-- **Android Studio**: Koala / Ladybug hoặc phiên bản mới hơn
-- **JDK**: Java 11 hoặc Java 17
-- **Min SDK**: API Level 26 (Android 8.0)
-- **Target SDK**: API Level 36
-- **Compile SDK**: API Level 37.1
+```text
+com.example.ViDroidCall_Studio/
+│
+├── MainActivity.kt                      # Activity gốc, áp dụng Theme và Font Scale toàn cục
+│
+├── data/
+│   ├── local/
+│   │   ├── history/
+│   │   │   ├── CommandHistoryDatabaseHelper.kt # SQLite OpenHelper quản lý bảng lịch sử
+│   │   │   └── CommandHistoryRepository.kt     # Repository CRUD và reactive Flow
+│   │   ├── FontSizePreferences.kt       # Quản lý lưu trữ tỷ lệ Cỡ chữ vào DataStore
+│   │   ├── OnboardingPreferences.kt     # Lưu trạng thái hoàn thành Onboarding
+│   │   └── ThemePreferences.kt          # Quản lý cấu hình Theme (Light / Dark / System)
+│   │
+│   ├── model/
+│   │   ├── NluModels.kt                 # Data classes cấu trúc Intent, Arguments, Risk Level
+│   │   └── NluJsonParser.kt             # Bộ phân tích cú pháp JSON an toàn
+│   │
+│   └── nlu/
+│       ├── NluEngineManager.kt          # Bộ điều phối NLU kép (Native LLM + Fallback)
+│       ├── NluActionDispatcher.kt       # Thực thi Intent gọi điện, SMS, báo thức, map...
+│       └── NluConstants.kt              # ChatML Prompt Template & Cấu hình AI
+│
+├── feature/
+│   ├── assistant/
+│   │   └── AssistantScreen.kt           # Màn hình Trợ lý Micro Full-screen & Thẻ NLU
+│   ├── history/
+│   │   ├── HistoryScreen.kt             # Màn hình Lịch sử câu lệnh đã thực hiện
+│   │   └── model/
+│   │       └── CommandHistoryItem.kt    # Model dữ liệu lịch sử
+│   ├── home/
+│   │   └── HomeScreen.kt                # Màn hình chính điều phối các tab và STT
+│   ├── onboarding/
+│   │   └── OnbroadingScreen.kt          # Màn hình hướng dẫn 3 bước cho người dùng mới
+│   ├── settings/
+│   │   ├── SettingsScreen.kt            # Cài đặt tổng quan
+│   │   ├── FontSizeSettingsScreen.kt    # Màn hình thanh trượt chỉnh cỡ chữ & Xem trước
+│   │   └── ThemeSelectionScreen.kt      # Màn hình chọn Theme Sáng / Tối
+│   └── speech/
+│       ├── RememberSpeechToText.kt      # Compose wrapper cho SpeechRecognizer
+│       └── SpeechToTextManager.kt       # Quản lý Audio Record & Speech Recognition
+│
+├── navigation/
+│   ├── AppNavHost.kt                    # Điều hướng Onboarding ↔ Home
+│   ├── AppRoot.kt                       # Kiểm tra trạng thái lần đầu khởi chạy
+│   └── AppRoute.kt                      # Định nghĩa các Route
+│
+└── ui/
+    ├── component/
+    │   ├── CustomBottomMenuBar.kt       # Thanh Bottom Bar tùy biến với Logo App trung tâm
+    │   └── BounceClickModifier.kt       # Hiệu ứng chạm phản hồi xúc giác
+    └── theme/
+        ├── Color.kt                     # Bảng màu thương hiệu & hệ thống
+        ├── Shape.kt                     # Cấu hình bo góc hình học
+        ├── Theme.kt                     # ViDroidCallTheme hỗ trợ Dynamic Font Scale
+        └── Type.kt                      # Typography chuẩn Material 3
+```
 
-### Các bước biên dịch
-1. Clone dự án về máy tính:
-   ```bash
-   git clone <repo-url>
-   cd ViDroidCall-Studio
-   ```
-2. Mở dự án bằng **Android Studio**.
-3. Sync Gradle và biên dịch ứng dụng:
-   ```bash
-   ./gradlew assembleDebug
-   ```
-4. Cài đặt và chạy trên thiết bị Android hoặc Emulator có hỗ trợ Micro/Google Speech Services.
+---
+
+## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
+
+* **Ngôn ngữ**: [Kotlin 2.0+](https://kotlinlang.org/)
+* **Giao diện**: [Jetpack Compose](https://developer.android.com/jetpack/compose) & [Material Design 3](https://m3.material.io/)
+* **Package**: `com.example.ViDroidCall_Studio`
+* **Kiến trúc**: MVI / MVVM với Kotlin Coroutines & StateFlow
+* **Xử lý AI On-Device**: [Llama.cpp](https://github.com/ggerganov/llama.cpp) / `LlamaHelper` (Chạy mô hình GGUF trực tiếp trên CPU/NPU thiết bị)
+* **Lưu trữ dữ liệu**: [Jetpack DataStore Preferences](https://developer.android.com/topic/libraries/architecture/datastore)
+* **Nhận dạng giọng nói**: Android `SpeechRecognizer` API
+* **Hoạt họa (Animations)**: Compose Animation (Spring Physics, Infinite Transition, GraphicsLayer)
+
+---
+
+## 🚀 Hướng Dẫn Cài Đặt & Chạy (Getting Started)
+
+### 1. Yêu cầu môi trường
+* **Android Studio**: Ladybug / Koala hoặc mới hơn
+* **JDK**: Java 17
+* **Android SDK**: Min SDK 26 (Android 8.0) | Target SDK 36 | Compile SDK 37.1
+
+### 2. Biên dịch dự án
+```bash
+# 1. Clone repository
+git clone https://github.com/tuanhdevvn/ViDroidCall-Studio.git
+cd ViDroidCall-Studio
+
+# 2. Biên dịch APK Debug
+./gradlew assembleDebug
+```
+
+### 3. Cài đặt mô hình AI GGUF (Tùy chọn)
+Để trải nghiệm chế độ **AI Offline On-Device thực thụ**:
+1. Tải file mô hình `qwen2.5-1.5b-instruct-q4_k_m.gguf` (hoặc mô hình GGUF tương thích).
+2. Chép file vào thư mục `/sdcard/Download/` hoặc `/sdcard/Documents/` trên điện thoại/máy ảo.
+3. Mở app **ViDroidCall**, hệ thống sẽ tự động phát hiện và chuyển sang trạng thái: **`Trợ lý AI ngoại tuyến: Sẵn sàng`**.
 
 ---
 
 ## 📄 Bản Quyền (License)
 
-Dự án được phát triển và quản lý bởi tác giả.
+Dự án được xây dựng và phát triển bởi **Tuấn Anh** (@tuanhdevvn). Mọi quyền được bảo lưu.

@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -28,8 +29,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,9 +47,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ViDroidCall_Studio.R
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
 
 /**
@@ -258,8 +262,8 @@ private fun NavItem(
 
     Column(
         modifier = modifier
-            .bounceClick(scaleDown = 0.82f, onClick = onSelect)
-            .padding(vertical = 8.dp),
+            .bounceClick(scaleDown = 0.85f, onClick = onSelect)
+            .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -274,10 +278,10 @@ private fun NavItem(
                 // Nền mềm dịu cho icon được chọn
                 Box(
                     modifier = Modifier
-                        .size(46.dp, 28.dp)
+                        .size(50.dp, 30.dp)
                         .background(
                             color = activeColor.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(15.dp)
                         )
                 )
             }
@@ -285,7 +289,7 @@ private fun NavItem(
                 imageVector = tab.icon,
                 contentDescription = tab.title,
                 tint = if (isSelected) activeColor else inactiveColor,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(26.dp)
             )
         }
 
@@ -293,8 +297,8 @@ private fun NavItem(
 
         Text(
             text = tab.title,
-            fontSize = 12.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             color = if (isSelected) activeColor else inactiveColor
         )
 
@@ -303,7 +307,7 @@ private fun NavItem(
             Spacer(modifier = Modifier.height(2.dp))
             Box(
                 modifier = Modifier
-                    .width(18.dp)
+                    .width(20.dp)
                     .height(3.dp)
                     .background(activeColor, RoundedCornerShape(2.dp))
             )
@@ -391,11 +395,11 @@ private fun CenterMicButton(
                 .bounceClick(scaleDown = 0.65f, onClick = onMicClick),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Mic,
-                contentDescription = "Voice Micro",
-                tint = Color.White,
-                modifier = Modifier.size(38.dp)
+            Image(
+                painter = painterResource(id = R.drawable.logo_app),
+                contentDescription = "Logo App",
+                modifier = Modifier.size(64.dp),
+                contentScale = ContentScale.Fit
             )
         }
     }

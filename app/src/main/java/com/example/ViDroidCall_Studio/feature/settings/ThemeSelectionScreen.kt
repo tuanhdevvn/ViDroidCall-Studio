@@ -45,13 +45,12 @@ import com.example.ViDroidCall_Studio.ui.component.bounceClick
 data class ThemeOptionItem(
     val theme: AppTheme,
     val title: String,
-    val description: String,
     val icon: ImageVector,
     val accentColor: Color
 )
 
 /**
- * Trang chọn Chủ đề (Theme) khi người dùng bấm vào Cài đặt giao diện
+ * Trang chọn Chủ đề (Theme) - Clean & Tinh gọn
  */
 @Composable
 fun ThemeSelectionScreen(
@@ -68,16 +67,16 @@ fun ThemeSelectionScreen(
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Header có nút Quay lại (Back Button)
+        // Header tinh gọn
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(vertical = 4.dp)
+            modifier = Modifier.padding(vertical = 6.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
                     .bounceClick(scaleDown = 0.85f, onClick = onBack),
                 contentAlignment = Alignment.Center
             ) {
@@ -85,57 +84,38 @@ fun ThemeSelectionScreen(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                     contentDescription = "Quay lại",
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-            Column {
-                Text(
-                    text = "Cài đặt giao diện",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "Tùy chỉnh chế độ hiển thị Sáng / Tối",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = "Giao diện",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "CHỌN CHỦ ĐỀ",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            letterSpacing = 1.sp,
-            modifier = Modifier.padding(start = 4.dp, bottom = 10.dp)
-        )
-
         val themeOptions = listOf(
             ThemeOptionItem(
                 theme = AppTheme.LIGHT,
-                title = "Giao diện Sáng (Trắng)",
-                description = "Tông màu trắng sáng, thanh lịch và tươi tắn",
+                title = "Sáng",
                 icon = Icons.Rounded.LightMode,
                 accentColor = Color(0xFFEAB308)
             ),
             ThemeOptionItem(
                 theme = AppTheme.DARK,
-                title = "Giao diện Tối (Đen)",
-                description = "Tông màu đen dịu mắt, tiết kiệm pin",
+                title = "Tối",
                 icon = Icons.Rounded.DarkMode,
                 accentColor = Color(0xFF6366F1)
             ),
             ThemeOptionItem(
                 theme = AppTheme.SYSTEM,
                 title = "Theo hệ thống",
-                description = "Tự động đồng bộ theo cài đặt của thiết bị",
                 icon = Icons.Rounded.PhoneAndroid,
                 accentColor = MaterialTheme.colorScheme.primary
             )
@@ -148,7 +128,7 @@ fun ThemeSelectionScreen(
                 isSelected = isSelected,
                 onSelect = { onSelectTheme(option.theme) }
             )
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
@@ -160,7 +140,7 @@ private fun ThemeSelectionCard(
     onSelect: () -> Unit
 ) {
     val borderColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
         label = "themeCardBorder"
     )
 
@@ -171,13 +151,12 @@ private fun ThemeSelectionCard(
             .clickable(onClick = onSelect),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
-        shadowElevation = if (isSelected) 4.dp else 1.dp
+        border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 18.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -185,10 +164,9 @@ private fun ThemeSelectionCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // Icon tròn
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
+                        .size(44.dp)
                         .background(
                             color = option.accentColor.copy(alpha = 0.12f),
                             shape = CircleShape
@@ -205,27 +183,15 @@ private fun ThemeSelectionCard(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Text mô tả
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = option.title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = option.description,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 18.sp
-                    )
-                }
+                Text(
+                    text = option.title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Checkbox / Radio indicator
+            // Radio indicator
             Box(
                 modifier = Modifier
                     .size(26.dp)
@@ -235,7 +201,7 @@ private fun ThemeSelectionCard(
                     )
                     .border(
                         width = 2.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center

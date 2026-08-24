@@ -8,7 +8,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 
 private val DarkColorScheme = darkColorScheme(
     primary = AppPrimaryLight,
@@ -41,10 +44,11 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun EmmaViDroidCallTheme(
+fun ViDroidCallTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Mặc định tắt để màu thương hiệu #0866FF không bị thiết bị thay thế.
     dynamicColor: Boolean = false,
+    fontScale: Float = 1.0f,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
@@ -57,10 +61,21 @@ fun EmmaViDroidCallTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = AppShapes,
-        content = content,
+    val currentDensity = LocalDensity.current
+    val customDensity = Density(
+        density = currentDensity.density,
+        fontScale = currentDensity.fontScale * fontScale
     )
+
+    CompositionLocalProvider(
+        LocalDensity provides customDensity
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            shapes = AppShapes,
+            content = content,
+        )
+    }
 }
+

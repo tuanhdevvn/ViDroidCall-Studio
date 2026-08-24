@@ -8,30 +8,39 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.ViDroidCall_Studio.data.local.history.CommandHistoryRepository
+import com.example.ViDroidCall_Studio.data.nlu.NluActionDispatcher
 import com.example.ViDroidCall_Studio.data.nlu.NluEngineManager
 import com.example.ViDroidCall_Studio.feature.assistant.AssistantScreen
 import com.example.ViDroidCall_Studio.feature.history.HistoryScreen
-import com.example.ViDroidCall_Studio.feature.history.model.CommandHistoryItem
 import com.example.ViDroidCall_Studio.feature.settings.SettingsScreen
 import com.example.ViDroidCall_Studio.feature.speech.rememberSpeechToText
 import com.example.ViDroidCall_Studio.ui.component.CustomBottomMenuBar
 import com.example.ViDroidCall_Studio.ui.component.NavTab
-import com.example.ViDroidCall_Studio.ui.theme.EmmaViDroidCallTheme
+import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableStateOf(NavTab.ASSISTANT) }
+
+    // Quản lý Lịch sử câu lệnh ngoại tuyến (SQLite Repository)
+    val historyRepository = remember { CommandHistoryRepository(context.applicationContext) }
+    val historyItems by historyRepository.historyFlow.collectAsState(initial = emptyList())
 
     // Quản lý NLU Engine
     val nluEngineManager = remember { NluEngineManager(context.applicationContext) }
@@ -39,22 +48,26 @@ fun HomeScreen(
     val isNluProcessing by nluEngineManager.isGenerating.collectAsState()
     val modelState by nluEngineManager.modelState.collectAsState()
 
+    // Quản lý Điều phối hành động Native (Gọi điện, Báo thức, Hẹn giờ, Mở app)
+    val actionDispatcher = remember { NluActionDispatcher(context.applicationContext) }
+
+    // Tự động lưu câu lệnh vào Lịch sử và thực thi hành động Native khi AI phân tích xong
+    LaunchedEffect(nluResult) {
+        val result = nluResult
+        val query = nluEngineManager.currentQuery.value
+        if (result != null && query.isNotBlank()) {
+            historyRepository.addFromNluResult(query = query, nluResult = result)
+            if (result.status == "success") {
+                actionDispatcher.executeNluResponse(result.rawJson)
+            }
+        }
+    }
+
     val speechToText = rememberSpeechToText(
         onSpeechResult = { recognizedText ->
             nluEngineManager.processQuery(recognizedText)
         }
     )
-
-    // Dữ liệu mẫu Lịch sử câu lệnh
-    val historyItems = remember {
-        listOf(
-            CommandHistoryItem("1", "Gọi điện cho Mẹ", "10:45 AM", "Thành công", "Cuộc gọi"),
-            CommandHistoryItem("2", "Mở ứng dụng Zalo", "09:30 AM", "Thành công", "Ứng dụng"),
-            CommandHistoryItem("3", "Nhắn tin cho Nam: 'Tôi đang tới'", "Hôm qua", "Thành công", "Tin nhắn"),
-            CommandHistoryItem("4", "Đặt báo thức 06:30 sáng", "Hôm qua", "Thành công", "Hệ thống"),
-            CommandHistoryItem("5", "Bật chế độ tiết kiệm pin", "12/08/2026", "Thành công", "Hệ thống")
-        )
-    }
 
     Scaffold(
         modifier = modifier
@@ -90,7 +103,17 @@ fun HomeScreen(
                 )
 
                 NavTab.HISTORY -> HistoryScreen(
-                    historyItems = historyItems
+                    historyItems = historyItems,
+                    onRerunCommand = { query ->
+                        nluEngineManager.processQuery(query)
+                        selectedTab = NavTab.ASSISTANT
+                    },
+                    onDeleteItem = { id ->
+                        scope.launch { historyRepository.deleteItem(id) }
+                    },
+                    onClearAll = {
+                        scope.launch { historyRepository.clearHistory() }
+                    }
                 )
 
                 NavTab.SETTINGS -> SettingsScreen()
@@ -102,7 +125,7 @@ fun HomeScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun HomeScreenPreview() {
-    EmmaViDroidCallTheme(dynamicColor = false) {
+    ViDroidCallTheme(dynamicColor = false) {
         HomeScreen()
     }
 }

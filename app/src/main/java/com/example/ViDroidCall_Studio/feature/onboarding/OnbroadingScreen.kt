@@ -45,7 +45,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.ViDroidCall_Studio.ui.theme.EmmaViDroidCallTheme
+import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
 import com.example.ViDroidCall_Studio.ui.theme.IllustrationRing
 import com.example.ViDroidCall_Studio.ui.theme.IndicatorInactive
 import com.example.ViDroidCall_Studio.ui.theme.MicrophoneGlowInner
@@ -422,7 +422,7 @@ private fun ReadyMicrophoneIllustration() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun OnboardingScreenPreview() {
-    EmmaViDroidCallTheme(dynamicColor = false) {
+    ViDroidCallTheme(dynamicColor = false) {
         OnboardingScreen(onFinished = {})
     }
 }

@@ -20,6 +20,9 @@ data class SpeechToTextState(
     val stopListening: () -> Unit
 )
 
+/**
+ * Hook Compose: Nhận diện giọng nói 100% In-App (SpeechToTextManager) trực tiếp trong App, không dùng popup Google.
+ */
 @Composable
 fun rememberSpeechToText(
     onSpeechResult: (String) -> Unit = {}
@@ -41,7 +44,11 @@ fun rememberSpeechToText(
                 }
 
                 override fun onFinalResult(text: String) {
-                    if (text.isNotBlank() && text != SpeechToTextManager.LISTENING_PLACEHOLDER && text != SpeechToTextManager.ERROR_MESSAGE) {
+                    // CHỈ GỌI MODEL AI KHI ĐÃ NHẬN DIỆN THÀNH CÔNG VĂN BẢN
+                    if (text.isNotBlank() && 
+                        text != SpeechToTextManager.LISTENING_PLACEHOLDER && 
+                        text != SpeechToTextManager.ERROR_MESSAGE &&
+                        text != SpeechToTextManager.PERMISSION_DENIED_MESSAGE) {
                         onSpeechResult(text)
                     }
                 }
