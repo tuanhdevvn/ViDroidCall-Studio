@@ -245,9 +245,11 @@ private fun VoiceAssistantSection(
         label = "aiLogoRotation"
     )
 
-    // Xử lý khi nhấn nút trong lúc AI chưa sẵn sàng
+    // Xử lý khi nhấn nút: Chặn thao tác nếu AI đang phân tích câu lệnh (thực thi tuần tự)
     val handleActionClick: () -> Unit = {
-        if (isAiReady) {
+        if (isNluProcessing) {
+            Toast.makeText(context, "AI đang phân tích câu lệnh, vui lòng đợi...", Toast.LENGTH_SHORT).show()
+        } else if (isAiReady) {
             onToggleListening()
         } else {
             val msg = when (modelState) {

@@ -1,5 +1,6 @@
 package com.example.ViDroidCall_Studio.feature.home
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -66,6 +67,15 @@ fun HomeScreen(
         }
     )
 
+    // Xử lý bật tắt thu âm an toàn: Chặn kích hoạt khi AI đang bận suy luận
+    val handleToggleListeningSafe: () -> Unit = {
+        if (isNluProcessing) {
+            Toast.makeText(context, "AI đang phân tích câu lệnh, vui lòng đợi...", Toast.LENGTH_SHORT).show()
+        } else {
+            speechToText.toggleListening()
+        }
+    }
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -75,7 +85,7 @@ fun HomeScreen(
             CustomBottomMenuBar(
                 selectedTab = selectedTab,
                 onTabSelected = { tab -> selectedTab = tab },
-                onMicClick = speechToText.toggleListening,
+                onMicClick = handleToggleListeningSafe,
                 isListening = speechToText.isListening,
                 modifier = Modifier.navigationBarsPadding()
             )
@@ -90,12 +100,14 @@ fun HomeScreen(
                 NavTab.ASSISTANT -> AssistantScreen(
                     isListening = speechToText.isListening,
                     speechText = speechToText.speechText,
-                    onToggleListening = speechToText.toggleListening,
+                    onToggleListening = handleToggleListeningSafe,
                     nluResult = nluResult,
                     isNluProcessing = isNluProcessing,
                     modelState = modelState,
                     onSuggestionClick = { prompt ->
-                        nluEngineManager.processQuery(prompt)
+                        if (!isNluProcessing) {
+                            nluEngineManager.processQuery(prompt)
+                        }
                     }
                 )
 
