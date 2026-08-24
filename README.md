@@ -1,7 +1,7 @@
 # 🎙️ ViDroidCall Studio - Trợ Lý Giọng Nói Tiếng Việt & On-Device AI NLU
 
 <p align="center">
-  <img src="app/src/main/res/drawable/logo_app.png" width="120" height="120" alt="ViDroidCall Logo"/>
+  <img src="app/src/main/res/drawable/logo_app.png" width="320" height="320" alt="ViDroidCall Logo"/>
 </p>
 
 <p align="center">
