@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Emma-ViDroidCall"
+rootProject.name = "ViDroidCall_Studio"
 include(":app")
  
