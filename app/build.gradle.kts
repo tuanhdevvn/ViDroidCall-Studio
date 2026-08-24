@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.emma_vidroidcall"
+        applicationId = "com.example.ViDroidCall_Studio"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
