@@ -91,14 +91,11 @@ class NluEngineManager(
         scope.launch(Dispatchers.IO) {
             _modelState.value = NluModelState.Loading
 
+            // CHỈ QUÉT DUY NHẤT THƯ MỤC DOWNLOAD
             val searchDirs = listOfNotNull(
-                context.getExternalFilesDir(null),
-                context.getExternalFilesDir("models"),
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                 File("/sdcard/Download"),
-                File("/sdcard/Documents"),
-                context.filesDir,
-                File(context.filesDir, "models")
+                File(Environment.getExternalStorageDirectory(), "Download")
             )
 
             // 1. Ưu tiên tìm file theo tên chuẩn MODEL_FILE_NAME

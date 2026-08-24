@@ -61,6 +61,7 @@ fun rememberSpeechToText(
     }
 
     val startListening = {
+        speechTextState = ""
         manager.startListening()
     }
 
@@ -79,6 +80,7 @@ fun rememberSpeechToText(
             manager.stopListening()
             isListeningState = false
         } else {
+            speechTextState = ""
             val hasPermission = ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.RECORD_AUDIO

@@ -51,15 +51,12 @@ fun HomeScreen(
     // Quản lý Điều phối hành động Native (Gọi điện, Báo thức, Hẹn giờ, Mở app)
     val actionDispatcher = remember { NluActionDispatcher(context.applicationContext) }
 
-    // Tự động lưu câu lệnh vào Lịch sử và thực thi hành động Native khi AI phân tích xong
+    // Tự động lưu câu lệnh vào Lịch sử và hiển thị JSON trực tiếp trên màn hình (Chưa mở app ngoài)
     LaunchedEffect(nluResult) {
         val result = nluResult
         val query = nluEngineManager.currentQuery.value
         if (result != null && query.isNotBlank()) {
             historyRepository.addFromNluResult(query = query, nluResult = result)
-            if (result.status == "success") {
-                actionDispatcher.executeNluResponse(result.rawJson)
-            }
         }
     }
 
@@ -116,7 +113,7 @@ fun HomeScreen(
                     }
                 )
 
-                NavTab.SETTINGS -> SettingsScreen()
+                NavTab.SETTINGS -> SettingsScreen(modelState = modelState)
             }
         }
     }

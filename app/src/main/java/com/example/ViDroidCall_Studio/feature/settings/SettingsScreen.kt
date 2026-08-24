@@ -54,19 +54,18 @@ import androidx.compose.ui.unit.sp
 import com.example.ViDroidCall_Studio.data.local.AppTheme
 import com.example.ViDroidCall_Studio.data.local.FontSizePreferences
 import com.example.ViDroidCall_Studio.data.local.ThemePreferences
+import com.example.ViDroidCall_Studio.data.nlu.NluModelState
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * Tab Màn hình Cài đặt All-in-one tinh gọn, đẹp mắt:
- * - Chọn Chủ đề (Theme) Sáng / Tối / Hệ thống trực tiếp.
- * - Điều chỉnh Cỡ chữ với thanh trượt nút tròn thân thiện & chính xác 4 nấc chọn nhanh.
- * - Đã loại bỏ hoàn toàn thẻ xem trước và nút khôi phục mặc định theo yêu cầu.
+ * Màn hình Cài đặt Thiết lập Ứng dụng - Tinh tế, Hiện đại & Thân thiện
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    modelState: NluModelState = NluModelState.Uninitialized,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -339,7 +338,7 @@ fun SettingsScreen(
                     val currentStepIndex = presetScales.indexOfFirst { (it - sliderValue).let { diff -> diff in -0.05f..0.05f } }.takeIf { it != -1 } ?: 1
                     var stepFloatValue by remember(sliderValue) { mutableFloatStateOf(currentStepIndex.toFloat()) }
 
-                    // Thanh trượt nút tròn thân thiện với chính xác 4 step
+                    // Thanh trượt nút tròn cao cấp với các điểm mốc tinh tế, không bị bóng ma hay đè vòng tròn
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -355,58 +354,108 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.width(12.dp))
 
-                        Slider(
-                            value = stepFloatValue,
-                            onValueChange = { newIdx ->
-                                stepFloatValue = newIdx
-                                val targetIdx = newIdx.roundToInt().coerceIn(0, 3)
-                                val targetScale = presetScales[targetIdx]
-                                sliderValue = targetScale
-                                scope.launch {
-                                    fontSizePreferences.setFontScale(targetScale)
-                                }
-                            },
-                            valueRange = 0f..3f,
-                            steps = 2, // Đúng chính xác 4 nấc (0, 1, 2, 3) tương ứng 4 nút bấm
-                            thumb = {
-                                // Nút trượt tròn to, thân thiện với bóng đổ mềm
-                                Box(
-                                    modifier = Modifier
-                                        .size(26.dp)
-                                        .shadow(4.dp, CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface, CircleShape)
-                                        .border(3.5.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Box(
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val primaryColor = MaterialTheme.colorScheme.primary
+                            val surfaceColor = MaterialTheme.colorScheme.surface
+                            val trackBgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                            val inactiveDotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+
+                            Slider(
+                                value = stepFloatValue,
+                                onValueChange = { newIdx ->
+                                    stepFloatValue = newIdx
+                                    val targetIdx = newIdx.roundToInt().coerceIn(0, 3)
+                                    val targetScale = presetScales[targetIdx]
+                                    sliderValue = targetScale
+                                },
+                                onValueChangeFinished = {
+                                    val targetIdx = stepFloatValue.roundToInt().coerceIn(0, 3)
+                                    stepFloatValue = targetIdx.toFloat()
+                                    val targetScale = presetScales[targetIdx]
+                                    sliderValue = targetScale
+                                    scope.launch {
+                                        fontSizePreferences.setFontScale(targetScale)
+                                    }
+                                },
+                                valueRange = 0f..3f,
+                                thumb = {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = surfaceColor,
+                                        shadowElevation = 5.dp,
+                                        border = BorderStroke(3.dp, primaryColor),
+                                        modifier = Modifier.size(26.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .background(primaryColor, CircleShape)
+                                            )
+                                        }
+                                    }
+                                },
+                                track = {
+                                    androidx.compose.foundation.Canvas(
                                         modifier = Modifier
-                                            .size(8.dp)
-                                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                    )
-                                }
-                            },
-                            track = {
-                                // Thanh ray với 4 điểm tròn thân thiện
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(8.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    // Thanh tiến trình đã kéo
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth(fraction = (stepFloatValue / 3f).coerceIn(0f, 1f))
-                                            .height(8.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primary)
-                                    )
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+                                            .fillMaxWidth()
+                                            .height(14.dp)
+                                    ) {
+                                        val trackH = 8.dp.toPx()
+                                        val topOff = (size.height - trackH) / 2f
+                                        val radius = androidx.compose.ui.geometry.CornerRadius(trackH / 2f, trackH / 2f)
+
+                                        val thumbRadius = 13.dp.toPx()
+                                        val usableWidth = (size.width - thumbRadius * 2f).coerceAtLeast(0f)
+                                        val thumbX = thumbRadius + usableWidth * (stepFloatValue / 3f).coerceIn(0f, 1f)
+
+                                        // 1. Ray nền toàn phần bo tròn
+                                        drawRoundRect(
+                                            color = trackBgColor,
+                                            topLeft = androidx.compose.ui.geometry.Offset(0f, topOff),
+                                            size = androidx.compose.ui.geometry.Size(size.width, trackH),
+                                            cornerRadius = radius
+                                        )
+
+                                        // 2. Đoạn đã kéo qua (ôm trọn đến tâm nút trượt)
+                                        if (thumbX > 0f) {
+                                            drawRoundRect(
+                                                color = primaryColor,
+                                                topLeft = androidx.compose.ui.geometry.Offset(0f, topOff),
+                                                size = androidx.compose.ui.geometry.Size((thumbX + thumbRadius * 0.5f).coerceAtMost(size.width), trackH),
+                                                cornerRadius = radius
+                                            )
+                                        }
+
+                                        // 3. Bốn điểm mốc tính toán chuẩn xác theo quỹ đạo của tâm nút trượt
+                                        val dotR = 2.5.dp.toPx()
+                                        for (i in 0..3) {
+                                            val dotX = thumbRadius + usableWidth * (i / 3f)
+                                            val dist = kotlin.math.abs(thumbX - dotX)
+
+                                            // Ẩn điểm mốc khi nút trượt đè lên để không bị lỗi 2 vòng tròn
+                                            if (dist > 15.dp.toPx()) {
+                                                val isPassed = i.toFloat() <= stepFloatValue
+                                                drawCircle(
+                                                    color = if (isPassed) surfaceColor.copy(alpha = 0.9f) else inactiveDotColor,
+                                                    radius = dotR,
+                                                    center = androidx.compose.ui.geometry.Offset(dotX, size.height / 2f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
 
                         Spacer(modifier = Modifier.width(12.dp))
 
@@ -484,7 +533,102 @@ fun SettingsScreen(
             }
         }
 
-        // 4. Thông tin phiên bản (App Info Footer)
+        // 4. Thẻ Mô Hình AI (Tách riêng hàng Tiêu đề & Hộp hiển thị đầy đủ tên Model)
+        item {
+            val modelName = when (modelState) {
+                is NluModelState.Ready -> modelState.modelPath
+                is NluModelState.Loading -> "Đang nạp mô hình..."
+                is NluModelState.ModelNotFound -> "Chưa có file mô hình trong Download"
+                is NluModelState.Error -> "Lỗi mô hình"
+                is NluModelState.Uninitialized -> "Đang khởi tạo..."
+            }
+            val statusColor = when (modelState) {
+                is NluModelState.Ready -> Color(0xFF10B981)
+                is NluModelState.Loading -> Color(0xFFF59E0B)
+                else -> Color(0xFFEF4444)
+            }
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp)
+                ) {
+                    // Header: Tiêu đề + Badge Trạng thái
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color(0xFF8B5CF6).copy(alpha = 0.12f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Settings,
+                                    contentDescription = null,
+                                    tint = Color(0xFF8B5CF6),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Mô hình AI",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Surface(
+                            shape = CircleShape,
+                            color = statusColor.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = when (modelState) {
+                                    is NluModelState.Ready -> "Đã sẵn sàng"
+                                    is NluModelState.Loading -> "Đang nạp"
+                                    else -> "Chưa nạp"
+                                },
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = statusColor,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Khối hiển thị Tên Model tách biệt rõ ràng, không bị cắt chữ
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = modelName,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (modelState is NluModelState.Ready) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // 5. Thông tin phiên bản (App Info Footer)
         item {
             Surface(
                 modifier = Modifier.fillMaxWidth(),

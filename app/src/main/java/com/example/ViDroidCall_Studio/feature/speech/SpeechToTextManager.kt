@@ -31,7 +31,7 @@ class SpeechToTextManager(
         override fun onReadyForSpeech(params: Bundle?) {
             isListeningActive = true
             callbacks.onListeningChanged(true)
-            callbacks.onTextChanged(LISTENING_PLACEHOLDER)
+            callbacks.onTextChanged("") // Reset văn bản khi bắt đầu lắng nghe mới
             Log.d(TAG, "SpeechRecognizer: Sẵn sàng nhận giọng nói trong App")
         }
 

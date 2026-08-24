@@ -17,7 +17,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Quản lý cơ sở dữ liệu SQLite lưu trữ lịch sử câu lệnh ngoại tuyến
+ * Quản lý cơ sở dữ liệu SQLite lưu trữ lịch sử câu lệnh ngoại tuyến (Giới hạn tối đa 10 câu lệnh mới nhất)
  */
 class CommandHistoryDatabaseHelper(context: Context) :
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -63,7 +63,23 @@ class CommandHistoryDatabaseHelper(context: Context) :
             put(COLUMN_TIMESTAMP, now)
         }
 
-        val id = writableDatabase.insert(TABLE_HISTORY, null, values)
+        val db = writableDatabase
+        val id = db.insert(TABLE_HISTORY, null, values)
+
+        // Tự động giữ tối đa 10 câu lệnh mới nhất, xóa sạch các câu lệnh cũ hơn
+        try {
+            db.execSQL("""
+                DELETE FROM $TABLE_HISTORY 
+                WHERE $COLUMN_ID NOT IN (
+                    SELECT $COLUMN_ID FROM $TABLE_HISTORY 
+                    ORDER BY $COLUMN_TIMESTAMP DESC 
+                    LIMIT $MAX_HISTORY_ITEMS
+                )
+            """.trimIndent())
+        } catch (e: Exception) {
+            // ignore
+        }
+
         updateNotifier.tryEmit(Unit)
         id
     }
@@ -77,7 +93,8 @@ class CommandHistoryDatabaseHelper(context: Context) :
             null,
             null,
             null,
-            "$COLUMN_TIMESTAMP DESC"
+            "$COLUMN_TIMESTAMP DESC",
+            "$MAX_HISTORY_ITEMS"
         )
 
         cursor.use {
@@ -142,6 +159,7 @@ class CommandHistoryDatabaseHelper(context: Context) :
     companion object {
         private const val DATABASE_NAME = "vidroidcall_history.db"
         private const val DATABASE_VERSION = 1
+        const val MAX_HISTORY_ITEMS = 10
 
         const val TABLE_HISTORY = "command_history"
         const val COLUMN_ID = "id"

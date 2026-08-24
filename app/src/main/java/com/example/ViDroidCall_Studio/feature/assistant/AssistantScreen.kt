@@ -54,6 +54,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -131,10 +132,10 @@ fun AssistantScreen(
 @Composable
 private fun ModelEngineStatusBadge(modelState: NluModelState) {
     val (statusText, badgeColor, iconVector) = when (modelState) {
-        is NluModelState.Ready -> Triple("Trợ lý AI ngoại tuyến: Sẵn sàng (${modelState.modelPath})", Color(0xFF10B981), Icons.Rounded.CheckCircle)
-        is NluModelState.Loading -> Triple("Đang nạp mô hình AI...", Color(0xFFF59E0B), Icons.Rounded.Sync)
-        is NluModelState.ModelNotFound -> Triple("Chưa tìm thấy file mô hình AI (.gguf)", Color(0xFFEF4444), Icons.Rounded.WarningAmber)
-        is NluModelState.Error -> Triple("Lỗi mô hình: ${modelState.message}", Color(0xFFEF4444), Icons.Rounded.WarningAmber)
+        is NluModelState.Ready -> Triple("Trợ lý AI đã sẵn sàng", Color(0xFF10B981), Icons.Rounded.CheckCircle)
+        is NluModelState.Loading -> Triple("Trợ lý AI đang nạp...", Color(0xFFF59E0B), Icons.Rounded.Sync)
+        is NluModelState.ModelNotFound -> Triple("Chưa có mô hình AI", Color(0xFFEF4444), Icons.Rounded.WarningAmber)
+        is NluModelState.Error -> Triple("Lỗi trợ lý AI", Color(0xFFEF4444), Icons.Rounded.WarningAmber)
         is NluModelState.Uninitialized -> Triple("Đang khởi động trợ lý AI...", Color(0xFF6B7280), Icons.Rounded.Memory)
     }
 
@@ -183,25 +184,42 @@ private fun VoiceAssistantSection(
     modelState: NluModelState,
     onToggleListening: () -> Unit
 ) {
+    val context = LocalContext.current
+    val isAiReady = modelState is NluModelState.Ready
+
     val infiniteTransition = rememberInfiniteTransition(label = "VoiceRings")
     val ringScale1 by infiniteTransition.animateFloat(
         initialValue = 0.85f,
-        targetValue = 1.35f,
+        targetValue = if (isListening) 1.40f else 1.30f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = FastOutSlowInEasing),
+            animation = tween(if (isListening) 1500 else 2400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "ringScale1"
     )
     val ringAlpha1 by infiniteTransition.animateFloat(
-        initialValue = 0.55f,
+        initialValue = if (isListening) 0.55f else 0.35f,
         targetValue = 0.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = FastOutSlowInEasing),
+            animation = tween(if (isListening) 1500 else 2400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "ringAlpha1"
     )
+
+    // Xử lý khi nhấn nút trong lúc AI chưa sẵn sàng
+    val handleActionClick: () -> Unit = {
+        if (isAiReady) {
+            onToggleListening()
+        } else {
+            val msg = when (modelState) {
+                is NluModelState.Loading -> "Trợ lý AI đang nạp, vui lòng đợi..."
+                is NluModelState.ModelNotFound -> "Chưa có file mô hình AI trong thư mục Download"
+                else -> "Trợ lý AI chưa sẵn sàng"
+            }
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -209,39 +227,52 @@ private fun VoiceAssistantSection(
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Nút Micro lớn ở trung tâm với hiệu ứng sóng lan toả
+        // Nút Micro lớn ở trung tâm với hiệu ứng sóng lan toả liên tục kể cả khi chưa nói
         Box(
             modifier = Modifier.size(210.dp),
             contentAlignment = Alignment.Center
         ) {
+            val waveColor = if (isAiReady) AppPrimary else AppPrimary.copy(alpha = 0.25f)
+
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
-                    color = AppPrimary.copy(alpha = 0.08f),
+                    color = waveColor.copy(alpha = if (isAiReady) 0.08f else 0.03f),
                     radius = size.minDimension / 2
                 )
+                if (isAiReady) {
+                    // Vòng sóng âm lan toả liên tục khi AI đã sẵn sàng
+                    drawCircle(
+                        color = waveColor.copy(alpha = ringAlpha1),
+                        radius = (size.minDimension / 2) * ringScale1,
+                        style = Stroke(width = if (isListening) 4.5f else 3.5f)
+                    )
+                }
                 drawCircle(
-                    color = AppPrimary.copy(alpha = if (isListening) ringAlpha1 else 0.15f),
-                    radius = (size.minDimension / 2) * (if (isListening) ringScale1 else 0.85f),
-                    style = Stroke(width = 4.5f)
-                )
-                drawCircle(
-                    color = AppPrimary.copy(alpha = 0.22f),
+                    color = waveColor.copy(alpha = if (isListening) 0.22f else if (isAiReady) 0.12f else 0.05f),
                     radius = size.minDimension * 0.38f
                 )
             }
 
-            // Màu gradient của Micro
-            val micGradientColors = listOf(
-                Color(0xFF3B82F6),
-                AppPrimary,
-                Color(0xFF0052D6)
-            )
+            // Màu gradient của Micro (Nếu chưa sẵn sàng thì làm mờ xanh dương)
+            val micGradientColors = if (isAiReady) {
+                listOf(
+                    Color(0xFF3B82F6),
+                    AppPrimary,
+                    Color(0xFF0052D6)
+                )
+            } else {
+                listOf(
+                    Color(0xFF3B82F6).copy(alpha = 0.40f),
+                    AppPrimary.copy(alpha = 0.40f),
+                    Color(0xFF0052D6).copy(alpha = 0.40f)
+                )
+            }
 
             Box(
                 modifier = Modifier
                     .size(126.dp)
                     .shadow(
-                        elevation = 20.dp,
+                        elevation = if (isAiReady) 20.dp else 4.dp,
                         shape = CircleShape,
                         spotColor = AppPrimary
                     )
@@ -249,32 +280,55 @@ private fun VoiceAssistantSection(
                         brush = Brush.radialGradient(colors = micGradientColors),
                         shape = CircleShape
                     )
-                    .bounceClick(scaleDown = 0.88f, onClick = onToggleListening),
+                    .bounceClick(scaleDown = if (isAiReady) 0.88f else 0.96f, onClick = handleActionClick),
                 contentAlignment = Alignment.Center
             ) {
-                if (isListening) {
-                    Icon(
-                        imageVector = Icons.Rounded.GraphicEq,
-                        contentDescription = "Waveform",
-                        tint = Color.White,
-                        modifier = Modifier.size(60.dp)
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Rounded.Mic,
-                        contentDescription = "Microphone",
-                        tint = Color.White,
-                        modifier = Modifier.size(58.dp)
-                    )
+                when {
+                    isListening -> {
+                        Icon(
+                            imageVector = Icons.Rounded.GraphicEq,
+                            contentDescription = "Waveform",
+                            tint = Color.White,
+                            modifier = Modifier.size(60.dp)
+                        )
+                    }
+                    isNluProcessing -> {
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                strokeWidth = 3.5.dp,
+                                modifier = Modifier.size(46.dp)
+                            )
+                            Icon(
+                                imageVector = Icons.Rounded.AutoAwesome,
+                                contentDescription = "AI Analyzing",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    else -> {
+                        Icon(
+                            imageVector = Icons.Rounded.Mic,
+                            contentDescription = "Microphone",
+                            tint = if (isAiReady) Color.White else Color.White.copy(alpha = 0.70f),
+                            modifier = Modifier.size(58.dp)
+                        )
+                    }
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Dòng trạng thái lớn, dễ đọc (Giữ nguyên nội dung)
+        // Dòng trạng thái lớn, dễ đọc
         Text(
             text = when {
+                !isAiReady -> when (modelState) {
+                    is NluModelState.Loading -> "Đang nạp mô hình AI..."
+                    is NluModelState.ModelNotFound -> "Chưa có file mô hình AI"
+                    else -> "Trợ lý AI chưa sẵn sàng"
+                }
                 isListening -> "Đang nghe bạn nói..."
                 isNluProcessing -> "AI đang phân tích câu lệnh..."
                 else -> "Chạm vào Micro để ra lệnh"
@@ -282,12 +336,14 @@ private fun VoiceAssistantSection(
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            color = if (isListening || isNluProcessing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            color = if (!isAiReady) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                    else if (isListening || isNluProcessing) MaterialTheme.colorScheme.primary 
+                    else MaterialTheme.colorScheme.onSurface
         )
 
         // Bong bóng hiển thị nội dung nhận dạng giọng nói tức thời
         AnimatedVisibility(
-            visible = speechText.isNotEmpty(),
+            visible = isAiReady && speechText.isNotBlank() && speechText != "Đang lắng nghe...",
             enter = fadeIn() + scaleIn(),
             exit = fadeOut() + scaleOut()
         ) {
@@ -317,35 +373,35 @@ private fun VoiceAssistantSection(
         Spacer(modifier = Modifier.height(28.dp))
 
         // Nút bấm hành động to, rõ ràng
+        val buttonBgColor = when {
+            !isAiReady -> MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+            isListening || isNluProcessing -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+            else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        }
+        val buttonTextColor = when {
+            !isAiReady -> MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+            else -> MaterialTheme.colorScheme.primary
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    if (isListening) Color(0xFFEF4444).copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    RoundedCornerShape(22.dp)
-                )
-                .bounceClick(onClick = onToggleListening)
+                .background(buttonBgColor, RoundedCornerShape(22.dp))
+                .bounceClick(scaleDown = if (isAiReady) 0.95f else 0.98f, onClick = handleActionClick)
                 .padding(vertical = 18.dp),
             contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Mic,
-                    contentDescription = null,
-                    tint = if (isListening) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(26.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = if (isListening) "Dừng nghe" else "Nhấn để bắt đầu nói",
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isListening) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary
-                )
-            }
+            Text(
+                text = when {
+                    !isAiReady -> "Trợ lý AI chưa sẵn sàng"
+                    isListening -> "Dừng nghe"
+                    isNluProcessing -> "AI đang phân tích..."
+                    else -> "Nhấn để bắt đầu nói"
+                },
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
+                color = buttonTextColor
+            )
         }
     }
 }

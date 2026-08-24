@@ -51,9 +51,12 @@ import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
 import kotlin.math.roundToInt
 
+import androidx.compose.material3.ExperimentalMaterial3Api
+
 /**
  * Màn hình Cài đặt Cỡ chữ - Giao diện Thân thiện, Ấm áp và Dễ dùng cho mọi lứa tuổi
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FontSizeSettingsScreen(
     currentScale: Float,
@@ -199,7 +202,17 @@ fun FontSizeSettingsScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Thanh trượt mượt mà với 2 chữ 'A' mềm mại
+                val presets = listOf(
+                    0.85f to "Nhỏ",
+                    1.0f to "Vừa",
+                    1.15f to "Lớn",
+                    1.30f to "Rất lớn"
+                )
+                val presetScales = presets.map { it.first }
+                val currentStepIndex = presetScales.indexOfFirst { (it - sliderValue).let { diff -> diff in -0.05f..0.05f } }.takeIf { it != -1 } ?: 1
+                var stepFloatValue by remember(sliderValue) { mutableFloatStateOf(currentStepIndex.toFloat()) }
+
+                // Thanh trượt mượt mà với 2 chữ 'A' mềm mại và điểm mốc tinh tế
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -215,21 +228,106 @@ fun FontSizeSettingsScreen(
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { newValue ->
-                            sliderValue = ((newValue * 20).roundToInt() / 20f)
-                            onScaleChange(sliderValue)
-                        },
-                        valueRange = FontSizePreferences.MIN_FONT_SCALE..FontSizePreferences.MAX_FONT_SCALE,
-                        steps = 4,
-                        modifier = Modifier.weight(1f),
-                        colors = SliderDefaults.colors(
-                            thumbColor = AppPrimary,
-                            activeTrackColor = AppPrimary,
-                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val primaryColor = MaterialTheme.colorScheme.primary
+                        val surfaceColor = MaterialTheme.colorScheme.surface
+                        val trackBgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                        val inactiveDotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+
+                        Slider(
+                            value = stepFloatValue,
+                            onValueChange = { newIdx ->
+                                stepFloatValue = newIdx
+                                val targetIdx = newIdx.roundToInt().coerceIn(0, 3)
+                                val targetScale = presetScales[targetIdx]
+                                sliderValue = targetScale
+                                onScaleChange(targetScale)
+                            },
+                            onValueChangeFinished = {
+                                val targetIdx = stepFloatValue.roundToInt().coerceIn(0, 3)
+                                stepFloatValue = targetIdx.toFloat()
+                                val targetScale = presetScales[targetIdx]
+                                sliderValue = targetScale
+                                onScaleChange(targetScale)
+                            },
+                            valueRange = 0f..3f,
+                            thumb = {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = surfaceColor,
+                                    shadowElevation = 5.dp,
+                                    border = BorderStroke(3.dp, primaryColor),
+                                    modifier = Modifier.size(26.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .background(primaryColor, CircleShape)
+                                        )
+                                    }
+                                }
+                            },
+                            track = {
+                                androidx.compose.foundation.Canvas(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(14.dp)
+                                ) {
+                                    val trackH = 8.dp.toPx()
+                                    val topOff = (size.height - trackH) / 2f
+                                    val radius = androidx.compose.ui.geometry.CornerRadius(trackH / 2f, trackH / 2f)
+
+                                    val thumbRadius = 13.dp.toPx()
+                                    val usableWidth = (size.width - thumbRadius * 2f).coerceAtLeast(0f)
+                                    val thumbX = thumbRadius + usableWidth * (stepFloatValue / 3f).coerceIn(0f, 1f)
+
+                                    // 1. Ray nền toàn phần bo tròn
+                                    drawRoundRect(
+                                        color = trackBgColor,
+                                        topLeft = androidx.compose.ui.geometry.Offset(0f, topOff),
+                                        size = androidx.compose.ui.geometry.Size(size.width, trackH),
+                                        cornerRadius = radius
+                                    )
+
+                                    // 2. Đoạn đã kéo qua
+                                    if (thumbX > 0f) {
+                                        drawRoundRect(
+                                            color = primaryColor,
+                                            topLeft = androidx.compose.ui.geometry.Offset(0f, topOff),
+                                            size = androidx.compose.ui.geometry.Size((thumbX + thumbRadius * 0.5f).coerceAtMost(size.width), trackH),
+                                            cornerRadius = radius
+                                        )
+                                    }
+
+                                    // 3. Bốn điểm mốc tính toán chuẩn xác theo quỹ đạo của tâm nút trượt
+                                    val dotR = 2.5.dp.toPx()
+                                    for (i in 0..3) {
+                                        val dotX = thumbRadius + usableWidth * (i / 3f)
+                                        val dist = kotlin.math.abs(thumbX - dotX)
+
+                                        if (dist > 15.dp.toPx()) {
+                                            val isPassed = i.toFloat() <= stepFloatValue
+                                            drawCircle(
+                                                color = if (isPassed) surfaceColor.copy(alpha = 0.9f) else inactiveDotColor,
+                                                radius = dotR,
+                                                center = androidx.compose.ui.geometry.Offset(dotX, size.height / 2f)
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    )
+                    }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
