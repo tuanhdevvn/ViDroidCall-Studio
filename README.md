@@ -1,4 +1,4 @@
-# 🎙️ Emma ViDroidCall - Trợ Lý Giọng Nói Thông Minh
+# 🎙 ViDroidCall - Trợ Lý Giọng Nói Thông Minh
 
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-purple.svg)](https://kotlinlang.org)
@@ -6,16 +6,15 @@
 [![DataStore](https://img.shields.io/badge/Storage-Jetpack%20DataStore-orange.svg)](https://developer.android.com/topic/libraries/architecture/datastore)
 [![MinSDK](https://img.shields.io/badge/Min%20SDK-26-brightgreen.svg)](https://android.com)
 
-**Emma ViDroidCall** là ứng dụng trợ lý giọng nói ảo tiếng Việt hiện đại dành cho hệ điều hành Android, được xây dựng hoàn toàn bằng **Jetpack Compose** và **Material 3**. Ứng dụng cung cấp khả năng nhận diện giọng nói, thực thi các tác vụ rảnh tay (gọi điện, mở ứng dụng, đặt báo thức, nhắn tin) cùng giao diện người dùng mượt mà, hỗ trợ chuyển đổi chủ đề Sáng / Tối (Light & Dark theme) tức thì.
+**ViDroidCall** là ứng dụng trợ lý giọng nói ảo tiếng Việt hiện đại dành cho hệ điều hành Android, được xây dựng hoàn toàn bằng **Jetpack Compose** và **Material 3**. Ứng dụng cung cấp khả năng nhận diện giọng nói, thực thi các tác vụ rảnh tay (gọi điện, mở ứng dụng, đặt báo thức, nhắn tin) cùng giao diện người dùng mượt mà, hỗ trợ chuyển đổi chủ đề Sáng / Tối (Light & Dark theme) tức thì.
 
 ---
 
 ## ✨ Tính Năng Nổi Bật
 
-### 1. 🎤 Trợ Lý Ảo Giọng Nói (Emma Assistant)
+### 1. 🎤 Trợ Lý Ảo Giọng Nói
 - Nhận diện giọng nói tiếng Việt thời gian thực thông qua `rememberSpeechToText`.
 - Hiệu ứng hoạt họa sóng âm thanh (pulse / breathing wave) và vòng hào quang phản hồi theo trạng thái lắng nghe.
-- Mascot Emma chuyển động lơ lửng kèm bong bóng hội thoại tương tác sinh động với hiệu ứng gõ chữ (typing effect).
 - Danh sách gợi ý câu lệnh nhanh (Gọi điện, Nhắn tin, Báo thức, Phát nhạc, Chỉ đường).
 
 ### 2. 📜 Lịch Sử Câu Lệnh (Command History)
@@ -65,7 +64,7 @@ com.example.emma_vidroidcall/
 │
 ├── feature/
 │   ├── assistant/
-│   │   └── AssistantScreen.kt           # Tab Hỏi đáp & Giao diện Trợ lý ảo Emma
+│   │   └── AssistantScreen.kt           # Tab Hỏi đáp & Giao diện Trợ lý ảo
 │   ├── history/
 │   │   ├── HistoryScreen.kt             # Tab Lịch sử câu lệnh
 │   │   └── model/
@@ -110,7 +109,7 @@ com.example.emma_vidroidcall/
 1. Clone dự án về máy tính:
    ```bash
    git clone <repo-url>
-   cd EmmaViDroidCall
+   cd ViDroidCall-Studio
    ```
 2. Mở dự án bằng **Android Studio**.
 3. Sync Gradle và biên dịch ứng dụng:

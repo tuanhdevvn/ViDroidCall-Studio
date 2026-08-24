@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.emma_vidroidcall"
+    namespace = "com.example.ViDroidCall_Studio"
     compileSdk {
         version = release(37) {
             minorApiLevel = 1
