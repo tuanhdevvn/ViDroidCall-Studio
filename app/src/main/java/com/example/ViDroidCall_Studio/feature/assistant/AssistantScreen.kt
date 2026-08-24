@@ -323,12 +323,8 @@ private fun VoiceAssistantSection(
             ) {
                 when {
                     isListening -> {
-                        Icon(
-                            imageVector = Icons.Rounded.GraphicEq,
-                            contentDescription = "Waveform",
-                            tint = Color.White,
-                            modifier = Modifier.size(60.dp)
-                        )
+                        // Hiệu ứng sóng âm thanh động 5 cột nhảy nhót nhịp nhàng khi người dùng đang nói
+                        AnimatedWaveformVisualizer()
                     }
                     isNluProcessing -> {
                         // Logo App xoay tròn kiểu Loading kết hợp vầng hào quang phát sáng
@@ -455,6 +451,75 @@ private fun VoiceAssistantSection(
                     color = buttonTextColor
                 )
             }
+        }
+    }
+}
+
+/**
+ * Hiệu ứng 5 cột sóng âm thanh nhảy nhót nhịp nhàng khi người dùng đang nói (Voice Equalizer Waveform)
+ */
+@Composable
+private fun AnimatedWaveformVisualizer() {
+    val transition = rememberInfiniteTransition(label = "WaveformBars")
+
+    val bar1Height by transition.animateFloat(
+        initialValue = 14f,
+        targetValue = 32f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(420, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bar1"
+    )
+    val bar2Height by transition.animateFloat(
+        initialValue = 22f,
+        targetValue = 48f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(540, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bar2"
+    )
+    val bar3Height by transition.animateFloat(
+        initialValue = 30f,
+        targetValue = 58f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(380, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bar3"
+    )
+    val bar4Height by transition.animateFloat(
+        initialValue = 20f,
+        targetValue = 46f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(580, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bar4"
+    )
+    val bar5Height by transition.animateFloat(
+        initialValue = 12f,
+        targetValue = 30f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(460, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bar5"
+    )
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.height(60.dp)
+    ) {
+        listOf(bar1Height, bar2Height, bar3Height, bar4Height, bar5Height).forEach { height ->
+            Box(
+                modifier = Modifier
+                    .width(5.5.dp)
+                    .height(height.dp)
+                    .background(Color.White, RoundedCornerShape(10.dp))
+            )
         }
     }
 }
