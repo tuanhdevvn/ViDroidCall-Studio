@@ -3,17 +3,21 @@ package com.example.ViDroidCall_Studio.feature.assistant
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +33,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.res.painterResource
+import com.example.ViDroidCall_Studio.R
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -207,6 +215,36 @@ private fun VoiceAssistantSection(
         label = "ringAlpha1"
     )
 
+    // Animation thở nhịp nhàng của Logo App khi AI đang suy nghĩ
+    val aiBrainScale by infiniteTransition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "aiBrainScale"
+    )
+    val aiGlowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.20f,
+        targetValue = 0.60f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "aiGlowAlpha"
+    )
+    // Animation xoay tròn 360 độ kiểu Loading cho Logo App
+    val aiLogoRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "aiLogoRotation"
+    )
+
     // Xử lý khi nhấn nút trong lúc AI chưa sẵn sàng
     val handleActionClick: () -> Unit = {
         if (isAiReady) {
@@ -293,17 +331,36 @@ private fun VoiceAssistantSection(
                         )
                     }
                     isNluProcessing -> {
-                        Box(contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(
-                                color = Color.White,
-                                strokeWidth = 3.5.dp,
-                                modifier = Modifier.size(46.dp)
+                        // Logo App xoay tròn kiểu Loading kết hợp vầng hào quang phát sáng
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // Vòng hào quang phát sáng thở màu xanh dịu mắt
+                            Box(
+                                modifier = Modifier
+                                    .size(78.dp)
+                                    .scale(aiBrainScale)
+                                    .background(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(
+                                                Color(0xFF60A5FA).copy(alpha = aiGlowAlpha),
+                                                Color(0xFF2563EB).copy(alpha = aiGlowAlpha * 0.5f),
+                                                Color.Transparent
+                                            )
+                                        ),
+                                        shape = CircleShape
+                                    )
                             )
-                            Icon(
-                                imageVector = Icons.Rounded.AutoAwesome,
-                                contentDescription = "AI Analyzing",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
+                            // Logo App xoay tròn 360 độ mượt mà kiểu Loading
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_app),
+                                contentDescription = "AI đang phân tích",
+                                modifier = Modifier
+                                    .size(66.dp)
+                                    .scale(aiBrainScale)
+                                    .rotate(aiLogoRotation)
+                                    .clip(CircleShape)
                             )
                         }
                     }
@@ -324,11 +381,6 @@ private fun VoiceAssistantSection(
         // Dòng trạng thái lớn, dễ đọc
         Text(
             text = when {
-                !isAiReady -> when (modelState) {
-                    is NluModelState.Loading -> "Đang nạp mô hình AI..."
-                    is NluModelState.ModelNotFound -> "Chưa có file mô hình AI"
-                    else -> "Trợ lý AI chưa sẵn sàng"
-                }
                 isListening -> "Đang nghe bạn nói..."
                 isNluProcessing -> "AI đang phân tích câu lệnh..."
                 else -> "Chạm vào Micro để ra lệnh"
@@ -372,36 +424,37 @@ private fun VoiceAssistantSection(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // Nút bấm hành động to, rõ ràng
-        val buttonBgColor = when {
-            !isAiReady -> MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
-            isListening || isNluProcessing -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-            else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-        }
-        val buttonTextColor = when {
-            !isAiReady -> MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
-            else -> MaterialTheme.colorScheme.primary
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(buttonBgColor, RoundedCornerShape(22.dp))
-                .bounceClick(scaleDown = if (isAiReady) 0.95f else 0.98f, onClick = handleActionClick)
-                .padding(vertical = 18.dp),
-            contentAlignment = Alignment.Center
+        // Nút bấm hành động to, rõ ràng (Tự động ẩn mượt mà khi AI đang phân tích để không bị trùng lặp)
+        AnimatedVisibility(
+            visible = !isNluProcessing,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
         ) {
-            Text(
-                text = when {
-                    !isAiReady -> "Trợ lý AI chưa sẵn sàng"
-                    isListening -> "Dừng nghe"
-                    isNluProcessing -> "AI đang phân tích..."
-                    else -> "Nhấn để bắt đầu nói"
-                },
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Bold,
-                color = buttonTextColor
-            )
+            val buttonBgColor = when {
+                !isAiReady -> MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+                isListening -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            }
+            val buttonTextColor = when {
+                !isAiReady -> MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+                else -> MaterialTheme.colorScheme.primary
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(buttonBgColor, RoundedCornerShape(22.dp))
+                    .bounceClick(scaleDown = if (isAiReady) 0.95f else 0.98f, onClick = handleActionClick)
+                    .padding(vertical = 18.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isListening) "Dừng nghe" else "Nhấn để bắt đầu nói",
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = buttonTextColor
+                )
+            }
         }
     }
 }
