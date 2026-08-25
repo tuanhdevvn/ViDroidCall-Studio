@@ -92,18 +92,32 @@ class NluEngineManager(
         scope.launch(Dispatchers.IO) {
             _modelState.value = NluModelState.Loading
 
-            // CHỈ QUÉT DUY NHẤT THƯ MỤC DOWNLOAD
+            // Thư mục quét: Thư mục cá nhân của App (không cần quyền Storage) + Thư mục Download chung của máy
             val searchDirs = listOfNotNull(
+                context.getExternalFilesDir(null),
+                context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                context.filesDir,
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                 File("/sdcard/Download"),
                 File(Environment.getExternalStorageDirectory(), "Download")
-            )
+            ).distinctBy { it.absolutePath }
+
+            Log.d(TAG, "Đang quét file .gguf tại ${searchDirs.size} thư mục...")
+
+            var targetFile: File? = null
 
             // 1. Ưu tiên tìm file theo tên chuẩn MODEL_FILE_NAME
-            var targetFile: File? = searchDirs.map { File(it, NluConstants.MODEL_FILE_NAME) }
-                .firstOrNull { it.exists() && it.canRead() && it.length() > 0 }
+            for (dir in searchDirs) {
+                if (dir.exists() && dir.isDirectory) {
+                    val file = File(dir, NluConstants.MODEL_FILE_NAME)
+                    if (file.exists() && file.canRead() && file.length() > 0) {
+                        targetFile = file
+                        break
+                    }
+                }
+            }
 
-            // 2. Nếu chưa thấy, quét tìm file bất kỳ có đuôi .gguf
+            // 2. Nếu chưa thấy, tìm file bất kỳ có đuôi .gguf trong các thư mục
             if (targetFile == null) {
                 for (dir in searchDirs) {
                     if (dir.exists() && dir.isDirectory) {
@@ -127,7 +141,7 @@ class NluEngineManager(
                     _modelState.value = NluModelState.Error("Lỗi nạp GGUF: ${e.localizedMessage}")
                 }
             } else {
-                Log.w(TAG, "⚠️ Không tìm thấy bất kỳ file .gguf nào trong máy!")
+                Log.w(TAG, "⚠️ Không tìm thấy bất kỳ file .gguf nào trong các thư mục quét!")
                 _modelState.value = NluModelState.ModelNotFound
             }
         }

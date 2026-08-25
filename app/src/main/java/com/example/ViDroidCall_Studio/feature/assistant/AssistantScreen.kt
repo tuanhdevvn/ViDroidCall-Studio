@@ -94,6 +94,7 @@ fun AssistantScreen(
     isNluProcessing: Boolean,
     modelState: NluModelState,
     modifier: Modifier = Modifier,
+    isTtsSpeaking: Boolean = false,
     onSuggestionClick: (String) -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
@@ -118,6 +119,7 @@ fun AssistantScreen(
             speechText = speechText,
             isNluProcessing = isNluProcessing,
             modelState = modelState,
+            isTtsSpeaking = isTtsSpeaking,
             onToggleListening = onToggleListening
         )
 
@@ -190,6 +192,7 @@ private fun VoiceAssistantSection(
     speechText: String,
     isNluProcessing: Boolean,
     modelState: NluModelState,
+    isTtsSpeaking: Boolean = false,
     onToggleListening: () -> Unit
 ) {
     val context = LocalContext.current
