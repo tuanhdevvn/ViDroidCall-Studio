@@ -78,24 +78,27 @@ flowchart TD
     B --> C["Văn bản câu lệnh (Clean Text)"]
     C --> D{"1. Khớp Fast-Path Quy Tắc?<br/>(fast_path_rules.json / Regex)"}
     
-    %% Nhánh Fast-Path
-    D -- "KHỚP (< 5ms)" --> E["⚡ Tạo trực tiếp NluResult<br/>(Bỏ qua LLM, Tiết kiệm Pin)"]
+    %% Nhánh 1: Fast-Path Match (< 5ms)
+    D -- "KHỚP (< 5ms)" --> E["⚡ Fast-Path Output<br/>(Bỏ qua LLM, Tiết kiệm Pin)"]
     
-    %% Nhánh AI LLM Engine
+    %% Nhánh 2: On-Device AI LLM Inference
     D -- "KHÔNG KHỚP" --> F["NluEngineManager (Quét /sdcard/Download/)"]
     
     subgraph AI_Engine ["Bộ Xử Lý AI On-Device (GGUF Engine)"]
         F --> G{"File .GGUF sẵn sàng?"}
         G -- "CÓ" --> H["Native Llama.cpp Engine<br/>Qwen2.5 GGUF On-Device"]
-        G -- "CHƯA CÓ" --> I["Thông báo trạng thái chưa nạp AI"]
+        H --> I["NluJsonParser (Parse JSON Chuẩn)"]
+        G -- "CHƯA CÓ" --> J["Thông báo trạng thái chưa nạp AI"]
     end
     
-    H --> E
+    %% Hợp nhất kết quả vào NluResult chung
+    E --> K["Kết Quả JSON NLU (NluResult)"]
+    I --> K
     
-    %% Xuất kết quả & Phản hồi
-    E --> J["AssistantScreen (Hiển thị Badge & JSON)"]
-    E --> K["CommandHistoryDatabaseHelper (SQLite FIFO 10 Items)"]
-    E --> L["NluActionDispatcher (Thực thi Native Actions / Voice Feedback)"]
+    %% Phân phối kết quả đến các module
+    K --> L["AssistantScreen (Hiển thị Badge & JSON)"]
+    K --> M["CommandHistoryDatabaseHelper (SQLite FIFO 10 Items)"]
+    K --> N["NluActionDispatcher (Thực thi Native Actions / Voice Feedback)"]
 ```
 
 ---
