@@ -14,10 +14,38 @@ import org.json.JSONObject
  * Điều phối các Native Android Actions từ kết quả JSON của NLU (Theo mục 5 trong ANDROID_INTEGRATION_SPEC.md)
  */
 class NluActionDispatcher(
-    private val context: Context,
+    private val context: Context?,
     private val onSpeakFeedback: (String) -> Unit = {}
 ) {
-    private val mainHandler = Handler(Looper.getMainLooper())
+    private val mainHandler by lazy {
+        try {
+            Handler(Looper.getMainLooper())
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun runOnMainThread(action: () -> Unit) {
+        val handler = mainHandler
+        if (handler != null) {
+            handler.post(action)
+        } else {
+            action()
+        }
+    }
+
+    private fun runDelayed(delayMs: Long, action: () -> Unit) {
+        val handler = mainHandler
+        if (handler != null) {
+            handler.postDelayed({
+                try {
+                    action()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Lỗi khi thực thi hành động: ${e.message}")
+                }
+            }, delayMs)
+        }
+    }
 
     fun executeNluResponse(jsonString: String) {
         try {
@@ -29,7 +57,7 @@ class NluActionDispatcher(
             if (status == "needs_clarification") {
                 val missing = args.optJSONArray("missing")
                 showToast("Bạn vui lòng cung cấp thêm thông tin về $missing")
-                speakText("Bạn vui lòng cung cấp thêm thông tin về $missing")
+                speakText("Bạn vui lòng cung cấp thêm thông tin")
                 return
             }
 
@@ -68,8 +96,13 @@ class NluActionDispatcher(
             val label = args.optString("label", "Báo thức AI")
 
             showToast("⏰ Đang đặt báo thức lúc $hour:$minute...")
+            if (minute > 0) {
+                speakText("Đang đặt báo thức lúc $hour giờ $minute phút")
+            } else {
+                speakText("Đang đặt báo thức lúc $hour giờ")
+            }
             
-            mainHandler.postDelayed({
+            runDelayed(800) {
                 try {
                     val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
                         putExtra(AlarmClock.EXTRA_HOUR, hour)
@@ -78,11 +111,11 @@ class NluActionDispatcher(
                         putExtra(AlarmClock.EXTRA_SKIP_UI, false)
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
-                    context.startActivity(intent)
+                    context?.startActivity(intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Lỗi khi mở báo thức: ${e.message}")
                 }
-            }, 800)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi đặt báo thức: ${e.message}")
         }
@@ -99,9 +132,17 @@ class NluActionDispatcher(
             }
             val label = args.optString("label", "Hẹn giờ")
 
-            showToast("⏳ Đang hẹn giờ $duration $unit...")
+            val unitText = when (unit) {
+                "hours" -> "giờ"
+                "minutes" -> "phút"
+                "seconds" -> "giây"
+                else -> unit
+            }
+
+            showToast("⏳ Đang hẹn giờ $duration $unitText...")
+            speakText("Đang hẹn giờ $duration $unitText")
             
-            mainHandler.postDelayed({
+            runDelayed(800) {
                 try {
                     val intent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
                         putExtra(AlarmClock.EXTRA_LENGTH, seconds)
@@ -109,11 +150,11 @@ class NluActionDispatcher(
                         putExtra(AlarmClock.EXTRA_SKIP_UI, false)
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
-                    context.startActivity(intent)
+                    context?.startActivity(intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Lỗi khi mở hẹn giờ: ${e.message}")
                 }
-            }, 800)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi hẹn giờ: ${e.message}")
         }
@@ -125,19 +166,24 @@ class NluActionDispatcher(
             val message = args.optString("message")
 
             showToast("💬 Đang mở tin nhắn gửi tới: $contact...")
+            if (contact.isNotBlank()) {
+                speakText("Đang mở ứng dụng gửi tin nhắn tới $contact")
+            } else {
+                speakText("Đang mở ứng dụng tin nhắn")
+            }
 
-            mainHandler.postDelayed({
+            runDelayed(800) {
                 try {
                     val intent = Intent(Intent.ACTION_SENDTO).apply {
                         data = Uri.parse("smsto:$contact")
                         putExtra("sms_body", message)
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
-                    context.startActivity(intent)
+                    context?.startActivity(intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Lỗi khi gửi SMS: ${e.message}")
                 }
-            }, 800)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi gửi SMS: ${e.message}")
         }
@@ -147,18 +193,23 @@ class NluActionDispatcher(
         try {
             val contact = args.optString("contact")
             showToast("📞 Đang mở cuộc gọi tới: $contact...")
+            if (contact.isNotBlank()) {
+                speakText("Đang thực hiện cuộc gọi tới $contact")
+            } else {
+                speakText("Đang mở ứng dụng cuộc gọi")
+            }
 
-            mainHandler.postDelayed({
+            runDelayed(800) {
                 try {
                     val intent = Intent(Intent.ACTION_DIAL).apply {
                         data = Uri.parse("tel:$contact")
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
-                    context.startActivity(intent)
+                    context?.startActivity(intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Lỗi khi gọi điện: ${e.message}")
                 }
-            }, 800)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi gọi điện: ${e.message}")
         }
@@ -168,19 +219,24 @@ class NluActionDispatcher(
         try {
             val destination = args.optString("destination")
             showToast("🗺️ Đang mở bản đồ tới: $destination...")
+            if (destination.isNotBlank()) {
+                speakText("Đang mở bản đồ chỉ đường tới $destination")
+            } else {
+                speakText("Đang mở ứng dụng bản đồ")
+            }
 
-            mainHandler.postDelayed({
+            runDelayed(800) {
                 try {
                     val gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(destination))
                     val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
                         setPackage("com.google.android.apps.maps")
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
-                    context.startActivity(mapIntent)
+                    context?.startActivity(mapIntent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Lỗi khi mở bản đồ: ${e.message}")
                 }
-            }, 800)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi mở bản đồ: ${e.message}")
         }
@@ -197,20 +253,22 @@ class NluActionDispatcher(
                 "chrome" -> "com.android.chrome"
                 else -> null
             }
+            showToast("🚀 Đang mở ứng dụng $appName...")
+            speakText("Đang mở ứng dụng $appName")
+
             if (pkg != null) {
-                showToast("🚀 Đang mở ứng dụng $appName...")
-                mainHandler.postDelayed({
+                runDelayed(800) {
                     try {
-                        val launchIntent = context.packageManager.getLaunchIntentForPackage(pkg)?.apply {
+                        val launchIntent = context?.packageManager?.getLaunchIntentForPackage(pkg)?.apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         }
-                        if (launchIntent != null) {
+                        if (launchIntent != null && context != null) {
                             context.startActivity(launchIntent)
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Lỗi khi mở app: ${e.message}")
                     }
-                }, 800)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi mở ứng dụng: ${e.message}")
@@ -228,9 +286,10 @@ class NluActionDispatcher(
     }
 
     private fun showToast(msg: String) {
-        mainHandler.post {
+        val targetContext = context ?: return
+        runOnMainThread {
             try {
-                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                Toast.makeText(targetContext, msg, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 // ignore
             }
@@ -238,8 +297,14 @@ class NluActionDispatcher(
     }
 
     private fun speakText(text: String) {
-        Log.d(TAG, "🔊 TTS: $text")
-        onSpeakFeedback(text)
+        try {
+            Log.d(TAG, "🔊 TTS: $text")
+        } catch (e: Throwable) {
+            // Ignore Android Log stub error in plain JVM unit tests
+        }
+        runOnMainThread {
+            onSpeakFeedback(text)
+        }
     }
 
     companion object {

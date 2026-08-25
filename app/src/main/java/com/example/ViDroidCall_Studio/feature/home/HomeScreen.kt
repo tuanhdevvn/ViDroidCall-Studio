@@ -26,6 +26,7 @@ import com.example.ViDroidCall_Studio.feature.assistant.AssistantScreen
 import com.example.ViDroidCall_Studio.feature.history.HistoryScreen
 import com.example.ViDroidCall_Studio.feature.settings.SettingsScreen
 import com.example.ViDroidCall_Studio.feature.speech.rememberSpeechToText
+import com.example.ViDroidCall_Studio.feature.speech.rememberTextToSpeech
 import com.example.ViDroidCall_Studio.ui.component.CustomBottomMenuBar
 import com.example.ViDroidCall_Studio.ui.component.NavTab
 import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
@@ -39,6 +40,9 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableStateOf(NavTab.ASSISTANT) }
 
+    // Quản lý phản hồi giọng nói TTS (Text-To-Speech)
+    val textToSpeech = rememberTextToSpeech()
+
     // Quản lý Lịch sử câu lệnh ngoại tuyến (SQLite Repository)
     val historyRepository = remember { CommandHistoryRepository(context.applicationContext) }
     val historyItems by historyRepository.historyFlow.collectAsState(initial = emptyList())
@@ -49,15 +53,23 @@ fun HomeScreen(
     val isNluProcessing by nluEngineManager.isGenerating.collectAsState()
     val modelState by nluEngineManager.modelState.collectAsState()
 
-    // Quản lý Điều phối hành động Native (Gọi điện, Báo thức, Hẹn giờ, Mở app)
-    val actionDispatcher = remember { NluActionDispatcher(context.applicationContext) }
+    // Quản lý Điều phối hành động Native & phát phản hồi thoại TTS
+    val actionDispatcher = remember(textToSpeech) {
+        NluActionDispatcher(
+            context = context.applicationContext,
+            onSpeakFeedback = { speechText ->
+                textToSpeech.speak(speechText)
+            }
+        )
+    }
 
-    // Tự động lưu câu lệnh vào Lịch sử và hiển thị JSON trực tiếp trên màn hình (Chưa mở app ngoài)
+    // Tự động lưu câu lệnh vào Lịch sử, điều phối hành động Native và phát phản hồi giọng nói
     LaunchedEffect(nluResult) {
         val result = nluResult
         val query = nluEngineManager.currentQuery.value
         if (result != null && query.isNotBlank()) {
             historyRepository.addFromNluResult(query = query, nluResult = result)
+            actionDispatcher.executeNluResponse(result.rawJson)
         }
     }
 
@@ -72,6 +84,10 @@ fun HomeScreen(
         if (isNluProcessing) {
             Toast.makeText(context, "AI đang phân tích câu lệnh, vui lòng đợi...", Toast.LENGTH_SHORT).show()
         } else {
+            // Nếu TTS đang phát thì ngắt phát giọng nói để lắng nghe câu lệnh mới
+            if (textToSpeech.isSpeaking) {
+                textToSpeech.stop()
+            }
             speechToText.toggleListening()
         }
     }
@@ -104,6 +120,7 @@ fun HomeScreen(
                     nluResult = nluResult,
                     isNluProcessing = isNluProcessing,
                     modelState = modelState,
+                    isTtsSpeaking = textToSpeech.isSpeaking,
                     onSuggestionClick = { prompt ->
                         if (!isNluProcessing) {
                             nluEngineManager.processQuery(prompt)
