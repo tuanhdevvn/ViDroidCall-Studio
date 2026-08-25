@@ -52,6 +52,8 @@ class NluActionDispatcher(
                 "send_sms" -> handleSendSms(args)
                 "open_map" -> handleOpenMap(args)
                 "open_app" -> handleOpenApp(args)
+                "greeting" -> handleGreeting()
+                "goodbye" -> handleGoodbye()
                 else -> speakText("Đã phân tích xong câu lệnh.")
             }
         } catch (e: Exception) {
@@ -213,6 +215,16 @@ class NluActionDispatcher(
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi mở ứng dụng: ${e.message}")
         }
+    }
+
+    private fun handleGreeting() {
+        showToast("👋 Xin chào! Tôi có thể giúp gì cho bạn?")
+        speakText("Xin chào bạn, tôi có thể giúp gì cho bạn?")
+    }
+
+    private fun handleGoodbye() {
+        showToast("👋 Tạm biệt và hẹn gặp lại!")
+        speakText("Tạm biệt bạn, hẹn gặp lại nhé!")
     }
 
     private fun showToast(msg: String) {

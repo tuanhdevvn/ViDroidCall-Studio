@@ -638,6 +638,21 @@ private fun NluJsonResultCard(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // Badge Nguồn xử lý (Fast-Path vs On-Device AI)
+                    if (nluResult.isFastPath) {
+                        NluBadgeChip(
+                            label = "⚡ Fast-Path (Bộ dữ liệu)",
+                            containerColor = Color(0xFF8B5CF6).copy(alpha = 0.15f),
+                            contentColor = Color(0xFF7C3AED)
+                        )
+                    } else {
+                        NluBadgeChip(
+                            label = "🧠 On-Device AI (GGUF)",
+                            containerColor = Color(0xFF0284C7).copy(alpha = 0.15f),
+                            contentColor = Color(0xFF0369A1)
+                        )
+                    }
+
                     // Badge Intent
                     NluBadgeChip(
                         label = "Intent: ${nluResult.intent}",

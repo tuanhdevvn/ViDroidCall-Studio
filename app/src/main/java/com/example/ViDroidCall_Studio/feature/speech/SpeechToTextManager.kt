@@ -30,8 +30,10 @@ class SpeechToTextManager(
     private val recognitionListener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
             isListeningActive = true
-            callbacks.onListeningChanged(true)
-            callbacks.onTextChanged("") // Reset văn bản khi bắt đầu lắng nghe mới
+            mainHandler.post {
+                callbacks.onListeningChanged(true)
+                callbacks.onTextChanged("") // Reset văn bản khi bắt đầu lắng nghe mới
+            }
             Log.d(TAG, "SpeechRecognizer: Sẵn sàng nhận giọng nói trong App")
         }
 
@@ -45,15 +47,14 @@ class SpeechToTextManager(
 
         override fun onEndOfSpeech() {
             isListeningActive = false
-            callbacks.onListeningChanged(false)
+            mainHandler.post {
+                callbacks.onListeningChanged(false)
+            }
             Log.d(TAG, "SpeechRecognizer: Người dùng đã ngưng nói, đang phân tích...")
         }
 
         override fun onError(error: Int) {
             isListeningActive = false
-            callbacks.onListeningChanged(false)
-            Log.w(TAG, "SpeechRecognizer onError: $error")
-
             val errorMessage = when (error) {
                 SpeechRecognizer.ERROR_AUDIO -> "Lỗi thu âm. Vui lòng thử lại."
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> PERMISSION_DENIED_MESSAGE
@@ -63,24 +64,29 @@ class SpeechToTextManager(
                 else -> ERROR_MESSAGE
             }
 
-            if (errorMessage.isNotEmpty()) {
-                callbacks.onTextChanged(errorMessage)
+            mainHandler.post {
+                callbacks.onListeningChanged(false)
+                if (errorMessage.isNotEmpty()) {
+                    callbacks.onTextChanged(errorMessage)
+                }
             }
+            Log.w(TAG, "SpeechRecognizer onError: $error ($errorMessage)")
         }
 
         override fun onResults(results: Bundle?) {
             isListeningActive = false
-            callbacks.onListeningChanged(false)
-
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             val recognized = matches?.firstOrNull { it.isNotBlank() }
 
-            if (!recognized.isNullOrBlank()) {
-                Log.i(TAG, "🎤 [Nhận diện thành công 100% In-App]: \"$recognized\"")
-                callbacks.onTextChanged(recognized)
-                callbacks.onFinalResult(recognized)
-            } else {
-                Log.w(TAG, "Không nhận diện được từ nào, không gọi model AI.")
+            mainHandler.post {
+                callbacks.onListeningChanged(false)
+                if (!recognized.isNullOrBlank()) {
+                    Log.i(TAG, "🎤 [Nhận diện thành công 100% In-App]: \"$recognized\"")
+                    callbacks.onTextChanged(recognized)
+                    callbacks.onFinalResult(recognized)
+                } else {
+                    Log.w(TAG, "Không nhận diện được từ nào, không gọi model AI.")
+                }
             }
         }
 
@@ -88,7 +94,9 @@ class SpeechToTextManager(
             val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             val partial = matches?.firstOrNull { it.isNotBlank() }
             if (!partial.isNullOrBlank()) {
-                callbacks.onTextChanged(partial)
+                mainHandler.post {
+                    callbacks.onTextChanged(partial)
+                }
             }
         }
 
