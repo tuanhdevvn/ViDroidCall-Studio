@@ -13,6 +13,8 @@ enum class NluIntent(val value: String, val title: String) {
     CALL_CONTACT("call_contact", "Gọi điện thoại"),
     SEND_SMS("send_sms", "Gửi tin nhắn"),
     CLARIFY("clarify", "Yêu cầu bổ sung thông tin"),
+    GREETING("greeting", "Chào hỏi"),
+    GOODBYE("goodbye", "Tạm biệt"),
     UNSUPPORTED("unsupported", "Không hỗ trợ");
 
     companion object {
@@ -64,7 +66,8 @@ data class NluResult(
     val requiresConfirmation: Boolean,
     val argumentsJson: String,
     val isParsedSuccessfully: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isFastPath: Boolean = false
 ) {
     val intentEnum: NluIntent get() = NluIntent.fromValue(intent)
     val statusEnum: NluStatus get() = NluStatus.fromValue(status)

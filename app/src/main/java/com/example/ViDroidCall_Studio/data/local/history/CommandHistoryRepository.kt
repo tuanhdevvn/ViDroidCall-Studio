@@ -32,6 +32,8 @@ class CommandHistoryRepository(context: Context) {
             "set_timer" -> "Hẹn giờ"
             "open_map" -> "Bản đồ"
             "open_app" -> "Ứng dụng"
+            "greeting" -> "Chào hỏi"
+            "goodbye" -> "Tạm biệt"
             "clarify" -> "Hỏi lại"
             else -> "Hệ thống"
         }

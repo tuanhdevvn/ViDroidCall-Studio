@@ -44,6 +44,7 @@ class NluEngineManager(
     private val _currentQuery = MutableStateFlow("")
     val currentQuery: StateFlow<String> = _currentQuery.asStateFlow()
 
+    private val fastPathMatcher = FastPathMatcher(context.applicationContext)
     private var llamaHelper: LlamaHelper? = null
     private val llmEventFlow = MutableSharedFlow<LlamaHelper.LLMEvent>(extraBufferCapacity = 64)
     private var isNativeReady = false
@@ -178,35 +179,52 @@ class NluEngineManager(
     }
 
     /**
-     * Gửi câu lệnh 100% vào Native GGUF Model để suy luận trên background thread (không block UI).
+     * Phân tích câu lệnh: Ưu tiên Fast-Path (Zero-LLM Latency) cho câu đơn giản/cố định,
+     * tự động chuyển sang mô hình GGUF Native khi câu lệnh phức tạp.
      */
     fun processQuery(query: String) {
-        val cleanQuery = query.trim()
-        if (cleanQuery.isEmpty()) return
+        try {
+            val cleanQuery = query.trim()
+            if (cleanQuery.isEmpty()) return
 
-        _currentQuery.value = cleanQuery
-        _isGenerating.value = true
-        streamingResponseBuilder.clear()
+            _currentQuery.value = cleanQuery
+            streamingResponseBuilder.clear()
 
-        val state = _modelState.value
-        if (state !is NluModelState.Ready || !isNativeReady || llamaHelper == null) {
-            _isGenerating.value = false
-            _lastResult.value = NluResult.fromError("Chưa có file mô hình AI (.gguf). Vui lòng đặt file vào thiết bị.")
-            Log.w(TAG, "Không thể xử lý vì chưa nạp mô hình GGUF (State: $state)")
-            return
-        }
-
-        val formattedChatMl = NluConstants.buildChatMlPrompt(cleanQuery)
-        Log.i(TAG, "🚀 Đang gửi Prompt vào 100% GGUF Native Engine (Background Thread):\n$formattedChatMl")
-
-        scope.launch(Dispatchers.Default) {
-            try {
-                llamaHelper?.predict(formattedChatMl)
-            } catch (e: Exception) {
-                Log.e(TAG, "Lỗi khi thực thi Native Predict: ${e.message}", e)
+            // 1. Khớp nhanh với bộ quy tắc Fast-Path (< 5ms, không tốn tài nguyên mô hình)
+            val fastResult = fastPathMatcher.match(cleanQuery)
+            if (fastResult != null) {
+                Log.i(TAG, "⚡ [Fast-Path Match (Zero-LLM)]: Intent=${fastResult.intent}, RawJson=${fastResult.rawJson}")
                 _isGenerating.value = false
-                _lastResult.value = NluResult.fromError("Lỗi khi suy luận: ${e.localizedMessage}")
+                _lastResult.value = fastResult
+                return
             }
+
+            // 2. Không khớp quy tắc nhanh -> Gửi Prompt vào Native GGUF Model để suy luận
+            _isGenerating.value = true
+            val state = _modelState.value
+            if (state !is NluModelState.Ready || !isNativeReady || llamaHelper == null) {
+                _isGenerating.value = false
+                _lastResult.value = NluResult.fromError("Chưa có file mô hình AI (.gguf). Vui lòng đặt file vào thiết bị.")
+                Log.w(TAG, "Không thể xử lý vì chưa nạp mô hình GGUF (State: $state)")
+                return
+            }
+
+            val formattedChatMl = NluConstants.buildChatMlPrompt(cleanQuery)
+            Log.i(TAG, "🚀 Đang gửi Prompt vào 100% GGUF Native Engine (Background Thread):\n$formattedChatMl")
+
+            scope.launch(Dispatchers.Default) {
+                try {
+                    llamaHelper?.predict(formattedChatMl)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Lỗi khi thực thi Native Predict: ${e.message}", e)
+                    _isGenerating.value = false
+                    _lastResult.value = NluResult.fromError("Lỗi khi suy luận: ${e.localizedMessage}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Lỗi trong processQuery: ${e.message}", e)
+            _isGenerating.value = false
+            _lastResult.value = NluResult.fromError("Lỗi xử lý câu lệnh: ${e.localizedMessage}")
         }
     }
 

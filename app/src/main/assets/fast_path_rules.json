@@ -1,0 +1,250 @@
+{
+  "version": "1.0.0",
+  "description": "Fast-Path Dataset mapping short/fixed commands to standardized NLU JSON without LLM invocation",
+  "exact_rules": [
+    {
+      "patterns": [
+        "xin chào",
+        "chào em",
+        "chào bạn",
+        "chào emma",
+        "hello",
+        "hi",
+        "alo",
+        "hey emma",
+        "chào em gái",
+        "có ai ở đó không",
+        "chào",
+        "hello emma"
+      ],
+      "intent": "greeting",
+      "arguments": {},
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "tạm biệt",
+        "chào tạm biệt",
+        "bye",
+        "bye bye",
+        "hẹn gặp lại",
+        "tắt đi",
+        "kết thúc",
+        "dừng lại",
+        "đóng lại",
+        "thoát ra"
+      ],
+      "intent": "goodbye",
+      "arguments": {},
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "gọi 113",
+        "gọi cảnh sát",
+        "gọi công an",
+        "báo công an"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "113"
+      },
+      "risk_level": "high",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi 114",
+        "gọi cứu hỏa",
+        "báo cháy"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "114"
+      },
+      "risk_level": "high",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi 115",
+        "gọi cấp cứu"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "115"
+      },
+      "risk_level": "high",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "mở bản đồ",
+        "bản đồ",
+        "google maps",
+        "mở google maps"
+      ],
+      "intent": "open_map",
+      "arguments": {
+        "destination": ""
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "mở youtube",
+        "youtube",
+        "vào youtube",
+        "bật youtube"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "youtube"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "mở zalo",
+        "zalo",
+        "vào zalo",
+        "bật zalo"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "zalo"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "mở facebook",
+        "facebook",
+        "vào facebook",
+        "bật facebook"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "facebook"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "mở tiktok",
+        "tiktok",
+        "vào tiktok",
+        "bật tiktok"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "tiktok"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "mở chrome",
+        "chrome",
+        "trình duyệt",
+        "mở trình duyệt",
+        "vào web"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "chrome"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "gọi",
+        "gọi điện",
+        "gọi điện thoại"
+      ],
+      "intent": "clarify",
+      "arguments": {
+        "missing": ["contact"]
+      },
+      "risk_level": "low",
+      "status": "needs_clarification",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "nhắn tin",
+        "gửi tin nhắn",
+        "soạn tin nhắn",
+        "gửi tin"
+      ],
+      "intent": "clarify",
+      "arguments": {
+        "missing": ["contact", "message"]
+      },
+      "risk_level": "low",
+      "status": "needs_clarification",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "hẹn giờ",
+        "đếm ngược"
+      ],
+      "intent": "clarify",
+      "arguments": {
+        "missing": ["duration", "unit"]
+      },
+      "risk_level": "low",
+      "status": "needs_clarification",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "đặt báo thức",
+        "báo thức",
+        "hẹn báo thức",
+        "cài báo thức"
+      ],
+      "intent": "clarify",
+      "arguments": {
+        "missing": ["hour", "minute"]
+      },
+      "risk_level": "low",
+      "status": "needs_clarification",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "tìm đường",
+        "chỉ đường",
+        "đường đi"
+      ],
+      "intent": "clarify",
+      "arguments": {
+        "missing": ["destination"]
+      },
+      "risk_level": "low",
+      "status": "needs_clarification",
+      "requires_confirmation": false
+    }
+  ]
+}
