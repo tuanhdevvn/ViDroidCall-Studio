@@ -6,6 +6,8 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.AlarmClock
+import android.provider.MediaStore
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import org.json.JSONObject
@@ -15,6 +17,7 @@ import org.json.JSONObject
  */
 class NluActionDispatcher(
     private val context: Context?,
+    private val enableAppLaunch: Boolean = false,
     private val onSpeakFeedback: (String) -> Unit = {}
 ) {
     private val mainHandler by lazy {
@@ -102,18 +105,20 @@ class NluActionDispatcher(
                 speakText("Đang đặt báo thức lúc $hour giờ")
             }
             
-            runDelayed(800) {
-                try {
-                    val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
-                        putExtra(AlarmClock.EXTRA_HOUR, hour)
-                        putExtra(AlarmClock.EXTRA_MINUTES, minute)
-                        putExtra(AlarmClock.EXTRA_MESSAGE, label)
-                        putExtra(AlarmClock.EXTRA_SKIP_UI, false)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            if (enableAppLaunch) {
+                runDelayed(800) {
+                    try {
+                        val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
+                            putExtra(AlarmClock.EXTRA_HOUR, hour)
+                            putExtra(AlarmClock.EXTRA_MINUTES, minute)
+                            putExtra(AlarmClock.EXTRA_MESSAGE, label)
+                            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context?.startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Lỗi khi mở báo thức: ${e.message}")
                     }
-                    context?.startActivity(intent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Lỗi khi mở báo thức: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -142,17 +147,19 @@ class NluActionDispatcher(
             showToast("⏳ Đang hẹn giờ $duration $unitText...")
             speakText("Đang hẹn giờ $duration $unitText")
             
-            runDelayed(800) {
-                try {
-                    val intent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
-                        putExtra(AlarmClock.EXTRA_LENGTH, seconds)
-                        putExtra(AlarmClock.EXTRA_MESSAGE, label)
-                        putExtra(AlarmClock.EXTRA_SKIP_UI, false)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            if (enableAppLaunch) {
+                runDelayed(800) {
+                    try {
+                        val intent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
+                            putExtra(AlarmClock.EXTRA_LENGTH, seconds)
+                            putExtra(AlarmClock.EXTRA_MESSAGE, label)
+                            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context?.startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Lỗi khi mở hẹn giờ: ${e.message}")
                     }
-                    context?.startActivity(intent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Lỗi khi mở hẹn giờ: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -172,16 +179,18 @@ class NluActionDispatcher(
                 speakText("Đang mở ứng dụng tin nhắn")
             }
 
-            runDelayed(800) {
-                try {
-                    val intent = Intent(Intent.ACTION_SENDTO).apply {
-                        data = Uri.parse("smsto:$contact")
-                        putExtra("sms_body", message)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            if (enableAppLaunch) {
+                runDelayed(800) {
+                    try {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("smsto:$contact")
+                            putExtra("sms_body", message)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context?.startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Lỗi khi gửi SMS: ${e.message}")
                     }
-                    context?.startActivity(intent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Lỗi khi gửi SMS: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -199,15 +208,17 @@ class NluActionDispatcher(
                 speakText("Đang mở ứng dụng cuộc gọi")
             }
 
-            runDelayed(800) {
-                try {
-                    val intent = Intent(Intent.ACTION_DIAL).apply {
-                        data = Uri.parse("tel:$contact")
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            if (enableAppLaunch) {
+                runDelayed(800) {
+                    try {
+                        val intent = Intent(Intent.ACTION_DIAL).apply {
+                            data = Uri.parse("tel:$contact")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context?.startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Lỗi khi gọi điện: ${e.message}")
                     }
-                    context?.startActivity(intent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Lỗi khi gọi điện: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -225,16 +236,18 @@ class NluActionDispatcher(
                 speakText("Đang mở ứng dụng bản đồ")
             }
 
-            runDelayed(800) {
-                try {
-                    val gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(destination))
-                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
-                        setPackage("com.google.android.apps.maps")
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            if (enableAppLaunch) {
+                runDelayed(800) {
+                    try {
+                        val gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(destination))
+                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+                            setPackage("com.google.android.apps.maps")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context?.startActivity(mapIntent)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Lỗi khi mở bản đồ: ${e.message}")
                     }
-                    context?.startActivity(mapIntent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Lỗi khi mở bản đồ: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -244,34 +257,112 @@ class NluActionDispatcher(
 
     private fun handleOpenApp(args: JSONObject) {
         try {
-            val appName = args.optString("app_name")
-            val pkg = when (appName.lowercase()) {
-                "zalo" -> "com.zing.zalo"
-                "facebook" -> "com.facebook.katana"
-                "youtube" -> "com.google.android.youtube"
-                "tiktok" -> "com.ss.android.ugc.trill"
-                "chrome" -> "com.android.chrome"
-                else -> null
+            val rawAppName = args.optString("app_name").trim()
+            if (rawAppName.isBlank()) {
+                speakText("Xin lỗi, bạn muốn mở ứng dụng nào?")
+                return
             }
-            showToast("🚀 Đang mở ứng dụng $appName...")
-            speakText("Đang mở ứng dụng $appName")
 
-            if (pkg != null) {
+            val cleanAppName = rawAppName.lowercase()
+                .replace("ứng dụng", "")
+                .replace("app", "")
+                .trim()
+
+            showToast("🚀 Đang mở ứng dụng $rawAppName...")
+            speakText("Đang mở ứng dụng $rawAppName")
+
+            if (enableAppLaunch) {
                 runDelayed(800) {
                     try {
-                        val launchIntent = context?.packageManager?.getLaunchIntentForPackage(pkg)?.apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        val targetContext = context ?: return@runDelayed
+
+                        // 1. System Intent đặc biệt
+                        val systemIntent = when (cleanAppName) {
+                            "camera", "máy ảnh", "chụp ảnh" -> Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+                            "cài đặt", "settings" -> Intent(Settings.ACTION_SETTINGS)
+                            "gọi điện", "điện thoại", "danh bạ" -> Intent(Intent.ACTION_DIAL)
+                            "tin nhắn", "sms" -> Intent(Intent.ACTION_MAIN).apply {
+                                addCategory(Intent.CATEGORY_APP_MESSAGING)
+                            }
+                            else -> null
                         }
-                        if (launchIntent != null && context != null) {
-                            context.startActivity(launchIntent)
+
+                        if (systemIntent != null) {
+                            systemIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            if (systemIntent.resolveActivity(targetContext.packageManager) != null) {
+                                targetContext.startActivity(systemIntent)
+                                return@runDelayed
+                            }
+                        }
+
+                        // 2. Tra cứu Package Name từ danh sách phổ biến
+                        var pkg = when (cleanAppName) {
+                            "zalo" -> "com.zing.zalo"
+                            "facebook" -> "com.facebook.katana"
+                            "youtube" -> "com.google.android.youtube"
+                            "tiktok" -> "com.ss.android.ugc.trill"
+                            "chrome" -> "com.android.chrome"
+                            "shopee" -> "com.shopee.vn"
+                            "messenger" -> "com.facebook.orca"
+                            "instagram" -> "com.instagram.android"
+                            "telegram" -> "org.telegram.messenger"
+                            "viber" -> "com.viber.voip"
+                            "lazada" -> "com.lazada.android"
+                            "momo" -> "com.mservice.momopay"
+                            "spotify" -> "com.spotify.music"
+                            else -> null
+                        }
+
+                        // 3. Tra cứu động qua PackageManager theo tên hiển thị của App đã cài đặt trên thiết bị
+                        if (pkg == null) {
+                            pkg = findPackageByLabel(targetContext, cleanAppName)
+                        }
+
+                        if (pkg != null) {
+                            val launchIntent = targetContext.packageManager.getLaunchIntentForPackage(pkg)?.apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            if (launchIntent != null) {
+                                targetContext.startActivity(launchIntent)
+                            } else {
+                                speakText("Không thể mở ứng dụng $rawAppName")
+                            }
+                        } else {
+                            speakText("Không tìm thấy ứng dụng $rawAppName trên thiết bị")
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Lỗi khi mở app: ${e.message}")
+                        speakText("Có lỗi xảy ra khi mở ứng dụng $rawAppName")
                     }
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi mở ứng dụng: ${e.message}")
+        }
+    }
+
+    private fun findPackageByLabel(context: Context, cleanAppName: String): String? {
+        return try {
+            val pm = context.packageManager
+            val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+            }
+            val resolveInfos = pm.queryIntentActivities(mainIntent, 0)
+            
+            var bestMatch: String? = null
+            for (info in resolveInfos) {
+                val label = info.loadLabel(pm).toString().lowercase().trim()
+                if (label == cleanAppName) {
+                    return info.activityInfo.packageName
+                }
+                if (label.contains(cleanAppName) || cleanAppName.contains(label)) {
+                    bestMatch = info.activityInfo.packageName
+                }
+            }
+            bestMatch
+        } catch (e: Exception) {
+            Log.e(TAG, "Lỗi khi tìm kiếm package theo tên: ${e.message}")
+            null
         }
     }
 
