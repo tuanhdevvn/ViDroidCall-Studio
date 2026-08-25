@@ -281,8 +281,12 @@ class FastPathMatcher(private val context: Context? = null) {
         val openAppMatcher = openAppPattern.matcher(text)
         if (openAppMatcher.find()) {
             val targetApp = openAppMatcher.group(1)?.trim() ?: ""
-            val commonApps = listOf("youtube", "zalo", "facebook", "tiktok", "chrome", "camera", "cài đặt", "messenger", "bản đồ")
-            if (targetApp.isNotEmpty() && (commonApps.contains(targetApp.lowercase()) || text.startsWith("mở ứng dụng") || text.startsWith("mở app"))) {
+            val commonApps = listOf(
+                "youtube", "zalo", "facebook", "tiktok", "chrome", "camera", "máy ảnh", "cài đặt", "messenger", "bản đồ",
+                "shopee", "instagram", "telegram", "viber", "lazada", "momo", "spotify", "gọi điện", "tin nhắn", "điện thoại"
+            )
+            val lowerText = text.lowercase()
+            if (targetApp.isNotEmpty() && (commonApps.contains(targetApp.lowercase()) || lowerText.startsWith("mở ứng dụng") || lowerText.startsWith("mở app") || lowerText.startsWith("bật ứng dụng") || lowerText.startsWith("vào app"))) {
                 val args = JSONObject().apply {
                     put("app_name", targetApp)
                 }

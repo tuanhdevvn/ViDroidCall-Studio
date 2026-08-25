@@ -57,6 +57,7 @@ fun HomeScreen(
     val actionDispatcher = remember(textToSpeech) {
         NluActionDispatcher(
             context = context.applicationContext,
+            enableAppLaunch = false, // Không mở app ngoài, chỉ phát phản hồi TTS và hiển thị JSON kết quả
             onSpeakFeedback = { speechText ->
                 textToSpeech.speak(speechText)
             }
