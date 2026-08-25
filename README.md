@@ -171,12 +171,15 @@ cd Emma-ViDroidCall
 ./gradlew installDebug
 ```
 
-### 2. Nạp file mô hình AI GGUF vào điện thoại
+### 2. Tải & Nạp file mô hình AI GGUF vào điện thoại
+* 📥 **Link tải toàn bộ mô hình GGUF (Google Drive):** [Google Drive Models Folder](https://drive.google.com/drive/folders/1nmWkENo5Oo_fYT5k5dA9e8-Mm3Napln2)
+* 📖 **Xem hướng dẫn chi tiết:** [02-Huong_dan_tai_va_nap_model_GGUF.md](file:///Users/nguyentuananh/AndroidStudioProjects/EmmaViDroidCall/docs/02-Huong_dan_tai_va_nap_model_GGUF.md)
+
 Ứng dụng tự động quét file `.gguf` tại **thư mục Download**:
 
 ```bash
-# Nạp file model vào thư mục Download của điện thoại
-adb push /path/to/qwen2.5-0.5b-nlu-q8_0.gguf /sdcard/Download/
+# Nạp file model vào thư mục Download của điện thoại qua ADB
+adb push ~/Downloads/qwen2.5-0.5b-nlu-q8_0.gguf /sdcard/Download/
 ```
 
 Sau khi nạp file vào `/sdcard/Download/`:
