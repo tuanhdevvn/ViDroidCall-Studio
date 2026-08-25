@@ -156,6 +156,22 @@ class FastPathMatcher(private val context: Context? = null) {
             status = "needs_clarification",
             confirm = false
         )
+        addRule(
+            patterns = listOf("bật nhạc", "mở nhạc", "nghe nhạc", "phát nhạc", "bật nhạc lên", "mở nhạc lên"),
+            intent = "play_music",
+            args = JSONObject(),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("tìm video", "mở video", "xem video", "bật video", "tìm clip", "xem clip"),
+            intent = "clarify",
+            args = JSONObject().put("missing", JSONArray().put("query")),
+            risk = "low",
+            status = "needs_clarification",
+            confirm = false
+        )
     }
 
     private fun addRule(
@@ -346,6 +362,44 @@ class FastPathMatcher(private val context: Context? = null) {
                     put("contact", contact)
                 }
                 return buildNluResult("call_contact", args, "high", "success", true)
+            }
+        }
+
+        // j. Tìm kiếm video YouTube (search_video): ví dụ "tìm video hài hoài linh", "mở youtube tìm phim tom and jerry"
+        val videoPattern = Pattern.compile("^(?:mở\\s+youtube\\s+tìm|tìm\\s+video|xem\\s+video|bật\\s+video|tìm\\s+clip)\\s+(.+)$", Pattern.UNICODE_CHARACTER_CLASS or Pattern.CASE_INSENSITIVE)
+        val videoMatcher = videoPattern.matcher(text)
+        if (videoMatcher.find()) {
+            val query = videoMatcher.group(1)?.trim() ?: ""
+            if (query.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("query", query)
+                }
+                return buildNluResult("search_video", args, "low", "success", false)
+            }
+        }
+
+        // k. Phát nhạc / Bài hát (play_music): ví dụ "mở bài hát diễm xưa", "bật bài cát đôi nỗi sầu", "mở nhạc bolero"
+        val songPattern = Pattern.compile("^(?:mở|bật|phát|nghe)(?:\\s+bài\\s+hát|\\s+bài|\\s+ca\\s+khúc)\\s+(.+)$", Pattern.UNICODE_CHARACTER_CLASS or Pattern.CASE_INSENSITIVE)
+        val songMatcher = songPattern.matcher(text)
+        if (songMatcher.find()) {
+            val songName = songMatcher.group(1)?.trim() ?: ""
+            if (songName.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("song_name", songName)
+                }
+                return buildNluResult("play_music", args, "low", "success", false)
+            }
+        }
+
+        val genreMusicPattern = Pattern.compile("^(?:mở|bật|phát|nghe)\\s+nhạc\\s+(.+)$", Pattern.UNICODE_CHARACTER_CLASS or Pattern.CASE_INSENSITIVE)
+        val genreMusicMatcher = genreMusicPattern.matcher(text)
+        if (genreMusicMatcher.find()) {
+            val genre = genreMusicMatcher.group(1)?.trim() ?: ""
+            if (genre.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("genre", "nhạc $genre")
+                }
+                return buildNluResult("play_music", args, "low", "success", false)
             }
         }
 

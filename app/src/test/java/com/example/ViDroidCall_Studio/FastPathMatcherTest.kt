@@ -148,6 +148,43 @@ class FastPathMatcherTest {
         val resultTimer = matcher.match("hẹn giờ")
         assertNotNull(resultTimer)
         assertEquals("clarify", resultTimer?.intent)
+
+        val resultVideo = matcher.match("tìm video")
+        assertNotNull(resultVideo)
+        assertEquals("clarify", resultVideo?.intent)
+    }
+
+    @Test
+    fun testSearchVideoFastPath() {
+        val result = matcher.match("tìm video hài hoài linh")
+        assertNotNull(result)
+        assertEquals("search_video", result?.intent)
+        assertEquals(NluIntent.SEARCH_VIDEO, result?.intentEnum)
+        assertEquals("hài hoài linh", JSONObject(result!!.argumentsJson).optString("query"))
+
+        val result2 = matcher.match("mở youtube tìm nhạc sống thôn quê")
+        assertNotNull(result2)
+        assertEquals("search_video", result2?.intent)
+        assertEquals("nhạc sống thôn quê", JSONObject(result2!!.argumentsJson).optString("query"))
+    }
+
+    @Test
+    fun testPlayMusicFastPath() {
+        val result = matcher.match("bật bài hát Diễm Xưa")
+        assertNotNull(result)
+        assertEquals("play_music", result?.intent)
+        assertEquals(NluIntent.PLAY_MUSIC, result?.intentEnum)
+        assertEquals("diễm xưa", JSONObject(result!!.argumentsJson).optString("song_name"))
+
+        val resultGenre = matcher.match("mở nhạc bolero")
+        assertNotNull(resultGenre)
+        assertEquals("play_music", resultGenre?.intent)
+        assertEquals(NluIntent.PLAY_MUSIC, resultGenre?.intentEnum)
+        assertEquals("nhạc bolero", JSONObject(resultGenre!!.argumentsJson).optString("genre"))
+
+        val resultGeneric = matcher.match("bật nhạc lên")
+        assertNotNull(resultGeneric)
+        assertEquals("play_music", resultGeneric?.intent)
     }
 
     @Test

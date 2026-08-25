@@ -245,6 +245,38 @@
       "risk_level": "low",
       "status": "needs_clarification",
       "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "bật nhạc",
+        "mở nhạc",
+        "nghe nhạc",
+        "phát nhạc",
+        "bật nhạc lên",
+        "mở nhạc lên"
+      ],
+      "intent": "play_music",
+      "arguments": {},
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "tìm video",
+        "mở video",
+        "xem video",
+        "bật video",
+        "tìm clip",
+        "xem clip"
+      ],
+      "intent": "clarify",
+      "arguments": {
+        "missing": ["query"]
+      },
+      "risk_level": "low",
+      "status": "needs_clarification",
+      "requires_confirmation": false
     }
   ]
 }

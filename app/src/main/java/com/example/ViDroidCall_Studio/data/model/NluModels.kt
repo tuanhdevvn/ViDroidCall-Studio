@@ -12,6 +12,8 @@ enum class NluIntent(val value: String, val title: String) {
     OPEN_APP("open_app", "Mở ứng dụng"),
     CALL_CONTACT("call_contact", "Gọi điện thoại"),
     SEND_SMS("send_sms", "Gửi tin nhắn"),
+    SEARCH_VIDEO("search_video", "Tìm kiếm video YouTube"),
+    PLAY_MUSIC("play_music", "Phát nhạc"),
     CLARIFY("clarify", "Yêu cầu bổ sung thông tin"),
     GREETING("greeting", "Chào hỏi"),
     GOODBYE("goodbye", "Tạm biệt"),

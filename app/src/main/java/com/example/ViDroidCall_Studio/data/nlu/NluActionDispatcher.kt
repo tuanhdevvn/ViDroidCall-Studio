@@ -83,6 +83,8 @@ class NluActionDispatcher(
                 "send_sms" -> handleSendSms(args)
                 "open_map" -> handleOpenMap(args)
                 "open_app" -> handleOpenApp(args)
+                "search_video" -> handleSearchVideo(args)
+                "play_music" -> handlePlayMusic(args)
                 "greeting" -> handleGreeting()
                 "goodbye" -> handleGoodbye()
                 else -> speakText("Đã phân tích xong câu lệnh.")
@@ -363,6 +365,106 @@ class NluActionDispatcher(
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi tìm kiếm package theo tên: ${e.message}")
             null
+        }
+    }
+
+    private fun handleSearchVideo(args: JSONObject) {
+        try {
+            val query = args.optString("query").trim()
+            if (query.isBlank()) {
+                speakText("Xin lỗi, bạn muốn tìm video gì trên YouTube?")
+                return
+            }
+
+            showToast("🎬 Đang tìm video: $query...")
+            speakText("Đang tìm video $query trên YouTube")
+
+            if (enableAppLaunch) {
+                runDelayed(800) {
+                    try {
+                        val targetContext = context ?: return@runDelayed
+                        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(query))).apply {
+                            setPackage("com.google.android.youtube")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        if (webIntent.resolveActivity(targetContext.packageManager) != null) {
+                            targetContext.startActivity(webIntent)
+                        } else {
+                            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(query))).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            targetContext.startActivity(browserIntent)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Lỗi khi tìm video YouTube: ${e.message}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Lỗi khi xử lý tìm video: ${e.message}")
+        }
+    }
+
+    private fun handlePlayMusic(args: JSONObject) {
+        try {
+            val songName = args.optString("song_name").trim()
+            val artist = args.optString("artist").trim()
+            val genre = args.optString("genre").trim()
+
+            val musicQuery = buildString {
+                if (songName.isNotBlank()) append(songName)
+                if (artist.isNotBlank()) {
+                    if (isNotEmpty()) append(" ")
+                    append(artist)
+                }
+                if (genre.isNotBlank() && isBlank()) append(genre)
+            }.trim()
+
+            if (musicQuery.isNotBlank()) {
+                showToast("🎵 Đang phát: $musicQuery...")
+                speakText("Đang phát $musicQuery")
+            } else {
+                showToast("🎵 Đang mở trình phát nhạc...")
+                speakText("Đang mở trình phát nhạc")
+            }
+
+            if (enableAppLaunch) {
+                runDelayed(800) {
+                    try {
+                        val targetContext = context ?: return@runDelayed
+                        if (musicQuery.isNotBlank()) {
+                            val searchIntent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
+                                putExtra(MediaStore.EXTRA_MEDIA_FOCUS, MediaStore.Audio.Artists.ENTRY_CONTENT_TYPE)
+                                putExtra(MediaStore.EXTRA_MEDIA_TITLE, songName)
+                                putExtra(MediaStore.EXTRA_MEDIA_ARTIST, artist)
+                                putExtra(android.app.SearchManager.QUERY, musicQuery)
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            if (searchIntent.resolveActivity(targetContext.packageManager) != null) {
+                                targetContext.startActivity(searchIntent)
+                                return@runDelayed
+                            }
+                        }
+
+                        val musicAppIntent = Intent(Intent.ACTION_MAIN).apply {
+                            addCategory(Intent.CATEGORY_APP_MUSIC)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        if (musicAppIntent.resolveActivity(targetContext.packageManager) != null) {
+                            targetContext.startActivity(musicAppIntent)
+                        } else {
+                            val youtubeMusicIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(musicQuery.ifBlank { "nhạc tuyển chọn" }))).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            targetContext.startActivity(youtubeMusicIntent)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Lỗi khi phát nhạc: ${e.message}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Lỗi khi xử lý phát nhạc: ${e.message}")
         }
     }
 

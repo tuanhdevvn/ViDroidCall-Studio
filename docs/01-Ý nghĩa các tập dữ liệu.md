@@ -89,18 +89,20 @@ Hiểu đơn giản:
 
 Ví dụ hệ thống hỗ trợ:
 
-- đặt báo thức;
-- hẹn giờ;
-- gọi điện;
-- gửi SMS;
-- mở bản đồ;
-- mở ứng dụng.
+- đặt báo thức (`set_alarm`);
+- hẹn giờ (`set_timer`);
+- gọi điện (`call_contact`);
+- gửi SMS (`send_sms`);
+- mở bản đồ (`open_map`);
+- mở ứng dụng (`open_app`);
+- tìm kiếm video (`search_video`);
+- phát nhạc (`play_music`).
 
 Nhưng người dùng nói:
 
 > `"Chuyển cho Nam 5 triệu đồng."`
 
-Đây không phải chức năng hệ thống hỗ trợ. Một hệ thống tốt phải nhận ra yêu cầu này là ngoài phạm vi thay vì cố thực hiện.
+Đây không phải chức năng hệ thống hỗ trợ. Một hệ thống tốt phải nhận ra yêu cầu này là ngoài phạm vi (`unsupported`) thay vì cố thực hiện.
 
 Trong bộ dữ liệu này có **20 câu test OOD**.
 
@@ -110,28 +112,25 @@ Trong bộ dữ liệu này có **20 câu test OOD**.
 
 `Ambiguous` nghĩa là **mơ hồ hoặc thiếu thông tin**.
 
-Ví dụ:
+Ví dụ câu mơ hồ cần làm rõ (`clarify`):
 
-> `"Nhắn cho Nam"`
+> `"Nhắn tin cho tôi"` hoặc `"Gửi tin nhắn đi"`
 
-Hệ thống biết người nhận là Nam nhưng chưa biết nội dung tin nhắn.
-
-Thay vì tự bịa nội dung, hệ thống nên nhận ra còn thiếu `message`.
-
-Ví dụ kết quả:
+Hệ thống biết người dùng muốn nhắn tin nhưng hoàn toàn chưa có người nhận (`contact`). Hệ thống sẽ yêu cầu bổ sung:
 
 ```json
 {
   "intent": "clarify",
   "arguments": {
-    "missing": ["message"]
-  }
+    "missing": ["contact"]
+  },
+  "status": "needs_clarification"
 }
 ```
 
-Có thể hiểu:
-
-> **Test Ambiguous = kiểm tra xem AI có biết rằng mình chưa có đủ thông tin hay không.**
+> **Lưu ý phân biệt với `send_sms`:**
+> - Nếu người dùng nói: *"Nhắn tin cho Nam"* (có người nhận, chưa có nội dung) $\rightarrow$ Vẫn là `send_sms` `{contact: "Nam"}` kèm `requires_confirmation: true` để hệ thống xác nhận và mở giao diện SMS sẵn sàng soạn tin.
+> - Nếu người dùng nói: *"Nhắn cho Nam là mai tôi qua"* (có cả người nhận và nội dung) $\rightarrow$ Là `send_sms` `{contact: "Nam", message: "mai tôi qua"}` kèm `requires_confirmation: true` để hệ thống xác nhận và điền sẵn nội dung vào SMS.
 
 Trong bộ dữ liệu này có **20 câu test ambiguous**.
 

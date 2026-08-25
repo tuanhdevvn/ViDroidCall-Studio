@@ -4,6 +4,7 @@ import com.example.ViDroidCall_Studio.data.model.NluIntent
 import com.example.ViDroidCall_Studio.data.model.NluJsonParser
 import com.example.ViDroidCall_Studio.data.model.NluStatus
 import com.example.ViDroidCall_Studio.data.nlu.NluConstants
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -92,5 +93,57 @@ class NluIntegrationTest {
         assertEquals("invalid", result.status)
         assertEquals(NluStatus.INVALID, result.statusEnum)
         assertFalse(result.requiresConfirmation)
+    }
+
+    @Test
+    fun testJsonParsingExample4_SearchVideo() {
+        val modelRawOutput = """
+        {
+          "intent": "search_video",
+          "arguments": {
+            "query": "hài Hoài Linh Chí Tài"
+          },
+          "risk_level": "low",
+          "status": "success",
+          "requires_confirmation": false
+        }
+        """.trimIndent()
+
+        val result = NluJsonParser.parse(modelRawOutput)
+        assertTrue(result.isParsedSuccessfully)
+        assertEquals("search_video", result.intent)
+        assertEquals(NluIntent.SEARCH_VIDEO, result.intentEnum)
+        assertEquals("success", result.status)
+        assertEquals(NluStatus.SUCCESS, result.statusEnum)
+        assertEquals("low", result.riskLevel)
+        assertFalse(result.requiresConfirmation)
+        assertEquals("hài Hoài Linh Chí Tài", JSONObject(result.argumentsJson).optString("query"))
+    }
+
+    @Test
+    fun testJsonParsingExample5_PlayMusic() {
+        val modelRawOutput = """
+        {
+          "intent": "play_music",
+          "arguments": {
+            "song_name": "Diễm Xưa",
+            "artist": "Khánh Ly"
+          },
+          "risk_level": "low",
+          "status": "success",
+          "requires_confirmation": false
+        }
+        """.trimIndent()
+
+        val result = NluJsonParser.parse(modelRawOutput)
+        assertTrue(result.isParsedSuccessfully)
+        assertEquals("play_music", result.intent)
+        assertEquals(NluIntent.PLAY_MUSIC, result.intentEnum)
+        assertEquals("success", result.status)
+        assertEquals(NluStatus.SUCCESS, result.statusEnum)
+        assertEquals("low", result.riskLevel)
+        assertFalse(result.requiresConfirmation)
+        assertEquals("Diễm Xưa", JSONObject(result.argumentsJson).optString("song_name"))
+        assertEquals("Khánh Ly", JSONObject(result.argumentsJson).optString("artist"))
     }
 }
