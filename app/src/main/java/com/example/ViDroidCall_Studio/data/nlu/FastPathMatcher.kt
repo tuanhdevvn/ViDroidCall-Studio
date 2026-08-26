@@ -11,7 +11,7 @@ import java.util.regex.Pattern
 /**
  * Bộ tiền xử lý và khớp quy tắc nhanh (Fast-Path Matcher)
  * Giúp nhận diện và phản hồi tức thì (< 5ms) cho các câu lệnh ngắn gọn,
- * tích hợp VietnameseNumberParser, chuẩn hóa thời gian theo buổi, giờ kém, thời gian tương đối & TimeProvider injection.
+ * hỗ trợ khẩu ngữ toàn diện 3 miền (Bắc - Trung - Nam), người cao tuổi, giờ kém/thiếu, giờ khuya, từ đệm & TimeProvider injection.
  */
 class FastPathMatcher(
     private val context: Context? = null,
@@ -219,7 +219,7 @@ class FastPathMatcher(
             return buildNluResult("goodbye", JSONObject(), "low", "success", false)
         }
 
-        // c. Xử lý thời gian tương đối cho set_alarm (ví dụ "báo thức sau 10 phút", "báo thức bây giờ cộng 10 phút", "báo thức sau 2 tiếng")
+        // c. Xử lý thời gian tương đối cho set_alarm
         if (unaccentedText.startsWith("bao thuc") || unaccentedText.startsWith("dat bao thuc")) {
             if (unaccentedText.contains("sau ") || unaccentedText.contains("nua") || unaccentedText.contains("bay gio") || unaccentedText.contains("hien tai")) {
                 val relAlarmResult = parseRelativeAlarmCommand(text)
@@ -227,7 +227,7 @@ class FastPathMatcher(
             }
         }
 
-        // d. Xử lý thời gian tương đối cho set_timer (ví dụ "sau 10 phút", "10 phút nữa", "sau 1 giờ", "2 tiếng nữa", "nửa tiếng nữa", "sau 20 giây", "hai mươi giây nữa")
+        // d. Xử lý thời gian tương đối cho set_timer
         val relTimerResult = parseRelativeTimerCommand(text)
         if (relTimerResult != null) return relTimerResult
 
@@ -350,7 +350,6 @@ class FastPathMatcher(
     private fun parseRelativeTimerCommand(text: String): NluResult? {
         val unaccented = stripAccents(text.lowercase())
 
-        // Kiểm tra pattern "sau X" hoặc "X nữa"
         val isSau = unaccented.startsWith("sau ")
         val isNua = unaccented.endsWith("nua") || unaccented.endsWith("nua.")
 
@@ -367,7 +366,6 @@ class FastPathMatcher(
 
         if (payload.isEmpty()) return null
 
-        // Xử lý nửa tiếng / nửa giờ
         if (payload == "nua tieng" || payload == "nua gio" || payload == "tieng" || payload == "gio") {
             val args = JSONObject().apply {
                 put("duration", 30)
@@ -438,7 +436,6 @@ class FastPathMatcher(
 
         val totalMins = currentHour * 60 + currentMinute + addMins
 
-        // Rollover qua ngày mới (cross-day rollover)
         val targetHour = (totalMins / 60) % 24
         val targetMinute = totalMins % 60
 
@@ -457,24 +454,30 @@ class FastPathMatcher(
         val isTrua = unaccented.contains("trua")
         val isChieu = unaccented.contains("chieu")
         val isToi = unaccented.contains("toi")
-        val isDem = unaccented.contains("dem")
+        val isDem = unaccented.contains("dem") || unaccented.contains("khuya")
 
-        // Xử lý kịch bản "Giờ kém"
-        if (unaccented.contains("kem")) {
+        // Xử lý kịch bản "Giờ kém" hoặc "Giờ thiếu" (Khẩu ngữ Miền Nam)
+        val isKem = unaccented.contains("kem") || unaccented.contains("thieu")
+        if (isKem) {
             val payloadKem = unaccented
                 .replace("dat bao thuc", "")
                 .replace("hen bao thuc", "")
                 .replace("cai bao thuc", "")
                 .replace("bao thuc", "")
+                .replace("tam khoang", "")
+                .replace("khoang", "")
+                .replace("tam", "")
+                .replace("vao luc", "")
                 .replace("luc", "")
                 .replace("sang", "")
                 .replace("trua", "")
                 .replace("chieu", "")
                 .replace("toi", "")
                 .replace("dem", "")
+                .replace("khuya", "")
                 .trim()
 
-            val kemParts = payloadKem.split(Regex("\\s+kem\\s+"))
+            val kemParts = payloadKem.split(Regex("\\s+(?:kem|thieu)\\s+"))
             if (kemParts.size == 2) {
                 val rawHourPart = kemParts[0].replace(Regex("\\s*(?:gio|giờ)\\s*|(?<=\\d)\\s*h\\b"), "").trim()
                 val rawMinPart = kemParts[1].replace("phut", "").replace("p", "").trim()
@@ -515,13 +518,20 @@ class FastPathMatcher(
             .replace("hen bao thuc", "")
             .replace("cai bao thuc", "")
             .replace("bao thuc", "")
+            .replace("tam khoang", "")
+            .replace("khoang", "")
+            .replace("tam", "")
+            .replace("vao luc", "")
             .replace("luc", "")
             .replace("sang", "")
             .replace("trua", "")
             .replace("chieu", "")
             .replace("toi", "")
             .replace("dem", "")
+            .replace("khuya", "")
             .replace("ruoi", "")
+            .replace("dung", "")
+            .replace("tron", "")
             .trim()
 
         var parsedHour: Int? = null
@@ -616,7 +626,6 @@ class FastPathMatcher(
             else -> "minutes"
         }
 
-        // Tách lấy phần số bằng cách bóc tách unit dạng ranh giới từ (tránh xóa nhầm chữ 'h' trong 'hai')
         val numStr = payload
             .replace(Regex("\\b(giay|phut|tieng|gio|s|p|h)\\b"), "")
             .trim()
