@@ -466,7 +466,7 @@ class FastPathMatcher(
                 .replace("bao thuc", "")
                 .replace("tam khoang", "")
                 .replace("khoang", "")
-                .replace("tam", "")
+                .replace(Regex("\\btam\\b(?!\\s*(?:gio|giờ|h\\b))"), "")
                 .replace("vao luc", "")
                 .replace("luc", "")
                 .replace("sang", "")
@@ -491,7 +491,7 @@ class FastPathMatcher(
 
                 if (parsedTargetHour != null && parsedKemMin != null && parsedKemMin in 1..59) {
                     if (isDem) {
-                        if (parsedTargetHour == 12) parsedTargetHour = 0 else if (parsedTargetHour in 1..11) parsedTargetHour += 12
+                        if (parsedTargetHour == 12) parsedTargetHour = 0 else if (parsedTargetHour in 9..11) parsedTargetHour += 12
                     } else if (isSang) {
                         if (parsedTargetHour == 12) parsedTargetHour = 0
                     } else if (isChieu || isToi) {
@@ -524,7 +524,7 @@ class FastPathMatcher(
             .replace("bao thuc", "")
             .replace("tam khoang", "")
             .replace("khoang", "")
-            .replace("tam", "")
+            .replace(Regex("\\btam\\b(?!\\s*(?:gio|giờ|h\\b))"), "")
             .replace("vao luc", "")
             .replace("luc", "")
             .replace("sang", "")
@@ -580,7 +580,7 @@ class FastPathMatcher(
         if (isDem) {
             if (hour == 12) {
                 hour = 0
-            } else if (hour in 1..11) {
+            } else if (hour in 9..11) {
                 hour += 12
             }
         } else if (isSang) {
