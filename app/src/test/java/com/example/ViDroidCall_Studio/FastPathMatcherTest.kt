@@ -179,6 +179,21 @@ class FastPathMatcherTest {
         assertEquals("set_alarm", rDung?.intent)
         assertEquals(7, JSONObject(rDung!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(rDung.argumentsJson).optInt("minute"))
+
+        // Từ ngữ dân dã / truyền thống: báo thức 4 giờ tờ mờ sáng -> 04:00
+        val rToMo = matcher.match("báo thức 4 giờ tờ mờ sáng")
+        assertNotNull(rToMo)
+        assertEquals(4, JSONObject(rToMo!!.argumentsJson).optInt("hour"))
+
+        // Từ ngữ dân dã / truyền thống: báo thức 4 giờ xế chiều -> 16:00
+        val rXeChieu = matcher.match("báo thức 4 giờ xế chiều")
+        assertNotNull(rXeChieu)
+        assertEquals(16, JSONObject(rXeChieu!!.argumentsJson).optInt("hour"))
+
+        // Từ ngữ dân dã / truyền thống: báo thức 6 giờ chạng vạng -> 18:00
+        val rChangVang = matcher.match("báo thức 6 giờ chạng vạng")
+        assertNotNull(rChangVang)
+        assertEquals(18, JSONObject(rChangVang!!.argumentsJson).optInt("hour"))
     }
 
     @Test

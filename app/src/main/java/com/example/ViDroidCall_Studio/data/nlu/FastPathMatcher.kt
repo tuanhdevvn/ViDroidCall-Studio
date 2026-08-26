@@ -11,7 +11,7 @@ import java.util.regex.Pattern
 /**
  * Bộ tiền xử lý và khớp quy tắc nhanh (Fast-Path Matcher)
  * Giúp nhận diện và phản hồi tức thì (< 5ms) cho các câu lệnh ngắn gọn,
- * hỗ trợ khẩu ngữ toàn diện 3 miền (Bắc - Trung - Nam), người cao tuổi, giờ kém/thiếu, giờ khuya, từ đệm & TimeProvider injection.
+ * hỗ trợ khẩu ngữ toàn diện 3 miền (Bắc - Trung - Nam), từ ngữ truyền thống (tờ mờ sáng, xế chiều, chạng vạng, khuya), người cao tuổi, giờ kém/thiếu, từ đệm & TimeProvider injection.
  */
 class FastPathMatcher(
     private val context: Context? = null,
@@ -450,10 +450,10 @@ class FastPathMatcher(
     private fun parseAlarmCommand(text: String): NluResult? {
         val unaccented = stripAccents(text.lowercase())
 
-        val isSang = unaccented.contains("sang")
+        val isSang = unaccented.contains("sang") || unaccented.contains("som") || unaccented.contains("to mo")
         val isTrua = unaccented.contains("trua")
-        val isChieu = unaccented.contains("chieu")
-        val isToi = unaccented.contains("toi")
+        val isChieu = unaccented.contains("chieu") || unaccented.contains("xe chieu")
+        val isToi = unaccented.contains("toi") || unaccented.contains("chang vang") || unaccented.contains("sam toi") || unaccented.contains("chap toi")
         val isDem = unaccented.contains("dem") || unaccented.contains("khuya")
 
         // Xử lý kịch bản "Giờ kém" hoặc "Giờ thiếu" (Khẩu ngữ Miền Nam)
@@ -472,7 +472,11 @@ class FastPathMatcher(
                 .replace("sang", "")
                 .replace("trua", "")
                 .replace("chieu", "")
+                .replace("xe chieu", "")
                 .replace("toi", "")
+                .replace("chang vang", "")
+                .replace("sam toi", "")
+                .replace("chap toi", "")
                 .replace("dem", "")
                 .replace("khuya", "")
                 .trim()
@@ -524,9 +528,15 @@ class FastPathMatcher(
             .replace("vao luc", "")
             .replace("luc", "")
             .replace("sang", "")
+            .replace("som", "")
+            .replace("to mo", "")
             .replace("trua", "")
             .replace("chieu", "")
+            .replace("xe chieu", "")
             .replace("toi", "")
+            .replace("chang vang", "")
+            .replace("sam toi", "")
+            .replace("chap toi", "")
             .replace("dem", "")
             .replace("khuya", "")
             .replace("ruoi", "")
