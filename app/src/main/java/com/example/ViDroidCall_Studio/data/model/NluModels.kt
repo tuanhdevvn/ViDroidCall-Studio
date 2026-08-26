@@ -69,7 +69,8 @@ data class NluResult(
     val argumentsJson: String,
     val isParsedSuccessfully: Boolean = true,
     val errorMessage: String? = null,
-    val isFastPath: Boolean = false
+    val isFastPath: Boolean = false,
+    val slots: Map<String, Any?> = emptyMap()
 ) {
     val intentEnum: NluIntent get() = NluIntent.fromValue(intent)
     val statusEnum: NluStatus get() = NluStatus.fromValue(status)
@@ -83,7 +84,8 @@ data class NluResult(
             riskLevel = "low",
             requiresConfirmation = false,
             argumentsJson = "{}",
-            isParsedSuccessfully = false
+            isParsedSuccessfully = false,
+            slots = emptyMap()
         )
 
         fun fromError(error: String): NluResult = NluResult(
@@ -94,7 +96,8 @@ data class NluResult(
             requiresConfirmation = false,
             argumentsJson = "{}",
             isParsedSuccessfully = false,
-            errorMessage = error
+            errorMessage = error,
+            slots = emptyMap()
         )
     }
 }
@@ -113,7 +116,8 @@ object NluJsonParser {
             val status = jsonObject.optString("status", "unsupported")
             val riskLevel = jsonObject.optString("risk_level", "low")
             val requiresConfirmation = jsonObject.optBoolean("requires_confirmation", false)
-            val argsObj = jsonObject.optJSONObject("arguments") ?: JSONObject()
+            val argsObj = jsonObject.optJSONObject("arguments") ?: jsonObject.optJSONObject("slots") ?: JSONObject()
+            val slotsMap = jsonObjectToMap(argsObj)
 
             val prettyJson = jsonObject.toString(2)
 
@@ -124,7 +128,8 @@ object NluJsonParser {
                 riskLevel = riskLevel,
                 requiresConfirmation = requiresConfirmation,
                 argumentsJson = argsObj.toString(2),
-                isParsedSuccessfully = true
+                isParsedSuccessfully = true,
+                slots = slotsMap
             )
         } catch (e: Exception) {
             return NluResult(
@@ -135,9 +140,20 @@ object NluJsonParser {
                 requiresConfirmation = false,
                 argumentsJson = "{}",
                 isParsedSuccessfully = false,
-                errorMessage = "Không thể parse JSON: ${e.localizedMessage}"
+                errorMessage = "Không thể parse JSON: ${e.localizedMessage}",
+                slots = emptyMap()
             )
         }
+    }
+
+    private fun jsonObjectToMap(jsonObject: JSONObject): Map<String, Any?> {
+        val map = mutableMapOf<String, Any?>()
+        val keys = jsonObject.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            map[key] = jsonObject.opt(key)
+        }
+        return map
     }
 
     private fun extractJsonString(text: String): String {

@@ -81,6 +81,9 @@ import com.example.ViDroidCall_Studio.data.nlu.NluModelState
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
 
+import com.example.ViDroidCall_Studio.domain.model.NativeAction
+import com.example.ViDroidCall_Studio.ui.component.ActionConfirmationDialog
+
 /**
  * Giao diện Màn hình Chính (Home / Voice AI Assistant)
  * Chiếm trọn Full màn hình, trực diện, không bị gò bó trong khung card nhỏ.
@@ -95,7 +98,11 @@ fun AssistantScreen(
     modelState: NluModelState,
     modifier: Modifier = Modifier,
     isTtsSpeaking: Boolean = false,
-    onSuggestionClick: (String) -> Unit = {}
+    onSuggestionClick: (String) -> Unit = {},
+    pendingAction: NativeAction? = null,
+    showConfirmationDialog: Boolean = false,
+    onConfirmAction: () -> Unit = {},
+    onCancelAction: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
 
@@ -132,6 +139,16 @@ fun AssistantScreen(
                 isProcessing = isNluProcessing
             )
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // 4. Hộp thoại Xác nhận thực thi hành động nhạy cảm (Không che mất hay xóa NluJsonResultCard)
+        if (showConfirmationDialog && pendingAction != null) {
+            ActionConfirmationDialog(
+                title = pendingAction.getConfirmationTitle(),
+                description = pendingAction.getConfirmationDescription(),
+                onConfirm = onConfirmAction,
+                onCancel = onCancelAction
+            )
         }
     }
 }
