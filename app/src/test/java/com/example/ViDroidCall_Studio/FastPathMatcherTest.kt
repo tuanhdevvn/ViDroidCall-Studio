@@ -8,6 +8,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Arrays
 
 class FastPathMatcherTest {
 
@@ -138,6 +139,26 @@ class FastPathMatcherTest {
     }
 
     @Test
+    fun testComprehensiveAlarmVariations() {
+        val testMap = mapOf(
+            "báo thức 5 giờ sáng" to Pair(5, 0),
+            "báo thức 10 giờ kém 15 sáng" to Pair(9, 45),
+            "báo thức 5 giờ kém 20 chiều" to Pair(16, 40),
+            "báo thức mười hai giờ kém mười lăm đêm" to Pair(23, 45),
+            "báo thức một giờ kém mười lăm" to Pair(0, 45),
+            "đặt báo thức ba giờ rưỡi chiều" to Pair(15, 30),
+            "báo thức chín giờ tối" to Pair(21, 0)
+        )
+        for ((query, expected) in testMap) {
+            val result = matcher.match(query)
+            assertNotNull("Query '$query' should match alarm", result)
+            val json = JSONObject(result!!.argumentsJson)
+            assertEquals("Hour mismatch for query: $query", expected.first, json.optInt("hour"))
+            assertEquals("Minute mismatch for query: $query", expected.second, json.optInt("minute"))
+        }
+    }
+
+    @Test
     fun testSetTimerVietnameseNumbersAndHalfHour() {
         // 17. mười lăm phút -> 15 phút
         val r1 = matcher.match("hẹn giờ mười lăm phút")
@@ -166,6 +187,23 @@ class FastPathMatcherTest {
         assertEquals("set_timer", r4?.intent)
         assertEquals(30, JSONObject(r4!!.argumentsJson).optInt("duration"))
         assertEquals("minutes", JSONObject(r4.argumentsJson).optString("unit"))
+    }
+
+    @Test
+    fun testComprehensiveTimerVariations() {
+        val testMap = mapOf(
+            "hẹn giờ ba mươi phút" to Pair(30, "minutes"),
+            "hẹn giờ một tiếng" to Pair(1, "hours"),
+            "hẹn giờ 2 tiếng" to Pair(2, "hours"),
+            "đếm ngược bốn mươi lăm giây" to Pair(45, "seconds")
+        )
+        for ((query, expected) in testMap) {
+            val result = matcher.match(query)
+            assertNotNull("Query '$query' should match timer", result)
+            val json = JSONObject(result!!.argumentsJson)
+            assertEquals("Duration mismatch for query: $query", expected.first, json.optInt("duration"))
+            assertEquals("Unit mismatch for query: $query", expected.second, json.optString("unit"))
+        }
     }
 
     @Test
@@ -227,22 +265,56 @@ class FastPathMatcherTest {
     }
 
     @Test
-    fun testMatchingLatencyPerformance() {
-        val testQueries = listOf("mở máy ảnh", "cho toi xem youtube", "tạm biệt", "bộ sưu tập", "báo thức bảy giờ rưỡi tối", "hẹn giờ mười lăm phút")
-        // Warmup
-        for (i in 0..100) {
-            matcher.match(testQueries[i % testQueries.size])
+    fun testStressBenchmark10000Queries() {
+        val queries = listOf(
+            "Xin chào",
+            "Tạm biệt",
+            "gọi 113",
+            "mở youtube",
+            "du tup",
+            "phay buc",
+            "top top",
+            "guc go map",
+            "báo thức bảy giờ rưỡi tối",
+            "báo thức 8 giờ kém 15",
+            "hẹn giờ mười lăm phút",
+            "hẹn giờ nửa tiếng",
+            "mở shopee",
+            "mở máy tính",
+            "bộ sưu tập"
+        )
+
+        // Warmup 500 iterations
+        for (i in 0..500) {
+            matcher.match(queries[i % queries.size])
         }
-        // Measure latency over 1000 runs
-        val start = System.nanoTime()
-        val iterations = 1000
+
+        val iterations = 10000
+        val latencies = DoubleArray(iterations)
+
+        val totalStart = System.nanoTime()
         for (i in 0 until iterations) {
-            matcher.match(testQueries[i % testQueries.size])
+            val start = System.nanoTime()
+            matcher.match(queries[i % queries.size])
+            val end = System.nanoTime()
+            latencies[i] = (end - start) / 1_000_000.0
         }
-        val elapsedMs = (System.nanoTime() - start) / 1_000_000.0
-        val avgLatencyMs = elapsedMs / iterations
-        println("⚡ FastPath Matcher Latency: total = ${elapsedMs}ms, avg = ${avgLatencyMs}ms/query")
-        assertTrue("Average matching latency should be < 5ms (Actual: ${avgLatencyMs}ms)", avgLatencyMs < 5.0)
+        val totalElapsedMs = (System.nanoTime() - totalStart) / 1_000_000.0
+
+        Arrays.sort(latencies)
+        val avg = totalElapsedMs / iterations
+        val p50 = latencies[(iterations * 0.50).toInt()]
+        val p95 = latencies[(iterations * 0.95).toInt()]
+        val p99 = latencies[(iterations * 0.99).toInt()]
+
+        println("🚀 FAST-PATH STRESS BENCHMARK (10,000 QUERIES):")
+        println("   - Total execution time: ${totalElapsedMs}ms")
+        println("   - Average Latency: ${avg}ms/query")
+        println("   - P50 Latency: ${p50}ms")
+        println("   - P95 Latency: ${p95}ms")
+        println("   - P99 Latency: ${p99}ms")
+
+        assertTrue("P95 latency must be < 5.0ms (Actual: ${p95}ms)", p95 < 5.0)
     }
 
     @Test
