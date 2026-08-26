@@ -11,9 +11,12 @@ import java.util.regex.Pattern
 /**
  * Bộ tiền xử lý và khớp quy tắc nhanh (Fast-Path Matcher)
  * Giúp nhận diện và phản hồi tức thì (< 5ms) cho các câu lệnh ngắn gọn,
- * tích hợp VietnameseNumberParser, chuẩn hóa thời gian theo buổi, giờ kém, và từ lóng ứng dụng.
+ * tích hợp VietnameseNumberParser, chuẩn hóa thời gian theo buổi, giờ kém, thời gian tương đối & TimeProvider injection.
  */
-class FastPathMatcher(private val context: Context? = null) {
+class FastPathMatcher(
+    private val context: Context? = null,
+    private val timeProvider: TimeProvider = TimeProvider.createDefault()
+) {
 
     private data class RuleEntry(
         val patterns: List<String>,
@@ -195,7 +198,7 @@ class FastPathMatcher(private val context: Context? = null) {
                 }
             }
 
-            // 3. Khớp Regex Pattern động kết hợp VietnameseNumberParser & Time Period Normalizer
+            // 3. Khớp Regex Pattern động kết hợp VietnameseNumberParser, Time Period Normalizer & Relative Time
             matchDynamicPatterns(rawClean)
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi trong quá trình Fast-Path match: ${e.message}", e)
@@ -216,19 +219,31 @@ class FastPathMatcher(private val context: Context? = null) {
             return buildNluResult("goodbye", JSONObject(), "low", "success", false)
         }
 
-        // c. Đặt báo thức (set_alarm) với VietnameseNumberParser, Time Period Normalizer & Giờ kém
+        // c. Xử lý thời gian tương đối cho set_alarm (ví dụ "báo thức sau 10 phút", "báo thức bây giờ cộng 10 phút", "báo thức sau 2 tiếng")
+        if (unaccentedText.startsWith("bao thuc") || unaccentedText.startsWith("dat bao thuc")) {
+            if (unaccentedText.contains("sau ") || unaccentedText.contains("nua") || unaccentedText.contains("bay gio") || unaccentedText.contains("hien tai")) {
+                val relAlarmResult = parseRelativeAlarmCommand(text)
+                if (relAlarmResult != null) return relAlarmResult
+            }
+        }
+
+        // d. Xử lý thời gian tương đối cho set_timer (ví dụ "sau 10 phút", "10 phút nữa", "sau 1 giờ", "2 tiếng nữa", "nửa tiếng nữa", "sau 20 giây", "hai mươi giây nữa")
+        val relTimerResult = parseRelativeTimerCommand(text)
+        if (relTimerResult != null) return relTimerResult
+
+        // e. Đặt báo thức (set_alarm) thời gian tuyệt đối
         if (unaccentedText.startsWith("bao thuc") || unaccentedText.startsWith("dat bao thuc") || unaccentedText.startsWith("hen bao thuc") || unaccentedText.startsWith("cai bao thuc")) {
             val alarmResult = parseAlarmCommand(text)
             if (alarmResult != null) return alarmResult
         }
 
-        // d. Hẹn giờ đếm ngược (set_timer) với VietnameseNumberParser & nửa tiếng/nửa giờ
+        // f. Hẹn giờ đếm ngược (set_timer) thời gian tuyệt đối / duration
         if (unaccentedText.startsWith("hen gio") || unaccentedText.startsWith("dat hen gio") || unaccentedText.startsWith("dem nguoc")) {
             val timerResult = parseTimerCommand(text)
             if (timerResult != null) return timerResult
         }
 
-        // e. Mở ứng dụng (open_app) động
+        // g. Mở ứng dụng (open_app) động
         val openAppMatcher = OPEN_APP_PATTERN.matcher(text)
         if (openAppMatcher.find()) {
             val targetApp = openAppMatcher.group(1)?.trim() ?: ""
@@ -242,7 +257,7 @@ class FastPathMatcher(private val context: Context? = null) {
             }
         }
 
-        // f. Mở bản đồ / Chỉ đường
+        // h. Mở bản đồ / Chỉ đường
         val mapMatcher = MAP_PATTERN.matcher(text)
         if (mapMatcher.find()) {
             val destination = mapMatcher.group(1)?.trim() ?: ""
@@ -254,7 +269,7 @@ class FastPathMatcher(private val context: Context? = null) {
             }
         }
 
-        // g. Gửi tin nhắn có nội dung
+        // i. Gửi tin nhắn có nội dung
         val smsContentMatcher = SMS_CONTENT_PATTERN.matcher(text)
         if (smsContentMatcher.find()) {
             val contact = smsContentMatcher.group(1)?.trim() ?: ""
@@ -268,7 +283,7 @@ class FastPathMatcher(private val context: Context? = null) {
             }
         }
 
-        // h. Soạn tin nhắn không nội dung
+        // j. Soạn tin nhắn không nội dung
         val smsSimpleMatcher = SMS_SIMPLE_PATTERN.matcher(text)
         if (smsSimpleMatcher.find()) {
             val contact = smsSimpleMatcher.group(1)?.trim() ?: ""
@@ -282,7 +297,7 @@ class FastPathMatcher(private val context: Context? = null) {
             }
         }
 
-        // i. Gọi điện (call_contact)
+        // k. Gọi điện (call_contact)
         val callMatcher = CALL_PATTERN.matcher(text)
         if (callMatcher.find()) {
             val contact = callMatcher.group(1)?.trim() ?: ""
@@ -294,7 +309,7 @@ class FastPathMatcher(private val context: Context? = null) {
             }
         }
 
-        // j. Tìm kiếm video YouTube (search_video)
+        // l. Tìm kiếm video YouTube (search_video)
         val videoMatcher = VIDEO_PATTERN.matcher(text)
         if (videoMatcher.find()) {
             val query = videoMatcher.group(1)?.trim() ?: ""
@@ -306,7 +321,7 @@ class FastPathMatcher(private val context: Context? = null) {
             }
         }
 
-        // k. Phát nhạc / Bài hát (play_music)
+        // m. Phát nhạc / Bài hát (play_music)
         val songMatcher = SONG_PATTERN.matcher(text)
         if (songMatcher.find()) {
             val songName = songMatcher.group(1)?.trim() ?: ""
@@ -332,6 +347,109 @@ class FastPathMatcher(private val context: Context? = null) {
         return null
     }
 
+    private fun parseRelativeTimerCommand(text: String): NluResult? {
+        val unaccented = stripAccents(text.lowercase())
+
+        // Kiểm tra pattern "sau X" hoặc "X nữa"
+        val isSau = unaccented.startsWith("sau ")
+        val isNua = unaccented.endsWith("nua") || unaccented.endsWith("nua.")
+
+        if (!isSau && !isNua) return null
+
+        val payload = unaccented
+            .replace("sau ", "")
+            .replace("nua", "")
+            .replace("bay gio", "")
+            .replace("hien tai", "")
+            .replace("luc nay", "")
+            .replace("cong", "")
+            .trim()
+
+        if (payload.isEmpty()) return null
+
+        // Xử lý nửa tiếng / nửa giờ
+        if (payload == "nua tieng" || payload == "nua gio" || payload == "tieng" || payload == "gio") {
+            val args = JSONObject().apply {
+                put("duration", 30)
+                put("unit", "minutes")
+                put("label", "Hẹn giờ")
+            }
+            return buildNluResult("set_timer", args, "low", "success", false)
+        }
+
+        val unit = when {
+            payload.contains("giay") || payload.endsWith("s") -> "seconds"
+            payload.contains("tieng") || payload.contains("gio") || payload.endsWith("h") -> "hours"
+            else -> "minutes"
+        }
+
+        val numStr = payload
+            .replace(Regex("\\b(giay|phut|tieng|gio|s|p|h)\\b"), "")
+            .trim()
+
+        val duration = VietnameseNumberParser.parse(numStr)
+        if (duration != null && duration > 0) {
+            val args = JSONObject().apply {
+                put("duration", duration)
+                put("unit", unit)
+                put("label", "Hẹn giờ")
+            }
+            return buildNluResult("set_timer", args, "low", "success", false)
+        }
+
+        return null
+    }
+
+    private fun parseRelativeAlarmCommand(text: String): NluResult? {
+        val unaccented = stripAccents(text.lowercase())
+
+        val payload = unaccented
+            .replace("dat bao thuc", "")
+            .replace("bao thuc", "")
+            .replace("luc", "")
+            .replace("bay gio", "")
+            .replace("hien tai", "")
+            .replace("luc nay", "")
+            .replace("cong", "")
+            .replace("sau ", "")
+            .replace("nua", "")
+            .trim()
+
+        var addMins = 0
+
+        if (payload == "nua tieng" || payload == "nua gio") {
+            addMins = 30
+        } else {
+            val unit = when {
+                payload.contains("tieng") || payload.contains("gio") || payload.endsWith("h") -> "hours"
+                else -> "minutes"
+            }
+            val numStr = payload
+                .replace(Regex("\\b(giay|phut|tieng|gio|s|p|h)\\b"), "")
+                .trim()
+            val parsedNum = VietnameseNumberParser.parse(numStr) ?: return null
+            addMins = if (unit == "hours") parsedNum * 60 else parsedNum
+        }
+
+        if (addMins <= 0) return null
+
+        val currentHour = timeProvider.getCurrentHour()
+        val currentMinute = timeProvider.getCurrentMinute()
+
+        val totalMins = currentHour * 60 + currentMinute + addMins
+
+        // Rollover qua ngày mới (cross-day rollover)
+        val targetHour = (totalMins / 60) % 24
+        val targetMinute = totalMins % 60
+
+        val args = JSONObject().apply {
+            put("hour", targetHour)
+            put("minute", targetMinute)
+            put("label", "Báo thức")
+        }
+        return buildNluResult("set_alarm", args, "low", "success", false)
+    }
+
     private fun parseAlarmCommand(text: String): NluResult? {
         val unaccented = stripAccents(text.lowercase())
 
@@ -341,7 +459,7 @@ class FastPathMatcher(private val context: Context? = null) {
         val isToi = unaccented.contains("toi")
         val isDem = unaccented.contains("dem")
 
-        // Xử lý kịch bản "Giờ kém" (ví dụ: "báo thức 8 giờ kém 15", "8h kém 20 tối", "báo thức tám giờ kém mười lăm")
+        // Xử lý kịch bản "Giờ kém"
         if (unaccented.contains("kem")) {
             val payloadKem = unaccented
                 .replace("dat bao thuc", "")

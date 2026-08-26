@@ -2,6 +2,7 @@ package com.example.ViDroidCall_Studio
 
 import com.example.ViDroidCall_Studio.data.model.NluIntent
 import com.example.ViDroidCall_Studio.data.nlu.FastPathMatcher
+import com.example.ViDroidCall_Studio.data.nlu.TimeProvider
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -173,6 +174,121 @@ class FastPathMatcherTest {
     }
 
     @Test
+    fun testRelativeTimeAndClockInjection() {
+        // Mock current time = 10:20:00
+        val fixedTimeProvider = TimeProvider.createFixed(hour = 10, minute = 20, second = 0)
+        val relativeMatcher = FastPathMatcher(context = null, timeProvider = fixedTimeProvider)
+
+        // 1. sau 5 phút -> timer 5 min
+        val r1 = relativeMatcher.match("sau 5 phút")
+        assertNotNull(r1)
+        assertEquals("set_timer", r1?.intent)
+        assertEquals(5, JSONObject(r1!!.argumentsJson).optInt("duration"))
+        assertEquals("minutes", JSONObject(r1.argumentsJson).optString("unit"))
+
+        // 2. sau năm phút -> timer 5 min
+        val r2 = relativeMatcher.match("sau năm phút")
+        assertNotNull(r2)
+        assertEquals("set_timer", r2?.intent)
+        assertEquals(5, JSONObject(r2!!.argumentsJson).optInt("duration"))
+
+        // 3. 5 phút nữa -> timer 5 min
+        val r3 = relativeMatcher.match("5 phút nữa")
+        assertNotNull(r3)
+        assertEquals("set_timer", r3?.intent)
+        assertEquals(5, JSONObject(r3!!.argumentsJson).optInt("duration"))
+
+        // 4. năm phút nữa -> timer 5 min
+        val r4 = relativeMatcher.match("năm phút nữa")
+        assertNotNull(r4)
+        assertEquals("set_timer", r4?.intent)
+        assertEquals(5, JSONObject(r4!!.argumentsJson).optInt("duration"))
+
+        // 5. sau 1 giờ -> timer 1 hour
+        val r5 = relativeMatcher.match("sau 1 giờ")
+        assertNotNull(r5)
+        assertEquals("set_timer", r5?.intent)
+        assertEquals(1, JSONObject(r5!!.argumentsJson).optInt("duration"))
+        assertEquals("hours", JSONObject(r5.argumentsJson).optString("unit"))
+
+        // 6. sau một giờ -> timer 1 hour
+        val r6 = relativeMatcher.match("sau một giờ")
+        assertNotNull(r6)
+        assertEquals("set_timer", r6?.intent)
+        assertEquals(1, JSONObject(r6!!.argumentsJson).optInt("duration"))
+
+        // 7. 2 tiếng nữa -> timer 2 hours
+        val r7 = relativeMatcher.match("2 tiếng nữa")
+        assertNotNull(r7)
+        assertEquals("set_timer", r7?.intent)
+        assertEquals(2, JSONObject(r7!!.argumentsJson).optInt("duration"))
+        assertEquals("hours", JSONObject(r7.argumentsJson).optString("unit"))
+
+        // 8. hai tiếng nữa -> timer 2 hours
+        val r8 = relativeMatcher.match("hai tiếng nữa")
+        assertNotNull(r8)
+        assertEquals("set_timer", r8?.intent)
+        assertEquals(2, JSONObject(r8!!.argumentsJson).optInt("duration"))
+
+        // 9. nửa tiếng nữa -> timer 30 min
+        val r9 = relativeMatcher.match("nửa tiếng nữa")
+        assertNotNull(r9)
+        assertEquals("set_timer", r9?.intent)
+        assertEquals(30, JSONObject(r9!!.argumentsJson).optInt("duration"))
+
+        // 10. sau nửa giờ -> timer 30 min
+        val r10 = relativeMatcher.match("sau nửa giờ")
+        assertNotNull(r10)
+        assertEquals("set_timer", r10?.intent)
+        assertEquals(30, JSONObject(r10!!.argumentsJson).optInt("duration"))
+
+        // 11. sau 20 giây -> timer 20 sec
+        val r11 = relativeMatcher.match("sau 20 giây")
+        assertNotNull(r11)
+        assertEquals("set_timer", r11?.intent)
+        assertEquals(20, JSONObject(r11!!.argumentsJson).optInt("duration"))
+        assertEquals("seconds", JSONObject(r11.argumentsJson).optString("unit"))
+
+        // 12. hai mươi giây nữa -> timer 20 sec
+        val r12 = relativeMatcher.match("hai mươi giây nữa")
+        assertNotNull(r12)
+        assertEquals("set_timer", r12?.intent)
+        assertEquals(20, JSONObject(r12!!.argumentsJson).optInt("duration"))
+
+        // 14. bây giờ + 10 phút (báo thức bây giờ cộng 10 phút) -> set_alarm: 10:20 + 10 = 10:30
+        val r14 = relativeMatcher.match("báo thức bây giờ cộng 10 phút")
+        assertNotNull(r14)
+        assertEquals("set_alarm", r14?.intent)
+        assertEquals(10, JSONObject(r14!!.argumentsJson).optInt("hour"))
+        assertEquals(30, JSONObject(r14.argumentsJson).optInt("minute"))
+
+        // 15. Phân biệt set_timer vs set_alarm:
+        // "sau 10 phút" -> set_timer
+        val rTimer = relativeMatcher.match("sau 10 phút")
+        assertEquals("set_timer", rTimer?.intent)
+
+        // "báo thức sau 10 phút" -> set_alarm
+        val rAlarm = relativeMatcher.match("báo thức sau 10 phút")
+        assertEquals("set_alarm", rAlarm?.intent)
+        assertEquals(10, JSONObject(rAlarm!!.argumentsJson).optInt("hour"))
+        assertEquals(30, JSONObject(rAlarm.argumentsJson).optInt("minute"))
+    }
+
+    @Test
+    fun testCrossDayRolloverForRelativeAlarm() {
+        // 13. Mock current time = 23:50:00 (vượt 24:00)
+        val midnightTimeProvider = TimeProvider.createFixed(hour = 23, minute = 50, second = 0)
+        val midnightMatcher = FastPathMatcher(context = null, timeProvider = midnightTimeProvider)
+
+        // "báo thức sau 20 phút" -> 23:50 + 20 min = 00:10 ngày hôm sau
+        val rCrossDay = midnightMatcher.match("báo thức sau 20 phút")
+        assertNotNull(rCrossDay)
+        assertEquals("set_alarm", rCrossDay?.intent)
+        assertEquals(0, JSONObject(rCrossDay!!.argumentsJson).optInt("hour"))
+        assertEquals(10, JSONObject(rCrossDay.argumentsJson).optInt("minute"))
+    }
+
+    @Test
     fun testSetTimerVietnameseNumbersAndHalfHour() {
         // 17. mười lăm phút -> 15 phút
         val r1 = matcher.match("hẹn giờ mười lăm phút")
@@ -295,7 +411,11 @@ class FastPathMatcherTest {
             "hẹn giờ nửa tiếng",
             "mở shopee",
             "mở máy tính",
-            "bộ sưu tập"
+            "bộ sưu tập",
+            "sau 5 phút",
+            "5 phút nữa",
+            "sau 1 giờ",
+            "sau nửa tiếng"
         )
 
         // Warmup 500 iterations
