@@ -32,6 +32,9 @@ import com.example.ViDroidCall_Studio.ui.component.NavTab
 import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
 import kotlinx.coroutines.launch
 
+import com.example.ViDroidCall_Studio.domain.model.NativeAction
+import kotlinx.coroutines.delay
+
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier
@@ -53,11 +56,16 @@ fun HomeScreen(
     val isNluProcessing by nluEngineManager.isGenerating.collectAsState()
     val modelState by nluEngineManager.modelState.collectAsState()
 
+    // Quản lý Trạng thái Action Dispatcher & Dialog xác nhận
+    var pendingAction by remember { mutableStateOf<NativeAction?>(null) }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    var lastProcessedResultId by remember { mutableStateOf<String?>(null) }
+
     // Quản lý Điều phối hành động Native & phát phản hồi thoại TTS
     val actionDispatcher = remember(textToSpeech) {
         NluActionDispatcher(
             context = context.applicationContext,
-            enableAppLaunch = false, // Không mở app ngoài, chỉ phát phản hồi TTS và hiển thị JSON kết quả
+            enableAppLaunch = true,
             onSpeakFeedback = { speechText ->
                 textToSpeech.speak(speechText)
             }
@@ -69,9 +77,43 @@ fun HomeScreen(
         val result = nluResult
         val query = nluEngineManager.currentQuery.value
         if (result != null && query.isNotBlank()) {
-            historyRepository.addFromNluResult(query = query, nluResult = result)
-            actionDispatcher.executeNluResponse(result.rawJson)
+            val resultId = "${result.intent}_${result.rawJson.hashCode()}"
+            if (resultId != lastProcessedResultId) {
+                lastProcessedResultId = resultId
+                historyRepository.addFromNluResult(query = query, nluResult = result)
+
+                val action = NativeAction.fromNluResult(result)
+                val speech = action.getSpeechFeedbackText()
+                if (speech.isNotBlank()) {
+                    textToSpeech.speak(speech)
+                }
+
+                if (result.status == "success") {
+                    if (action.requiresConfirmation) {
+                        pendingAction = action
+                        showConfirmationDialog = true
+                    } else if (action !is NativeAction.Informational && action !is NativeAction.Unsupported) {
+                        // Delay 800ms cho hành động an toàn không cần xác nhận
+                        delay(800)
+                        actionDispatcher.executeNativeAction(action)
+                    }
+                }
+            }
         }
+    }
+
+    val handleConfirmAction = {
+        val action = pendingAction
+        showConfirmationDialog = false
+        pendingAction = null
+        if (action != null) {
+            actionDispatcher.executeNativeAction(action)
+        }
+    }
+
+    val handleCancelAction = {
+        showConfirmationDialog = false
+        pendingAction = null
     }
 
     val speechToText = rememberSpeechToText(
@@ -126,7 +168,11 @@ fun HomeScreen(
                         if (!isNluProcessing) {
                             nluEngineManager.processQuery(prompt)
                         }
-                    }
+                    },
+                    pendingAction = pendingAction,
+                    showConfirmationDialog = showConfirmationDialog,
+                    onConfirmAction = handleConfirmAction,
+                    onCancelAction = handleCancelAction
                 )
 
                 NavTab.HISTORY -> HistoryScreen(
