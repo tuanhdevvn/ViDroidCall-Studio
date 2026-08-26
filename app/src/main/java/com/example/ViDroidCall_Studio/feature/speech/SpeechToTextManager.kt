@@ -75,8 +75,16 @@ class SpeechToTextManager(
 
         override fun onResults(results: Bundle?) {
             isListeningActive = false
-            val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            val recognized = matches?.firstOrNull { it.isNotBlank() }
+            val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: emptyList<String>()
+
+            // Ưu tiên chọn ứng viên (candidate) chứa từ khẩu ngữ nguyên bản (kém, thiếu, rưỡi) nếu Google ITN tự ý đổi số
+            val recognized = matches.firstOrNull { candidate ->
+                candidate.isNotBlank() && (
+                    candidate.contains("kém", ignoreCase = true) ||
+                    candidate.contains("thiếu", ignoreCase = true) ||
+                    candidate.contains("rưỡi", ignoreCase = true)
+                )
+            } ?: matches.firstOrNull { it.isNotBlank() }
 
             mainHandler.post {
                 callbacks.onListeningChanged(false)
@@ -138,7 +146,7 @@ class SpeechToTextManager(
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, LANGUAGE_VI_VN)
                     putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, LANGUAGE_VI_VN)
                     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
                     
                     // Cấu hình khoảng lặng để tránh ngắt mic sớm cho người lớn tuổi
                     putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)

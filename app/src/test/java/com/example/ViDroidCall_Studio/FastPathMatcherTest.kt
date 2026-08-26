@@ -723,6 +723,10 @@ class FastPathMatcherTest {
     @Test fun testGranularAlarm_1GioKem10Trua() { val r = matcher.match("báo thức 1 giờ kém 10 trưa"); assertNotNull(r); assertEquals(12, JSONObject(r!!.argumentsJson).optInt("hour")); assertEquals(50, JSONObject(r.argumentsJson).optInt("minute")) }
     @Test fun testGranularAlarm_12GioKem10Dem() { val r = matcher.match("báo thức 12 giờ kém 10 đêm"); assertNotNull(r); assertEquals(23, JSONObject(r!!.argumentsJson).optInt("hour")); assertEquals(50, JSONObject(r.argumentsJson).optInt("minute")) }
     @Test fun testGranularAlarm_1GioKem10Dem() { val r = matcher.match("báo thức 1 giờ kém 10 đêm"); assertNotNull(r); assertEquals(0, JSONObject(r!!.argumentsJson).optInt("hour")); assertEquals(50, JSONObject(r.argumentsJson).optInt("minute")) }
+    @Test fun testGranularAlarm_2_45_Kem15() { val r = matcher.match("Đặt báo thức 2:45 kém 15"); assertNotNull(r); assertEquals(1, JSONObject(r!!.argumentsJson).optInt("hour")); assertEquals(45, JSONObject(r.argumentsJson).optInt("minute")) }
+    @Test fun testGoogleSttItnCorrection_2_45() { val r = matcher.match("Đặt báo thức 2:45"); assertNotNull(r); assertEquals(1, JSONObject(r!!.argumentsJson).optInt("hour")); assertEquals(45, JSONObject(r.argumentsJson).optInt("minute")) }
+    @Test fun testGoogleSttItnCorrection_2_50() { val r = matcher.match("Đặt báo thức 2:50"); assertNotNull(r); assertEquals(1, JSONObject(r!!.argumentsJson).optInt("hour")); assertEquals(50, JSONObject(r.argumentsJson).optInt("minute")) }
+    @Test fun testGoogleSttSpoken_2Gio45() { val r = matcher.match("Đặt báo thức 2 giờ 45"); assertNotNull(r); assertEquals(2, JSONObject(r!!.argumentsJson).optInt("hour")); assertEquals(45, JSONObject(r.argumentsJson).optInt("minute")) }
 
     // 5. TIMER DURATIONS TESTS
     @Test fun testGranularTimer_15Phut() { val r = matcher.match("hẹn giờ 15 phút"); assertNotNull(r); assertEquals(15, JSONObject(r!!.argumentsJson).optInt("duration")) }
@@ -778,4 +782,126 @@ class FastPathMatcherTest {
     @Test fun testGranularNegative_unknownApp() { assertNull(matcher.match("tôi muốn mở ứng dụng lạ không có thật abc xyz")) }
     @Test fun testGranularNegative_hourOutOfRange() { assertNull(matcher.match("báo thức lúc 25 giờ 90 phút")) }
     @Test fun testGranularNegative_minuteOutOfRange() { assertNull(matcher.match("báo thức 2 giờ 70 phút")) }
+
+    @Test
+    fun testVietnameseVoiceVariationsUpgrade() {
+        // a. Chuyển đổi số dạng chữ (Vietnamese Number Word Parser)
+        val rSauGio = matcher.match("báo thức sáu giờ")
+        assertNotNull(rSauGio); assertEquals("set_alarm", rSauGio?.intent); assertEquals(6, JSONObject(rSauGio!!.argumentsJson).optInt("hour")); assertEquals(0, JSONObject(rSauGio.argumentsJson).optInt("minute"))
+
+        val rSauGioUnaccented = matcher.match("báo thức sau gio")
+        assertNotNull(rSauGioUnaccented); assertEquals("set_alarm", rSauGioUnaccented?.intent); assertEquals(6, JSONObject(rSauGioUnaccented!!.argumentsJson).optInt("hour")); assertEquals(0, JSONObject(rSauGioUnaccented.argumentsJson).optInt("minute"))
+
+        val rBayGioRuoi = matcher.match("báo thức bảy giờ rưỡi")
+        assertNotNull(rBayGioRuoi); assertEquals("set_alarm", rBayGioRuoi?.intent); assertEquals(7, JSONObject(rBayGioRuoi!!.argumentsJson).optInt("hour")); assertEquals(30, JSONObject(rBayGioRuoi.argumentsJson).optInt("minute"))
+
+        val rBayGioRuoiUnaccented = matcher.match("báo thức bay gio ruoi")
+        assertNotNull(rBayGioRuoiUnaccented); assertEquals("set_alarm", rBayGioRuoiUnaccented?.intent); assertEquals(7, JSONObject(rBayGioRuoiUnaccented!!.argumentsJson).optInt("hour")); assertEquals(30, JSONObject(rBayGioRuoiUnaccented.argumentsJson).optInt("minute"))
+
+        val rMuoiLamPhut = matcher.match("hẹn giờ mười lăm phút")
+        assertNotNull(rMuoiLamPhut); assertEquals("set_timer", rMuoiLamPhut?.intent); assertEquals(15, JSONObject(rMuoiLamPhut!!.argumentsJson).optInt("duration")); assertEquals("minutes", JSONObject(rMuoiLamPhut.argumentsJson).optString("unit"))
+
+        val rMuoiLamPhutUnaccented = matcher.match("hẹn giờ muoi lam phut")
+        assertNotNull(rMuoiLamPhutUnaccented); assertEquals("set_timer", rMuoiLamPhutUnaccented?.intent); assertEquals(15, JSONObject(rMuoiLamPhutUnaccented!!.argumentsJson).optInt("duration"))
+
+        val rHaiMuoiGiay = matcher.match("hẹn giờ hai mươi giây")
+        assertNotNull(rHaiMuoiGiay); assertEquals("set_timer", rHaiMuoiGiay?.intent); assertEquals(20, JSONObject(rHaiMuoiGiay!!.argumentsJson).optInt("duration")); assertEquals("seconds", JSONObject(rHaiMuoiGiay.argumentsJson).optString("unit"))
+
+        val rHaiMuoiGiayUnaccented = matcher.match("hẹn giờ hai muoi giay")
+        assertNotNull(rHaiMuoiGiayUnaccented); assertEquals("set_timer", rHaiMuoiGiayUnaccented?.intent); assertEquals(20, JSONObject(rHaiMuoiGiayUnaccented!!.argumentsJson).optInt("duration")); assertEquals("seconds", JSONObject(rHaiMuoiGiayUnaccented.argumentsJson).optString("unit"))
+
+        val rNuaTieng = matcher.match("hẹn giờ nửa tiếng")
+        assertNotNull(rNuaTieng); assertEquals("set_timer", rNuaTieng?.intent); assertEquals(30, JSONObject(rNuaTieng!!.argumentsJson).optInt("duration")); assertEquals("minutes", JSONObject(rNuaTieng.argumentsJson).optString("unit"))
+
+        val rNuaGioUnaccented = matcher.match("hẹn giờ nua gio")
+        assertNotNull(rNuaGioUnaccented); assertEquals("set_timer", rNuaGioUnaccented?.intent); assertEquals(30, JSONObject(rNuaGioUnaccented!!.argumentsJson).optInt("duration")); assertEquals("minutes", JSONObject(rNuaGioUnaccented.argumentsJson).optString("unit"))
+
+        // Test độc lập không từ tiền tố
+        val rStandalone1 = matcher.match("sau gio")
+        assertNotNull(rStandalone1); assertEquals("set_alarm", rStandalone1?.intent); assertEquals(6, JSONObject(rStandalone1!!.argumentsJson).optInt("hour"))
+
+        val rStandalone2 = matcher.match("bay gio ruoi")
+        assertNotNull(rStandalone2); assertEquals("set_alarm", rStandalone2?.intent); assertEquals(7, JSONObject(rStandalone2!!.argumentsJson).optInt("hour")); assertEquals(30, JSONObject(rStandalone2.argumentsJson).optInt("minute"))
+
+        val rStandalone3 = matcher.match("muoi lam phut")
+        assertNotNull(rStandalone3); assertEquals("set_timer", rStandalone3?.intent); assertEquals(15, JSONObject(rStandalone3!!.argumentsJson).optInt("duration")); assertEquals("minutes", JSONObject(rStandalone3.argumentsJson).optString("unit"))
+
+        val rStandalone4 = matcher.match("hai muoi giay")
+        assertNotNull(rStandalone4); assertEquals("set_timer", rStandalone4?.intent); assertEquals(20, JSONObject(rStandalone4!!.argumentsJson).optInt("duration")); assertEquals("seconds", JSONObject(rStandalone4.argumentsJson).optString("unit"))
+
+        val rStandalone5 = matcher.match("nua tieng")
+        assertNotNull(rStandalone5); assertEquals("set_timer", rStandalone5?.intent); assertEquals(30, JSONObject(rStandalone5!!.argumentsJson).optInt("duration")); assertEquals("minutes", JSONObject(rStandalone5.argumentsJson).optString("unit"))
+
+        // b. Quy đổi thời gian theo buổi (24-Hour Period Normalizer)
+        val periodTestMap = mapOf(
+            "báo thức 5 giờ chiều" to Pair(17, 0),
+            "báo thức 6 giờ tối" to Pair(18, 0),
+            "báo thức 7 giờ tối" to Pair(19, 0),
+            "báo thức 8 giờ tối" to Pair(20, 0),
+            "báo thức 9 giờ tối" to Pair(21, 0),
+            "báo thức 10 giờ tối" to Pair(22, 0),
+            "báo thức 11 giờ tối" to Pair(23, 0),
+            "báo thức 12 giờ đêm" to Pair(0, 0),
+            "báo thức 1 giờ đêm" to Pair(1, 0),
+            "báo thức 2 giờ đêm" to Pair(2, 0),
+            "báo thức 3 giờ đêm" to Pair(3, 0),
+            "báo thức 4 giờ sáng" to Pair(4, 0),
+            "báo thức 7 giờ sáng" to Pair(7, 0),
+            "báo thức 12 giờ trưa" to Pair(12, 0),
+            "báo thức 1 giờ trưa" to Pair(13, 0),
+            "báo thức 2 giờ chiều" to Pair(14, 0),
+            "báo thức 7 giờ kém một phần tư" to Pair(6, 45),
+            "báo thức 8:00 sáng" to Pair(8, 0),
+            "báo thức 8:00 tối" to Pair(20, 0),
+            "báo thức lúc 8:00 sáng" to Pair(8, 0)
+        )
+        for ((query, expected) in periodTestMap) {
+            val res = matcher.match(query)
+            assertNotNull("Period query '$query' must not be null", res)
+            assertEquals("set_alarm", res?.intent)
+            val json = JSONObject(res!!.argumentsJson)
+            assertEquals("Hour mismatch for '$query'", expected.first, json.optInt("hour"))
+            assertEquals("Minute mismatch for '$query'", expected.second, json.optInt("minute"))
+        }
+
+        // c. Mở rộng từ điển App Name & Từ lóng tiếng Việt
+        val appTestMap = mapOf(
+            "du tup" to "youtube",
+            "yutube" to "youtube",
+            "youtube" to "youtube",
+            "nhac youtube" to "youtube",
+            "mở nhac youtube" to "youtube",
+            "phay" to "facebook",
+            "phay buc" to "facebook",
+            "fb" to "facebook",
+            "facebook" to "facebook",
+            "face" to "facebook",
+            "mở face" to "facebook",
+            "vào face" to "facebook",
+            "top top" to "tiktok",
+            "tik tok" to "tiktok",
+            "tiktok" to "tiktok",
+            "guc go map" to "google_maps",
+            "bản đồ" to "google_maps",
+            "chỉ đường" to "google_maps",
+            "máy tính" to "calculator",
+            "bộ sưu tập" to "gallery",
+            "anh" to "gallery",
+            "mở ảnh" to "gallery",
+            "danh bạ" to "contacts",
+            "ch play" to "playstore",
+            "shopee" to "shopee",
+            "lazada" to "lazada",
+            "grab" to "grab",
+            "be" to "be"
+        )
+
+        for ((query, expectedApp) in appTestMap) {
+            val res = matcher.match(query)
+            assertNotNull("App query '$query' must not be null", res)
+            assertEquals("open_app", res?.intent)
+            val json = JSONObject(res!!.argumentsJson)
+            assertEquals("App name mismatch for '$query'", expectedApp, json.optString("app_name"))
+        }
+    }
 }

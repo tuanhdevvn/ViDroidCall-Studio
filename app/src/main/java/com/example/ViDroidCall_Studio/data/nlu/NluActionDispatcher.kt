@@ -270,8 +270,28 @@ class NluActionDispatcher(
                 .replace("app", "")
                 .trim()
 
-            showToast("🚀 Đang mở ứng dụng $rawAppName...")
-            speakText("Đang mở ứng dụng $rawAppName")
+            val displayAppName = when (cleanAppName) {
+                "google_maps", "google map", "google maps" -> "Google Maps"
+                "ch play", "playstore" -> "CH Play"
+                "youtube" -> "YouTube"
+                "facebook" -> "Facebook"
+                "tiktok" -> "TikTok"
+                "zalo" -> "Zalo"
+                "shopee" -> "Shopee"
+                "lazada" -> "Lazada"
+                "gallery" -> "Bộ sưu tập"
+                "camera" -> "Máy ảnh"
+                "calculator" -> "Máy tính"
+                "contacts" -> "Danh bạ"
+                "clock" -> "Đồng hồ"
+                "settings" -> "Cài đặt"
+                "recorder" -> "Ghi âm"
+                "files" -> "Quản lý tệp"
+                else -> rawAppName.replace("_", " ")
+            }
+
+            showToast("🚀 Đang mở ứng dụng $displayAppName...")
+            speakText("Đang mở ứng dụng $displayAppName")
 
             if (enableAppLaunch) {
                 runDelayed(800) {

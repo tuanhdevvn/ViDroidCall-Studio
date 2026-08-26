@@ -2,16 +2,28 @@ package com.example.ViDroidCall_Studio
 
 import com.example.ViDroidCall_Studio.data.nlu.VietnameseNumberParser
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class VietnameseNumberParserTest {
 
     @Test
-    fun testDigits() {
+    fun testZeroAndHalf() {
         assertEquals(0, VietnameseNumberParser.parse("0"))
-        assertEquals(6, VietnameseNumberParser.parse("6"))
+        assertEquals(0, VietnameseNumberParser.parse("không"))
+        assertEquals(0, VietnameseNumberParser.parse("KHÔNG"))
+        assertEquals(30, VietnameseNumberParser.parse("nửa"))
+        assertEquals(30, VietnameseNumberParser.parse("nua"))
+    }
+
+    @Test
+    fun testDirectDigits() {
+        assertEquals(0, VietnameseNumberParser.parse("0"))
+        assertEquals(5, VietnameseNumberParser.parse("5"))
         assertEquals(15, VietnameseNumberParser.parse("15"))
-        assertEquals(20, VietnameseNumberParser.parse("20"))
+        assertEquals(25, VietnameseNumberParser.parse("25"))
+        assertEquals(120, VietnameseNumberParser.parse("120"))
+        assertEquals(999, VietnameseNumberParser.parse("999"))
     }
 
     @Test
@@ -31,11 +43,11 @@ class VietnameseNumberParserTest {
     }
 
     @Test
-    fun testUnaccentedSingleDigits() {
-        assertEquals(6, VietnameseNumberParser.parse("sau"))
-        assertEquals(7, VietnameseNumberParser.parse("bay"))
-        assertEquals(8, VietnameseNumberParser.parse("tam"))
-        assertEquals(9, VietnameseNumberParser.parse("chin"))
+    fun testNormalizationAndCaseHyphens() {
+        assertEquals(25, VietnameseNumberParser.parse("Hai Mươi Lăm"))
+        assertEquals(25, VietnameseNumberParser.parse("hai  mươi   lăm"))
+        assertEquals(25, VietnameseNumberParser.parse("hai-mươi-lăm"))
+        assertEquals(25, VietnameseNumberParser.parse("HAI MƯƠI LĂM"))
     }
 
     @Test
@@ -50,19 +62,8 @@ class VietnameseNumberParserTest {
         assertEquals(24, VietnameseNumberParser.parse("hai mươi tư"))
         assertEquals(24, VietnameseNumberParser.parse("hai mươi bốn"))
         assertEquals(25, VietnameseNumberParser.parse("hai mươi lăm"))
-        assertEquals(30, VietnameseNumberParser.parse("ba mươi"))
         assertEquals(35, VietnameseNumberParser.parse("ba mươi lăm"))
-    }
-
-    @Test
-    fun testUnaccentedTensAndComposites() {
-        assertEquals(10, VietnameseNumberParser.parse("muoi"))
-        assertEquals(11, VietnameseNumberParser.parse("muoi mot"))
-        assertEquals(15, VietnameseNumberParser.parse("muoi lam"))
-        assertEquals(20, VietnameseNumberParser.parse("hai muoi"))
-        assertEquals(21, VietnameseNumberParser.parse("hai muoi mot"))
-        assertEquals(25, VietnameseNumberParser.parse("hai muoi lam"))
-        assertEquals(24, VietnameseNumberParser.parse("hai muoi tu"))
+        assertEquals(99, VietnameseNumberParser.parse("chín mươi chín"))
     }
 
     @Test
@@ -70,7 +71,20 @@ class VietnameseNumberParserTest {
         assertEquals(100, VietnameseNumberParser.parse("một trăm"))
         assertEquals(105, VietnameseNumberParser.parse("một trăm linh năm"))
         assertEquals(105, VietnameseNumberParser.parse("một trăm lẻ năm"))
+        assertEquals(120, VietnameseNumberParser.parse("một trăm hai mươi"))
+        assertEquals(125, VietnameseNumberParser.parse("một trăm hai mươi lăm"))
         assertEquals(210, VietnameseNumberParser.parse("hai trăm mười"))
+        assertEquals(215, VietnameseNumberParser.parse("hai trăm mười lăm"))
         assertEquals(230, VietnameseNumberParser.parse("hai trăm ba mươi"))
+        assertEquals(999, VietnameseNumberParser.parse("chín trăm chín mươi chín"))
+    }
+
+    @Test
+    fun testInvalidNonsenseSequencesReturnNull() {
+        assertNull(VietnameseNumberParser.parse("hai ba"))
+        assertNull(VietnameseNumberParser.parse("một hai ba"))
+        assertNull(VietnameseNumberParser.parse("hai năm mười"))
+        assertNull(VietnameseNumberParser.parse("mười mười"))
+        assertNull(VietnameseNumberParser.parse("hai trăm linh linh"))
     }
 }

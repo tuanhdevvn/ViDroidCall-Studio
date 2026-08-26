@@ -117,7 +117,7 @@ class NluActionDispatcherTest {
         """.trimIndent()
 
         dispatcher.executeNluResponse(json)
-        assertEquals("Đang mở ứng dụng Youtube", spokenText)
+        assertEquals("Đang mở ứng dụng YouTube", spokenText)
     }
 
     @Test
