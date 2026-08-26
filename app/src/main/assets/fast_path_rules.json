@@ -86,18 +86,21 @@
     },
     {
       "patterns": [
-        "mở bản đồ",
-        "bản đồ",
-        "google maps",
-        "google map",
-        "mở google maps",
-        "guc go map",
-        "tìm đường",
-        "chỉ đường"
+        "chup anh",
+        "chup hinh",
+        "may anh",
+        "mo may anh",
+        "mo camera",
+        "camera",
+        "ca me ra",
+        "chụp ảnh",
+        "chụp hình",
+        "máy ảnh",
+        "mở máy ảnh"
       ],
       "intent": "open_app",
       "arguments": {
-        "app_name": "google_maps"
+        "app_name": "camera"
       },
       "risk_level": "low",
       "status": "success",
@@ -105,17 +108,207 @@
     },
     {
       "patterns": [
-        "mở youtube",
-        "youtube",
-        "vào youtube",
-        "bật youtube",
-        "du tup",
-        "du túp",
+        "xem anh",
+        "xem hinh",
+        "bo suu tap",
+        "album anh",
+        "mo anh",
+        "thu vien anh",
+        "thu vien",
+        "gallery",
+        "xem ảnh",
+        "xem hình",
+        "bộ sưu tập",
+        "album ảnh",
+        "thư viện ảnh"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "gallery"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "may tinh",
+        "tinh tien",
+        "tinh toan",
+        "ban tinh",
+        "mo may tinh",
+        "calculator",
+        "máy tính",
+        "tính tiền",
+        "tính toán",
+        "bàn tính"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "calculator"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "danh ba",
+        "so dien thoai",
+        "danh sach goi",
+        "mo danh ba",
+        "danh bạ",
+        "số điện thoại",
+        "danh sách gọi"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "contacts"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "xem gio",
+        "dong ho",
+        "dong ho bao thuc",
+        "mo dong ho",
+        "xem giờ",
+        "đồng hồ",
+        "đồng hồ báo thức"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "clock"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "cai dat",
+        "thiet lap",
+        "cai dat may",
+        "mo cai dat",
+        "cai dat dien thoai",
+        "settings",
+        "cài đặt",
+        "thiết lập",
+        "cài đặt máy",
+        "cài đặt điện thoại"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "settings"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "ghi am",
+        "may ghi am",
+        "thu am",
+        "mo ghi am",
+        "ghi âm",
+        "máy ghi âm",
+        "thu âm"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "recorder"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "quan ly tep",
+        "file cua ban",
+        "tep tin",
+        "mo file",
+        "quan ly file",
+        "file",
+        "quản lý tệp",
+        "file của bạn",
+        "tệp tin",
+        "mở file",
+        "quản lý file"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "files"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "tai ung dung",
+        "cai tro choi",
+        "ch play",
+        "cua hang",
+        "cua hang ung dung",
+        "google play",
+        "play store",
+        "tải ứng dụng",
+        "cài trò chơi",
+        "CH Play",
+        "cửa hàng",
+        "cửa hàng ứng dụng"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "playstore"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "doc bao",
+        "xem tin tuc",
+        "len mang",
+        "guc go",
+        "google",
+        "mo trinh duyet",
+        "trinh duyet",
+        "chrome",
+        "đọc báo",
+        "xem tin tức",
+        "lên mạng",
+        "mở trình duyệt",
+        "trình duyệt"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "chrome"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
         "diu tup",
+        "du tup",
         "dut tup",
         "yutube",
-        "nhac youtube",
-        "xem youtube"
+        "youtube",
+        "xem ca nhac",
+        "xem video",
+        "mo youtube",
+        "diu túp",
+        "du túp",
+        "đút túp",
+        "xem ca nhạc"
       ],
       "intent": "open_app",
       "arguments": {
@@ -127,15 +320,16 @@
     },
     {
       "patterns": [
-        "mở zalo",
-        "zalo",
-        "vào zalo",
-        "bật zalo",
         "da lo",
         "za lo",
         "da ro",
+        "zalo",
+        "nhan da lo",
+        "goi da lo",
+        "mo zalo",
         "da-lô",
-        "za-lô"
+        "za-lô",
+        "nhắn da lô"
       ],
       "intent": "open_app",
       "arguments": {
@@ -147,15 +341,13 @@
     },
     {
       "patterns": [
-        "mở facebook",
-        "facebook",
-        "vào facebook",
-        "bật facebook",
         "phay",
         "phay buc",
         "phay bup",
         "fb",
         "xem phay",
+        "facebook",
+        "mo facebook",
         "phây",
         "phây búc",
         "phây búp"
@@ -170,16 +362,15 @@
     },
     {
       "patterns": [
-        "mở tiktok",
-        "tiktok",
-        "vào tiktok",
-        "bật tiktok",
         "top top",
         "toc toc",
         "tik tok",
+        "tiktok",
+        "xem video ngan",
+        "mo tiktok",
         "tóp tóp",
         "tóc tóc",
-        "xem video ngan"
+        "xem video ngắn"
       ],
       "intent": "open_app",
       "arguments": {
@@ -191,113 +382,20 @@
     },
     {
       "patterns": [
-        "mở chrome",
-        "chrome",
-        "trình duyệt",
-        "mở trình duyệt",
-        "vào web",
-        "đọc báo",
-        "xem tin tức",
-        "lên mạng",
-        "guc go",
-        "google"
+        "ban do",
+        "chi duong",
+        "guc go map",
+        "tim duong",
+        "google map",
+        "google maps",
+        "mo ban do",
+        "bản đồ",
+        "chỉ đường",
+        "tìm đường"
       ],
       "intent": "open_app",
       "arguments": {
-        "app_name": "chrome"
-      },
-      "risk_level": "low",
-      "status": "success",
-      "requires_confirmation": false
-    },
-    {
-      "patterns": [
-        "mở máy ảnh",
-        "chụp ảnh",
-        "chụp hình",
-        "may anh",
-        "mo may anh",
-        "mo camera",
-        "camera",
-        "ca me ra"
-      ],
-      "intent": "open_app",
-      "arguments": {
-        "app_name": "camera"
-      },
-      "risk_level": "low",
-      "status": "success",
-      "requires_confirmation": false
-    },
-    {
-      "patterns": [
-        "xem ảnh",
-        "bộ sưu tập",
-        "album ảnh",
-        "bo suu tap",
-        "thu vien anh",
-        "thu vien",
-        "gallery",
-        "xem hinh"
-      ],
-      "intent": "open_app",
-      "arguments": {
-        "app_name": "gallery"
-      },
-      "risk_level": "low",
-      "status": "success",
-      "requires_confirmation": false
-    },
-    {
-      "patterns": [
-        "máy tính",
-        "tính toán",
-        "tính tiền",
-        "may tinh",
-        "tinh tien",
-        "tinh toan",
-        "ban tinh",
-        "mo may tinh",
-        "calculator"
-      ],
-      "intent": "open_app",
-      "arguments": {
-        "app_name": "calculator"
-      },
-      "risk_level": "low",
-      "status": "success",
-      "requires_confirmation": false
-    },
-    {
-      "patterns": [
-        "danh bạ",
-        "số điện thoại",
-        "danh ba",
-        "so dien thoai",
-        "danh sach goi",
-        "mo danh ba"
-      ],
-      "intent": "open_app",
-      "arguments": {
-        "app_name": "contacts"
-      },
-      "risk_level": "low",
-      "status": "success",
-      "requires_confirmation": false
-    },
-    {
-      "patterns": [
-        "ch play",
-        "google play",
-        "cua hang ung dung",
-        "tai ung dung",
-        "cai tro choi",
-        "play store",
-        "playstore"
-      ],
-      "intent": "open_app",
-      "arguments": {
-        "app_name": "playstore"
+        "app_name": "google_maps"
       },
       "risk_level": "low",
       "status": "success",
@@ -308,7 +406,7 @@
         "shopee",
         "shop pi",
         "shoppe",
-        "mở shopee"
+        "mo shopee"
       ],
       "intent": "open_app",
       "arguments": {
@@ -322,7 +420,7 @@
       "patterns": [
         "lazada",
         "la da da",
-        "mở lazada"
+        "mo lazada"
       ],
       "intent": "open_app",
       "arguments": {
@@ -336,7 +434,7 @@
       "patterns": [
         "grab",
         "grab bike",
-        "mở grab"
+        "mo grab"
       ],
       "intent": "open_app",
       "arguments": {
@@ -351,7 +449,7 @@
         "be",
         "be bike",
         "be taxi",
-        "mở be"
+        "mo be"
       ],
       "intent": "open_app",
       "arguments": {
@@ -406,7 +504,6 @@
     {
       "patterns": [
         "đặt báo thức",
-        "báo thức",
         "hẹn báo thức",
         "cài báo thức"
       ],

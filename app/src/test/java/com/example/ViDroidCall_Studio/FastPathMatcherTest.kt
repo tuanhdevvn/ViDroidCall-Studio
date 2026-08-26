@@ -169,24 +169,22 @@ class FastPathMatcherTest {
 
         val rXeChieu = matcher.match("báo thức 4 giờ xế chiều")
         assertNotNull(rXeChieu)
-        // Từ ngữ dân dã / truyền thống: báo thức 6 giờ chạng vạng -> 18:00
+        assertEquals(16, JSONObject(rXeChieu!!.argumentsJson).optInt("hour"))
+
         val rChangVang = matcher.match("báo thức 6 giờ chạng vạng")
         assertNotNull(rChangVang)
         assertEquals(18, JSONObject(rChangVang!!.argumentsJson).optInt("hour"))
 
-        // Tiền tố đa dạng: nhắc tôi 7 giờ sáng -> 07:00
         val rNhacToi = matcher.match("nhắc tôi 7 giờ sáng")
         assertNotNull(rNhacToi)
         assertEquals("set_alarm", rNhacToi?.intent)
         assertEquals(7, JSONObject(rNhacToi!!.argumentsJson).optInt("hour"))
 
-        // Tiền tố đa dạng: đặt chuông báo thức 8 giờ tối -> 20:00
         val rChuongBaoThuc = matcher.match("đặt chuông báo thức 8 giờ tối")
         assertNotNull(rChuongBaoThuc)
         assertEquals("set_alarm", rChuongBaoThuc?.intent)
         assertEquals(20, JSONObject(rChuongBaoThuc!!.argumentsJson).optInt("hour"))
 
-        // Giờ 0 / không giờ: báo thức không giờ rưỡi -> 00:30
         val rKhongGioRuoi = matcher.match("báo thức không giờ rưỡi")
         assertNotNull(rKhongGioRuoi)
         assertEquals("set_alarm", rKhongGioRuoi?.intent)
@@ -197,45 +195,25 @@ class FastPathMatcherTest {
     @Test
     fun testKiemAndThieu20RequiredTestCases() {
         val testMap = listOf(
-            // 1. 2 giờ kém 10 -> 01:50
             "báo thức 2 giờ kém 10" to Pair(1, 50),
-            // 2. 2 giờ kém 10 phút -> 01:50
             "báo thức 2 giờ kém 10 phút" to Pair(1, 50),
-            // 3. hai giờ kém mười -> 01:50
             "báo thức hai giờ kém mười" to Pair(1, 50),
-            // 4. hai giờ kém mười phút -> 01:50
             "báo thức hai giờ kém mười phút" to Pair(1, 50),
-            // 5. 7 giờ kém 15 -> 06:45
             "báo thức 7 giờ kém 15" to Pair(6, 45),
-            // 6. bảy giờ kém mười lăm -> 06:45
             "báo thức bảy giờ kém mười lăm" to Pair(6, 45),
-            // 7. 8 giờ kém 5 -> 07:55
             "báo thức 8 giờ kém 5" to Pair(7, 55),
-            // 8. tám giờ kém năm -> 07:55
             "báo thức tám giờ kém năm" to Pair(7, 55),
-            // 9. 8 giờ kém 5 sáng -> 07:55
             "báo thức 8 giờ kém 5 sáng" to Pair(7, 55),
-            // 10. 2 giờ kém 10 chiều -> 13:50
             "báo thức 2 giờ kém 10 chiều" to Pair(13, 50),
-            // 11. 2 giờ kém 10 tối -> 19:50
             "báo thức 2 giờ kém 10 tối" to Pair(19, 50),
-            // 12. 7 giờ kém 15 tối -> 18:45
             "báo thức 7 giờ kém 15 tối" to Pair(18, 45),
-            // 13. 8 giờ kém 5 tối -> 19:55
             "báo thức 8 giờ kém 5 tối" to Pair(19, 55),
-            // 14. 11 giờ kém 10 đêm -> 22:50
             "báo thức 11 giờ kém 10 đêm" to Pair(22, 50),
-            // 15. 12 giờ kém 10 -> 11:50
             "báo thức 12 giờ kém 10" to Pair(11, 50),
-            // 16. 1 giờ kém 10 -> 00:50
             "báo thức 1 giờ kém 10" to Pair(0, 50),
-            // 17. 2 giờ 10 -> 02:10
             "báo thức 2 giờ 10" to Pair(2, 10),
-            // 18. 2 giờ 10 phút -> 02:10
             "báo thức 2 giờ 10 phút" to Pair(2, 10),
-            // 19. 2 giờ rưỡi -> 02:30
             "báo thức 2 giờ rưỡi" to Pair(2, 30),
-            // 20. 2 giờ thiếu 10 -> 01:50
             "báo thức 2 giờ thiếu 10" to Pair(1, 50)
         )
 
