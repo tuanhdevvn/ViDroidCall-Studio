@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Fast-Path Dataset mapping short/fixed commands to standardized NLU JSON without LLM invocation",
   "exact_rules": [
     {
@@ -174,12 +174,10 @@
         "xem gio",
         "dong ho",
         "dong ho bao thuc",
-        "bao thuc",
         "mo dong ho",
         "xem giờ",
         "đồng hồ",
-        "đồng hồ báo thức",
-        "báo thức"
+        "đồng hồ báo thức"
       ],
       "intent": "open_app",
       "arguments": {
@@ -398,6 +396,64 @@
       "intent": "open_app",
       "arguments": {
         "app_name": "google_maps"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "shopee",
+        "shop pi",
+        "shoppe",
+        "mo shopee"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "shopee"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "lazada",
+        "la da da",
+        "mo lazada"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "lazada"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "grab",
+        "grab bike",
+        "mo grab"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "grab"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "be",
+        "be bike",
+        "be taxi",
+        "mo be"
+      ],
+      "intent": "open_app",
+      "arguments": {
+        "app_name": "be"
       },
       "risk_level": "low",
       "status": "success",
