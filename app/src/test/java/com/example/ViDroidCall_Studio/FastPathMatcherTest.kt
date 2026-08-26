@@ -96,7 +96,11 @@ class FastPathMatcherTest {
             "báo thức 7 giờ kém 15 tối" to Pair(18, 45),    // 38
             "báo thức 8 giờ kém 5 tối" to Pair(19, 55),     // 39
             "báo thức 11 giờ kém 10 đêm" to Pair(22, 50),   // 40
-            "báo thức 2 giờ thiếu 10" to Pair(1, 50)        // 41
+            "báo thức 2 giờ thiếu 10" to Pair(1, 50),       // 41
+            "báo thức 12 giờ kém 10 trưa" to Pair(11, 50),
+            "báo thức 1 giờ kém 10 trưa" to Pair(12, 50),
+            "báo thức 12 giờ kém 10 đêm" to Pair(23, 50),
+            "báo thức 1 giờ kém 10 đêm" to Pair(0, 50)
         )
         for ((q, expected) in kiemMap) {
             val res = matcher.match(q)

@@ -479,13 +479,13 @@ class FastPathMatcher(
                 h = 0
             }
         } else if (isTrua) {
-            if (h == 12) {
+            if (h == 12 || h == 0) {
                 h = 12
             } else if (h in 1..5) {
                 h += 12
             }
         } else if (isChieu) {
-            if (h == 12) {
+            if (h == 12 || h == 0) {
                 h = 12
             } else if (h in 1..11) {
                 h += 12
