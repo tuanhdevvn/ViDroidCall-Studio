@@ -1,5 +1,6 @@
 package com.example.ViDroidCall_Studio.data.nlu
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -10,16 +11,26 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
+import com.example.ViDroidCall_Studio.data.model.NluJsonParser
+import com.example.ViDroidCall_Studio.domain.model.NativeAction
+import com.example.ViDroidCall_Studio.util.AppResolver
 import org.json.JSONObject
 
 /**
- * Điều phối các Native Android Actions từ kết quả JSON của NLU (Theo mục 5 trong ANDROID_INTEGRATION_SPEC.md)
+ * Điều phối và thực thi các Native Android Actions dựa trên kết quả JSON NLU
  */
 class NluActionDispatcher(
     private val context: Context?,
-    private val enableAppLaunch: Boolean = false,
+    private val enableAppLaunch: Boolean = true,
+    private val onActionError: (String) -> Unit = {},
     private val onSpeakFeedback: (String) -> Unit = {}
 ) {
+    // Secondary constructor for backwards compatibility with tests and callers
+    constructor(
+        context: Context?,
+        enableAppLaunch: Boolean = true,
+        onSpeakFeedback: (String) -> Unit
+    ) : this(context, enableAppLaunch, {}, onSpeakFeedback)
     private val mainHandler by lazy {
         try {
             Handler(Looper.getMainLooper())
@@ -44,471 +55,314 @@ class NluActionDispatcher(
                 try {
                     action()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Lỗi khi thực thi hành động: ${e.message}")
+                    Log.e(TAG, "ACTION_FAILED Lỗi khi thực thi hành động trễ: ${e.message}")
                 }
             }, delayMs)
         }
     }
 
+    /**
+     * Phân tích và thực thi trực tiếp từ chuỗi JSON NLU
+     */
     fun executeNluResponse(jsonString: String) {
-        try {
-            val json = JSONObject(jsonString)
-            val intent = json.optString("intent")
-            val status = json.optString("status")
-            val args = json.optJSONObject("arguments") ?: JSONObject()
+        val nluResult = NluJsonParser.parse(jsonString)
+        val action = NativeAction.fromNluResult(nluResult)
+        dispatch(action)
+    }
 
-            if (status == "needs_clarification") {
-                val missing = args.optJSONArray("missing")
-                showToast("Bạn vui lòng cung cấp thêm thông tin về $missing")
-                speakText("Bạn vui lòng cung cấp thêm thông tin")
+    /**
+     * Xử lý điều phối hành động NativeAction
+     */
+    fun dispatch(action: NativeAction) {
+        logLifecycle("ACTION_DISPATCH", "intent=${action.intentName}, requiresConfirmation=${action.requiresConfirmation}")
+
+        // 1. Phát phản hồi giọng nói (TTS)
+        val speech = action.getSpeechFeedbackText()
+        if (speech.isNotBlank()) {
+            speakText(speech)
+        }
+
+        // 2. Kiểm tra nếu là hành động thông tin/chưa hỗ trợ
+        when (action) {
+            is NativeAction.Informational -> {
+                showToast(action.message)
                 return
             }
-
-            if (status == "invalid") {
-                showToast("Thời gian yêu cầu không hợp lệ.")
-                speakText("Thời gian bạn yêu cầu không hợp lệ, vui lòng kiểm tra lại.")
+            is NativeAction.Unsupported -> {
+                showToast(action.message)
                 return
             }
+            else -> {}
+        }
 
-            if (status == "unsupported") {
-                showToast("Chưa hỗ trợ tính năng này.")
-                speakText("Xin lỗi, tôi chưa hỗ trợ tính năng này.")
+        // 3. Nếu không kích hoạt mở app ngoài (chế độ preview/test)
+        if (!enableAppLaunch) {
+            return
+        }
+
+        // 4. Nếu hành động yêu cầu xác nhận -> Ghi log (UI sẽ hiển thị dialog)
+        if (action.requiresConfirmation) {
+            logLifecycle("ACTION_CONFIRM_REQUIRED", "intent=${action.intentName}")
+            return
+        }
+
+        // 5. Nếu hành động an toàn không cần xác nhận -> Chờ 800ms rồi thực thi
+        runDelayed(800) {
+            executeNativeAction(action)
+        }
+    }
+
+    /**
+     * Thực thi trực tiếp hành động Native (sau khi đã delay hoặc sau khi người dùng nhấn Xác nhận)
+     */
+    fun executeNativeAction(action: NativeAction) {
+        val targetContext = context ?: run {
+            logLifecycle("ACTION_FAILED", "intent=${action.intentName}, error=Context is null")
+            return
+        }
+
+        logLifecycle("ACTION_EXECUTING", "intent=${action.intentName}")
+
+        try {
+            when (action) {
+                is NativeAction.OpenApp -> executeOpenApp(targetContext, action)
+                is NativeAction.CallContact -> executeCallContact(targetContext, action)
+                is NativeAction.SendSms -> executeSendSms(targetContext, action)
+                is NativeAction.OpenMap -> executeOpenMap(targetContext, action)
+                is NativeAction.SetAlarm -> executeSetAlarm(targetContext, action)
+                is NativeAction.SetTimer -> executeSetTimer(targetContext, action)
+                is NativeAction.SearchVideo -> executeSearchVideo(targetContext, action)
+                is NativeAction.PlayMusic -> executePlayMusic(targetContext, action)
+                else -> {
+                    logLifecycle("ACTION_SUCCESS", "intent=${action.intentName}")
+                }
+            }
+        } catch (e: ActivityNotFoundException) {
+            val errorMsg = "Thiết bị không có ứng dụng phù hợp để thực hiện hành động này."
+            logLifecycle("ACTION_FAILED", "intent=${action.intentName}, error=ActivityNotFoundException: ${e.message}")
+            showToast(errorMsg)
+            onActionError(errorMsg)
+        } catch (e: SecurityException) {
+            val errorMsg = "Ứng dụng chưa được cấp quyền thực hiện hành động này."
+            logLifecycle("ACTION_FAILED", "intent=${action.intentName}, error=SecurityException: ${e.message}")
+            showToast(errorMsg)
+            onActionError(errorMsg)
+        } catch (e: Exception) {
+            val errorMsg = "Có lỗi xảy ra khi thực hiện hành động: ${e.localizedMessage}"
+            logLifecycle("ACTION_FAILED", "intent=${action.intentName}, error=${e.message}")
+            showToast(errorMsg)
+            onActionError(errorMsg)
+        }
+    }
+
+    private fun executeOpenApp(context: Context, action: NativeAction.OpenApp) {
+        val cleanName = AppResolver.cleanAppName(action.appName)
+        if (cleanName.isBlank()) {
+            val error = "Vui lòng chỉ định tên ứng dụng cần mở."
+            showToast(error)
+            onActionError(error)
+            return
+        }
+        val displayAppName = AppResolver.getDisplayAppName(action.appName)
+
+        showToast("🚀 Đang mở ứng dụng $displayAppName...")
+        speakText("Đang mở ứng dụng $displayAppName")
+
+        // 1. Kiểm tra System Intent trước
+        val systemIntent = AppResolver.resolveSystemIntent(cleanName)?.apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        if (systemIntent != null && systemIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(systemIntent)
+            logLifecycle("ACTION_SUCCESS", "intent=open_app, type=system_intent")
+            return
+        }
+
+        // 2. Tra cứu package name đã cài đặt
+        val packageName = AppResolver.resolvePackageName(context, action.appName)
+        if (packageName != null) {
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            if (launchIntent != null) {
+                context.startActivity(launchIntent)
+                logLifecycle("ACTION_SUCCESS", "intent=open_app, package=$packageName")
                 return
             }
-
-            when (intent) {
-                "set_alarm" -> handleSetAlarm(args)
-                "set_timer" -> handleSetTimer(args)
-                "call_contact" -> handleCall(args)
-                "send_sms" -> handleSendSms(args)
-                "open_map" -> handleOpenMap(args)
-                "open_app" -> handleOpenApp(args)
-                "search_video" -> handleSearchVideo(args)
-                "play_music" -> handlePlayMusic(args)
-                "greeting" -> handleGreeting()
-                "goodbye" -> handleGoodbye()
-                else -> speakText("Đã phân tích xong câu lệnh.")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi xử lý NLU Response: ${e.message}", e)
         }
+
+        val notFoundMsg = "Không tìm thấy ứng dụng ${action.appName} trên thiết bị."
+        showToast(notFoundMsg)
+        speakText("Không tìm thấy ứng dụng ${action.appName} trên thiết bị")
+        onActionError(notFoundMsg)
+        logLifecycle("ACTION_FAILED", "intent=open_app, error=App not installed: ${action.appName}")
     }
 
-    private fun handleSetAlarm(args: JSONObject) {
-        try {
-            val hour = args.optInt("hour")
-            val minute = args.optInt("minute")
-            val label = args.optString("label", "Báo thức AI")
+    private fun executeCallContact(context: Context, action: NativeAction.CallContact) {
+        val target = if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
+        if (target.isBlank()) {
+            val error = "Không tìm thấy thông tin số điện thoại để thực hiện cuộc gọi."
+            showToast(error)
+            speakText("Vui lòng cung cấp số điện thoại hoặc tên liên hệ")
+            onActionError(error)
+            return
+        }
 
-            showToast("⏰ Đang đặt báo thức lúc $hour:$minute...")
-            if (minute > 0) {
-                speakText("Đang đặt báo thức lúc $hour giờ $minute phút")
+        showToast("📞 Đang mở cuộc gọi tới: $target...")
+        val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+            data = Uri.parse("tel:${Uri.encode(target)}")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(dialIntent)
+        logLifecycle("ACTION_SUCCESS", "intent=call_contact, target=$target")
+    }
+
+    private fun executeSendSms(context: Context, action: NativeAction.SendSms) {
+        val target = if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
+        showToast("💬 Đang mở tin nhắn gửi tới: $target...")
+
+        val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("smsto:${Uri.encode(target)}")
+            putExtra("sms_body", action.message)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(smsIntent)
+        logLifecycle("ACTION_SUCCESS", "intent=send_sms, target=$target")
+    }
+
+    private fun executeOpenMap(context: Context, action: NativeAction.OpenMap) {
+        if (action.destination.isBlank()) {
+            val error = "Vui lòng cung cấp địa điểm bạn muốn tìm trên bản đồ."
+            showToast(error)
+            onActionError(error)
+            return
+        }
+
+        showToast("🗺️ Đang mở bản đồ tới: ${action.destination}...")
+        val gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(action.destination))
+
+        val googleMapsIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+            setPackage("com.google.android.apps.maps")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        if (googleMapsIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(googleMapsIntent)
+            logLifecycle("ACTION_SUCCESS", "intent=open_map, provider=google_maps")
+        } else {
+            val genericMapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            if (genericMapIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(genericMapIntent)
+                logLifecycle("ACTION_SUCCESS", "intent=open_map, provider=generic_map")
             } else {
-                speakText("Đang đặt báo thức lúc $hour giờ")
-            }
-            
-            if (enableAppLaunch) {
-                runDelayed(800) {
-                    try {
-                        val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
-                            putExtra(AlarmClock.EXTRA_HOUR, hour)
-                            putExtra(AlarmClock.EXTRA_MINUTES, minute)
-                            putExtra(AlarmClock.EXTRA_MESSAGE, label)
-                            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        context?.startActivity(intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Lỗi khi mở báo thức: ${e.message}")
-                    }
+                val browserUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=" + Uri.encode(action.destination))
+                val webIntent = Intent(Intent.ACTION_VIEW, browserUri).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
+                context.startActivity(webIntent)
+                logLifecycle("ACTION_SUCCESS", "intent=open_map, provider=browser")
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi đặt báo thức: ${e.message}")
         }
     }
 
-    private fun handleSetTimer(args: JSONObject) {
-        try {
-            val duration = args.optInt("duration")
-            val unit = args.optString("unit", "minutes")
-            val seconds = when (unit) {
-                "hours" -> duration * 3600
-                "minutes" -> duration * 60
-                else -> duration
-            }
-            val label = args.optString("label", "Hẹn giờ")
+    private fun executeSetAlarm(context: Context, action: NativeAction.SetAlarm) {
+        if (action.hour < 0 || action.hour > 23 || action.minute < 0 || action.minute > 59) {
+            val error = "Thời gian đặt báo thức không hợp lệ (${action.hour}:${action.minute})."
+            showToast(error)
+            speakText("Thời gian đặt báo thức không hợp lệ")
+            onActionError(error)
+            return
+        }
 
-            val unitText = when (unit) {
-                "hours" -> "giờ"
-                "minutes" -> "phút"
-                "seconds" -> "giây"
-                else -> unit
-            }
+        showToast("⏰ Đang đặt báo thức lúc ${action.hour}:${action.minute}...")
+        val alarmIntent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
+            putExtra(AlarmClock.EXTRA_HOUR, action.hour)
+            putExtra(AlarmClock.EXTRA_MINUTES, action.minute)
+            putExtra(AlarmClock.EXTRA_MESSAGE, action.label)
+            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(alarmIntent)
+        logLifecycle("ACTION_SUCCESS", "intent=set_alarm, time=${action.hour}:${action.minute}")
+    }
 
-            showToast("⏳ Đang hẹn giờ $duration $unitText...")
-            speakText("Đang hẹn giờ $duration $unitText")
-            
-            if (enableAppLaunch) {
-                runDelayed(800) {
-                    try {
-                        val intent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
-                            putExtra(AlarmClock.EXTRA_LENGTH, seconds)
-                            putExtra(AlarmClock.EXTRA_MESSAGE, label)
-                            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        context?.startActivity(intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Lỗi khi mở hẹn giờ: ${e.message}")
-                    }
-                }
+    private fun executeSetTimer(context: Context, action: NativeAction.SetTimer) {
+        if (action.durationSeconds <= 0) {
+            val error = "Thời lượng hẹn giờ không hợp lệ."
+            showToast(error)
+            speakText("Thời lượng hẹn giờ không hợp lệ")
+            onActionError(error)
+            return
+        }
+
+        showToast("⏳ Đang hẹn giờ ${action.displayDuration} ${action.unitText}...")
+        val timerIntent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
+            putExtra(AlarmClock.EXTRA_LENGTH, action.durationSeconds)
+            putExtra(AlarmClock.EXTRA_MESSAGE, action.label)
+            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(timerIntent)
+        logLifecycle("ACTION_SUCCESS", "intent=set_timer, duration=${action.durationSeconds}s")
+    }
+
+    private fun executeSearchVideo(context: Context, action: NativeAction.SearchVideo) {
+        if (action.query.isBlank()) return
+        showToast("🎬 Đang tìm video: ${action.query}...")
+
+        val queryUri = Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(action.query))
+        val ytIntent = Intent(Intent.ACTION_VIEW, queryUri).apply {
+            setPackage("com.google.android.youtube")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        if (ytIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(ytIntent)
+            logLifecycle("ACTION_SUCCESS", "intent=search_video, app=youtube")
+        } else {
+            val browserIntent = Intent(Intent.ACTION_VIEW, queryUri).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi hẹn giờ: ${e.message}")
+            context.startActivity(browserIntent)
+            logLifecycle("ACTION_SUCCESS", "intent=search_video, app=browser")
         }
     }
 
-    private fun handleSendSms(args: JSONObject) {
-        try {
-            val contact = args.optString("contact")
-            val message = args.optString("message")
-
-            showToast("💬 Đang mở tin nhắn gửi tới: $contact...")
-            if (contact.isNotBlank()) {
-                speakText("Đang mở ứng dụng gửi tin nhắn tới $contact")
-            } else {
-                speakText("Đang mở ứng dụng tin nhắn")
+    private fun executePlayMusic(context: Context, action: NativeAction.PlayMusic) {
+        showToast("🎵 Đang mở trình phát nhạc...")
+        if (action.musicQuery.isNotBlank()) {
+            val searchIntent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
+                putExtra(MediaStore.EXTRA_MEDIA_FOCUS, MediaStore.Audio.Artists.ENTRY_CONTENT_TYPE)
+                if (action.songName.isNotBlank()) putExtra(MediaStore.EXTRA_MEDIA_TITLE, action.songName)
+                if (action.artist.isNotBlank()) putExtra(MediaStore.EXTRA_MEDIA_ARTIST, action.artist)
+                putExtra(android.app.SearchManager.QUERY, action.musicQuery)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-
-            if (enableAppLaunch) {
-                runDelayed(800) {
-                    try {
-                        val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("smsto:$contact")
-                            putExtra("sms_body", message)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        context?.startActivity(intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Lỗi khi gửi SMS: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi gửi SMS: ${e.message}")
-        }
-    }
-
-    private fun handleCall(args: JSONObject) {
-        try {
-            val contact = args.optString("contact")
-            showToast("📞 Đang mở cuộc gọi tới: $contact...")
-            if (contact.isNotBlank()) {
-                speakText("Đang thực hiện cuộc gọi tới $contact")
-            } else {
-                speakText("Đang mở ứng dụng cuộc gọi")
-            }
-
-            if (enableAppLaunch) {
-                runDelayed(800) {
-                    try {
-                        val intent = Intent(Intent.ACTION_DIAL).apply {
-                            data = Uri.parse("tel:$contact")
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        context?.startActivity(intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Lỗi khi gọi điện: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi gọi điện: ${e.message}")
-        }
-    }
-
-    private fun handleOpenMap(args: JSONObject) {
-        try {
-            val destination = args.optString("destination")
-            showToast("🗺️ Đang mở bản đồ tới: $destination...")
-            if (destination.isNotBlank()) {
-                speakText("Đang mở bản đồ chỉ đường tới $destination")
-            } else {
-                speakText("Đang mở ứng dụng bản đồ")
-            }
-
-            if (enableAppLaunch) {
-                runDelayed(800) {
-                    try {
-                        val gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(destination))
-                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
-                            setPackage("com.google.android.apps.maps")
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        context?.startActivity(mapIntent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Lỗi khi mở bản đồ: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi mở bản đồ: ${e.message}")
-        }
-    }
-
-    private fun handleOpenApp(args: JSONObject) {
-        try {
-            val rawAppName = args.optString("app_name").trim()
-            if (rawAppName.isBlank()) {
-                speakText("Xin lỗi, bạn muốn mở ứng dụng nào?")
+            if (searchIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(searchIntent)
+                logLifecycle("ACTION_SUCCESS", "intent=play_music, type=media_search")
                 return
             }
-
-            val cleanAppName = rawAppName.lowercase()
-                .replace("ứng dụng", "")
-                .replace("app", "")
-                .trim()
-
-            val displayAppName = when (cleanAppName) {
-                "google_maps", "google map", "google maps" -> "Google Maps"
-                "ch play", "playstore" -> "CH Play"
-                "youtube" -> "YouTube"
-                "facebook" -> "Facebook"
-                "tiktok" -> "TikTok"
-                "zalo" -> "Zalo"
-                "shopee" -> "Shopee"
-                "lazada" -> "Lazada"
-                "gallery" -> "Bộ sưu tập"
-                "camera" -> "Máy ảnh"
-                "calculator" -> "Máy tính"
-                "contacts" -> "Danh bạ"
-                "clock" -> "Đồng hồ"
-                "settings" -> "Cài đặt"
-                "recorder" -> "Ghi âm"
-                "files" -> "Quản lý tệp"
-                else -> rawAppName.replace("_", " ")
-            }
-
-            showToast("🚀 Đang mở ứng dụng $displayAppName...")
-            speakText("Đang mở ứng dụng $displayAppName")
-
-            if (enableAppLaunch) {
-                runDelayed(800) {
-                    try {
-                        val targetContext = context ?: return@runDelayed
-
-                        // 1. System Intent đặc biệt
-                        val systemIntent = when (cleanAppName) {
-                            "camera", "máy ảnh", "chụp ảnh", "chụp hình" -> Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
-                            "gallery", "bộ sưu tập", "thư viện", "thư viện ảnh", "album ảnh" -> Intent(Intent.ACTION_VIEW, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-                            "calculator", "máy tính", "bàn tính" -> Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_CALCULATOR) }
-                            "contacts", "danh bạ", "số điện thoại", "danh sách gọi" -> Intent(Intent.ACTION_VIEW, Uri.parse("content://contacts/people"))
-                            "clock", "đồng hồ", "báo thức", "đồng hồ báo thức" -> Intent(AlarmClock.ACTION_SHOW_ALARMS)
-                            "settings", "cài đặt", "thiết lập", "cài đặt máy", "cài đặt điện thoại" -> Intent(Settings.ACTION_SETTINGS)
-                            "recorder", "ghi âm", "máy ghi âm", "thu âm" -> Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION)
-                            "files", "quản lý tệp", "tệp tin", "file của bạn", "quản lý file" -> Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)
-                            "playstore", "ch play", "cửa hàng", "tải ứng dụng", "cửa hàng ứng dụng" -> Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.gms"))
-                            "chrome", "trình duyệt", "mở trình duyệt" -> Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com")).apply {
-                                setPackage("com.android.chrome")
-                            }
-                            "gọi điện", "điện thoại" -> Intent(Intent.ACTION_DIAL)
-                            "tin nhắn", "sms" -> Intent(Intent.ACTION_MAIN).apply {
-                                addCategory(Intent.CATEGORY_APP_MESSAGING)
-                            }
-                            else -> null
-                        }
-
-                        if (systemIntent != null) {
-                            systemIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            if (systemIntent.resolveActivity(targetContext.packageManager) != null) {
-                                targetContext.startActivity(systemIntent)
-                                return@runDelayed
-                            }
-                        }
-
-                        // 2. Tra cứu Package Name từ danh sách phổ biến
-                        var pkg = when (cleanAppName) {
-                            "zalo" -> "com.zing.zalo"
-                            "facebook" -> "com.facebook.katana"
-                            "youtube" -> "com.google.android.youtube"
-                            "tiktok" -> "com.ss.android.ugc.trill"
-                            "chrome" -> "com.android.chrome"
-                            "google_maps", "google map", "google maps", "bản đồ" -> "com.google.android.apps.maps"
-                            "playstore", "ch play" -> "com.android.vending"
-                            "calculator", "máy tính" -> "com.google.android.calculator"
-                            "shopee" -> "com.shopee.vn"
-                            "messenger" -> "com.facebook.orca"
-                            "instagram" -> "com.instagram.android"
-                            "telegram" -> "org.telegram.messenger"
-                            "viber" -> "com.viber.voip"
-                            "lazada" -> "com.lazada.android"
-                            "momo" -> "com.mservice.momopay"
-                            "spotify" -> "com.spotify.music"
-                            else -> null
-                        }
-
-                        // 3. Tra cứu động qua PackageManager theo tên hiển thị của App đã cài đặt trên thiết bị
-                        if (pkg == null) {
-                            pkg = findPackageByLabel(targetContext, cleanAppName)
-                        }
-
-                        if (pkg != null) {
-                            val launchIntent = targetContext.packageManager.getLaunchIntentForPackage(pkg)?.apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            if (launchIntent != null) {
-                                targetContext.startActivity(launchIntent)
-                            } else {
-                                speakText("Không thể mở ứng dụng $rawAppName")
-                            }
-                        } else {
-                            speakText("Không tìm thấy ứng dụng $rawAppName trên thiết bị")
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Lỗi khi mở app: ${e.message}")
-                        speakText("Có lỗi xảy ra khi mở ứng dụng $rawAppName")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi mở ứng dụng: ${e.message}")
         }
-    }
 
-    private fun findPackageByLabel(context: Context, cleanAppName: String): String? {
-        return try {
-            val pm = context.packageManager
-            val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
-                addCategory(Intent.CATEGORY_LAUNCHER)
-            }
-            val resolveInfos = pm.queryIntentActivities(mainIntent, 0)
-            
-            var bestMatch: String? = null
-            for (info in resolveInfos) {
-                val label = info.loadLabel(pm).toString().lowercase().trim()
-                if (label == cleanAppName) {
-                    return info.activityInfo.packageName
-                }
-                if (label.contains(cleanAppName) || cleanAppName.contains(label)) {
-                    bestMatch = info.activityInfo.packageName
-                }
-            }
-            bestMatch
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi tìm kiếm package theo tên: ${e.message}")
-            null
+        val musicAppIntent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_APP_MUSIC)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
-    }
-
-    private fun handleSearchVideo(args: JSONObject) {
-        try {
-            val query = args.optString("query").trim()
-            if (query.isBlank()) {
-                speakText("Xin lỗi, bạn muốn tìm video gì trên YouTube?")
-                return
+        if (musicAppIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(musicAppIntent)
+            logLifecycle("ACTION_SUCCESS", "intent=play_music, type=music_app")
+        } else {
+            val query = action.musicQuery.ifBlank { "nhạc tuyển chọn" }
+            val ytMusicUri = Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(query))
+            val ytMusicIntent = Intent(Intent.ACTION_VIEW, ytMusicUri).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-
-            showToast("🎬 Đang tìm video: $query...")
-            speakText("Đang tìm video $query trên YouTube")
-
-            if (enableAppLaunch) {
-                runDelayed(800) {
-                    try {
-                        val targetContext = context ?: return@runDelayed
-                        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(query))).apply {
-                            setPackage("com.google.android.youtube")
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        if (webIntent.resolveActivity(targetContext.packageManager) != null) {
-                            targetContext.startActivity(webIntent)
-                        } else {
-                            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(query))).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            targetContext.startActivity(browserIntent)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Lỗi khi tìm video YouTube: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi xử lý tìm video: ${e.message}")
+            context.startActivity(ytMusicIntent)
+            logLifecycle("ACTION_SUCCESS", "intent=play_music, type=youtube_fallback")
         }
-    }
-
-    private fun handlePlayMusic(args: JSONObject) {
-        try {
-            val songName = args.optString("song_name").trim()
-            val artist = args.optString("artist").trim()
-            val genre = args.optString("genre").trim()
-
-            val musicQuery = buildString {
-                if (songName.isNotBlank()) append(songName)
-                if (artist.isNotBlank()) {
-                    if (isNotEmpty()) append(" ")
-                    append(artist)
-                }
-                if (genre.isNotBlank() && isBlank()) append(genre)
-            }.trim()
-
-            if (musicQuery.isNotBlank()) {
-                showToast("🎵 Đang phát: $musicQuery...")
-                speakText("Đang phát $musicQuery")
-            } else {
-                showToast("🎵 Đang mở trình phát nhạc...")
-                speakText("Đang mở trình phát nhạc")
-            }
-
-            if (enableAppLaunch) {
-                runDelayed(800) {
-                    try {
-                        val targetContext = context ?: return@runDelayed
-                        if (musicQuery.isNotBlank()) {
-                            val searchIntent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
-                                putExtra(MediaStore.EXTRA_MEDIA_FOCUS, MediaStore.Audio.Artists.ENTRY_CONTENT_TYPE)
-                                putExtra(MediaStore.EXTRA_MEDIA_TITLE, songName)
-                                putExtra(MediaStore.EXTRA_MEDIA_ARTIST, artist)
-                                putExtra(android.app.SearchManager.QUERY, musicQuery)
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            if (searchIntent.resolveActivity(targetContext.packageManager) != null) {
-                                targetContext.startActivity(searchIntent)
-                                return@runDelayed
-                            }
-                        }
-
-                        val musicAppIntent = Intent(Intent.ACTION_MAIN).apply {
-                            addCategory(Intent.CATEGORY_APP_MUSIC)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        if (musicAppIntent.resolveActivity(targetContext.packageManager) != null) {
-                            targetContext.startActivity(musicAppIntent)
-                        } else {
-                            val youtubeMusicIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(musicQuery.ifBlank { "nhạc tuyển chọn" }))).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            targetContext.startActivity(youtubeMusicIntent)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Lỗi khi phát nhạc: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi xử lý phát nhạc: ${e.message}")
-        }
-    }
-
-    private fun handleGreeting() {
-        showToast("👋 Xin chào! Tôi có thể giúp gì cho bạn?")
-        speakText("Xin chào bạn, tôi có thể giúp gì cho bạn?")
-    }
-
-    private fun handleGoodbye() {
-        showToast("👋 Tạm biệt và hẹn gặp lại!")
-        speakText("Tạm biệt bạn, hẹn gặp lại nhé!")
     }
 
     private fun showToast(msg: String) {
@@ -526,10 +380,18 @@ class NluActionDispatcher(
         try {
             Log.d(TAG, "🔊 TTS: $text")
         } catch (e: Throwable) {
-            // Ignore Android Log stub error in plain JVM unit tests
+            // Ignore Android Log stub in JVM unit test
         }
         runOnMainThread {
             onSpeakFeedback(text)
+        }
+    }
+
+    private fun logLifecycle(event: String, details: String) {
+        try {
+            Log.i(TAG, "$event $details")
+        } catch (e: Throwable) {
+            // Ignore in pure JVM unit tests
         }
     }
 
