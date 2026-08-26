@@ -11,7 +11,8 @@ import java.util.regex.Pattern
 /**
  * Bộ tiền xử lý và khớp quy tắc nhanh (Fast-Path Matcher)
  * Giúp nhận diện và phản hồi tức thì (< 5ms) cho các câu lệnh ngắn gọn,
- * hỗ trợ khẩu ngữ toàn diện 3 miền (Bắc - Trung - Nam), từ ngữ truyền thống (tờ mờ sáng, xế chiều, chạng vạng, khuya), người cao tuổi, giờ kém/thiếu, từ đệm & TimeProvider injection.
+ * hỗ trợ khẩu ngữ toàn diện 3 miền (Bắc - Trung - Nam), từ ngữ truyền thống (tờ mờ sáng, xế chiều, chạng vạng, khuya),
+ * người cao tuổi, giờ kém/thiếu, từ đệm, biến thể STT thực tế & TimeProvider injection.
  */
 class FastPathMatcher(
     private val context: Context? = null,
@@ -219,8 +220,8 @@ class FastPathMatcher(
             return buildNluResult("goodbye", JSONObject(), "low", "success", false)
         }
 
-        // c. Xử lý thời gian tương đối cho set_alarm
-        if (unaccentedText.startsWith("bao thuc") || unaccentedText.startsWith("dat bao thuc")) {
+        // c. Xử lý thời gian tương đối cho set_alarm (ví dụ "báo thức sau 10 phút", "nhắc tôi sau 10 phút")
+        if (unaccentedText.contains("bao thuc") || unaccentedText.startsWith("nhac toi")) {
             if (unaccentedText.contains("sau ") || unaccentedText.contains("nua") || unaccentedText.contains("bay gio") || unaccentedText.contains("hien tai")) {
                 val relAlarmResult = parseRelativeAlarmCommand(text)
                 if (relAlarmResult != null) return relAlarmResult
@@ -232,13 +233,13 @@ class FastPathMatcher(
         if (relTimerResult != null) return relTimerResult
 
         // e. Đặt báo thức (set_alarm) thời gian tuyệt đối
-        if (unaccentedText.startsWith("bao thuc") || unaccentedText.startsWith("dat bao thuc") || unaccentedText.startsWith("hen bao thuc") || unaccentedText.startsWith("cai bao thuc")) {
+        if (isAlarmCommand(unaccentedText)) {
             val alarmResult = parseAlarmCommand(text)
             if (alarmResult != null) return alarmResult
         }
 
         // f. Hẹn giờ đếm ngược (set_timer) thời gian tuyệt đối / duration
-        if (unaccentedText.startsWith("hen gio") || unaccentedText.startsWith("dat hen gio") || unaccentedText.startsWith("dem nguoc")) {
+        if (isTimerCommand(unaccentedText)) {
             val timerResult = parseTimerCommand(text)
             if (timerResult != null) return timerResult
         }
@@ -347,6 +348,14 @@ class FastPathMatcher(
         return null
     }
 
+    private fun isAlarmCommand(text: String): Boolean {
+        return ALARM_PREFIXES.any { text.contains(it) }
+    }
+
+    private fun isTimerCommand(text: String): Boolean {
+        return TIMER_PREFIXES.any { text.contains(it) }
+    }
+
     private fun parseRelativeTimerCommand(text: String): NluResult? {
         val unaccented = stripAccents(text.lowercase())
 
@@ -401,9 +410,12 @@ class FastPathMatcher(
     private fun parseRelativeAlarmCommand(text: String): NluResult? {
         val unaccented = stripAccents(text.lowercase())
 
-        val payload = unaccented
-            .replace("dat bao thuc", "")
-            .replace("bao thuc", "")
+        var payload = unaccented
+        for (prefix in ALARM_PREFIXES) {
+            payload = payload.replace(prefix, "")
+        }
+
+        payload = payload
             .replace("luc", "")
             .replace("bay gio", "")
             .replace("hien tai", "")
@@ -496,14 +508,14 @@ class FastPathMatcher(
         val isDem = unaccented.contains("dem") || unaccented.contains("khuya")
 
         // Xử lý kịch bản "Giờ kém" hoặc "Giờ thiếu" (Khẩu ngữ Miền Nam)
-        // QUY TẮC: Parse X, Parse Y -> totalMinutes = X * 60 - Y -> Normalize 0..1439 -> rawHour/minute -> Period Normalization
         val isKem = unaccented.contains("kem") || unaccented.contains("thieu")
         if (isKem) {
-            val payloadKem = unaccented
-                .replace("dat bao thuc", "")
-                .replace("hen bao thuc", "")
-                .replace("cai bao thuc", "")
-                .replace("bao thuc", "")
+            var payloadKem = unaccented
+            for (prefix in ALARM_PREFIXES) {
+                payloadKem = payloadKem.replace(prefix, "")
+            }
+
+            payloadKem = payloadKem
                 .replace("tam khoang", "")
                 .replace("khoang", "")
                 .replace(Regex("\\btam\\b(?!\\s*(?:gio|giờ|h\\b))"), "")
@@ -551,11 +563,12 @@ class FastPathMatcher(
         val isRuoi = unaccented.contains("ruoi")
         var minute = if (isRuoi) 30 else 0
 
-        val payload = unaccented
-            .replace("dat bao thuc", "")
-            .replace("hen bao thuc", "")
-            .replace("cai bao thuc", "")
-            .replace("bao thuc", "")
+        var payload = unaccented
+        for (prefix in ALARM_PREFIXES) {
+            payload = payload.replace(prefix, "")
+        }
+
+        payload = payload
             .replace("tam khoang", "")
             .replace("khoang", "")
             .replace(Regex("\\btam\\b(?!\\s*(?:gio|giờ|h\\b))"), "")
@@ -635,11 +648,12 @@ class FastPathMatcher(
             return buildNluResult("set_timer", args, "low", "success", false)
         }
 
-        val payload = unaccented
-            .replace("dat hen gio", "")
-            .replace("hen gio", "")
-            .replace("dem nguoc", "")
-            .trim()
+        var payload = unaccented
+        for (prefix in TIMER_PREFIXES) {
+            payload = payload.replace(prefix, "")
+        }
+
+        payload = payload.trim()
 
         val unit = when {
             payload.contains("giay") || payload.endsWith("s") -> "seconds"
@@ -720,6 +734,32 @@ class FastPathMatcher(
         private val PUNCTUATION_REGEX = Pattern.compile("[.,?!;:'\"\\-_]")
         private val MULTIPLE_SPACES_REGEX = Pattern.compile("\\s+")
 
+        private val ALARM_PREFIXES = listOf(
+            "dat chuong bao thuc",
+            "chuong bao thuc",
+            "nhac giup toi",
+            "dat bao thuc",
+            "hen bao thuc",
+            "cai bao thuc",
+            "bat bao thuc",
+            "mo bao thuc",
+            "nhac toi",
+            "bao thuc",
+            "bao toi",
+            "nhac"
+        )
+
+        private val TIMER_PREFIXES = listOf(
+            "dong ho dem nguoc",
+            "bat dem nguoc",
+            "mo dem nguoc",
+            "dat hen gio",
+            "bat hen gio",
+            "mo hen gio",
+            "hen gio",
+            "dem nguoc"
+        )
+
         private val COMMAND_PREFIXES = listOf(
             "vui long mo giup toi",
             "cho toi xem giup toi",
@@ -757,13 +797,17 @@ class FastPathMatcher(
             "du tup" to "youtube",
             "diu tup" to "youtube",
             "yutube" to "youtube",
+            "iu tup" to "youtube",
+            "utube" to "youtube",
             "phay" to "facebook",
             "phay buc" to "facebook",
             "phay bup" to "facebook",
+            "phe buc" to "facebook",
             "fb" to "facebook",
             "top top" to "tiktok",
             "toc toc" to "tiktok",
             "tik tok" to "tiktok",
+            "tich tac" to "tiktok",
             "guc go map" to "google_maps",
             "ban do" to "google_maps",
             "shop pi" to "shopee",

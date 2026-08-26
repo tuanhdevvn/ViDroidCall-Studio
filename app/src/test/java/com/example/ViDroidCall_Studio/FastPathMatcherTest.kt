@@ -169,11 +169,29 @@ class FastPathMatcherTest {
 
         val rXeChieu = matcher.match("báo thức 4 giờ xế chiều")
         assertNotNull(rXeChieu)
-        assertEquals(16, JSONObject(rXeChieu!!.argumentsJson).optInt("hour"))
-
+        // Từ ngữ dân dã / truyền thống: báo thức 6 giờ chạng vạng -> 18:00
         val rChangVang = matcher.match("báo thức 6 giờ chạng vạng")
         assertNotNull(rChangVang)
         assertEquals(18, JSONObject(rChangVang!!.argumentsJson).optInt("hour"))
+
+        // Tiền tố đa dạng: nhắc tôi 7 giờ sáng -> 07:00
+        val rNhacToi = matcher.match("nhắc tôi 7 giờ sáng")
+        assertNotNull(rNhacToi)
+        assertEquals("set_alarm", rNhacToi?.intent)
+        assertEquals(7, JSONObject(rNhacToi!!.argumentsJson).optInt("hour"))
+
+        // Tiền tố đa dạng: đặt chuông báo thức 8 giờ tối -> 20:00
+        val rChuongBaoThuc = matcher.match("đặt chuông báo thức 8 giờ tối")
+        assertNotNull(rChuongBaoThuc)
+        assertEquals("set_alarm", rChuongBaoThuc?.intent)
+        assertEquals(20, JSONObject(rChuongBaoThuc!!.argumentsJson).optInt("hour"))
+
+        // Giờ 0 / không giờ: báo thức không giờ rưỡi -> 00:30
+        val rKhongGioRuoi = matcher.match("báo thức không giờ rưỡi")
+        assertNotNull(rKhongGioRuoi)
+        assertEquals("set_alarm", rKhongGioRuoi?.intent)
+        assertEquals(0, JSONObject(rKhongGioRuoi!!.argumentsJson).optInt("hour"))
+        assertEquals(30, JSONObject(rKhongGioRuoi!!.argumentsJson).optInt("minute"))
     }
 
     @Test
