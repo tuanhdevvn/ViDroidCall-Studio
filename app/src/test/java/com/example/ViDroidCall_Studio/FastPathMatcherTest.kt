@@ -777,6 +777,5 @@ class FastPathMatcherTest {
     @Test fun testGranularNegative_toiDangTinhToan() { assertNull(matcher.match("tôi đang tính toán")) }
     @Test fun testGranularNegative_unknownApp() { assertNull(matcher.match("tôi muốn mở ứng dụng lạ không có thật abc xyz")) }
     @Test fun testGranularNegative_hourOutOfRange() { assertNull(matcher.match("báo thức lúc 25 giờ 90 phút")) }
-    @Test fun testGranularNegative_hourOutOfRange() { assertNull(matcher.match("báo thức lúc 25 giờ 90 phút")) }
     @Test fun testGranularNegative_minuteOutOfRange() { assertNull(matcher.match("báo thức 2 giờ 70 phút")) }
 }
