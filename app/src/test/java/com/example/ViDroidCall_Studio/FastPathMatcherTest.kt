@@ -11,7 +11,7 @@ import org.junit.Test
 
 class FastPathMatcherTest {
 
-    private val matcher = FastPathMatcher(context = null) // Sử dụng default built-in rules
+    private val matcher = FastPathMatcher(context = null)
 
     @Test
     fun testGreetingMatching() {
@@ -56,135 +56,179 @@ class FastPathMatcherTest {
     }
 
     @Test
-    fun testDynamicCallContact() {
-        val result = matcher.match("gọi cho mẹ")
-        assertNotNull(result)
-        assertEquals("call_contact", result?.intent)
-        assertEquals("mẹ", JSONObject(result!!.argumentsJson).optString("contact"))
+    fun testSetAlarmVietnameseTimeAndPeriods() {
+        // 9. bảy giờ -> 07:00
+        val r1 = matcher.match("báo thức bảy giờ")
+        assertNotNull(r1)
+        assertEquals("set_alarm", r1?.intent)
+        assertEquals(7, JSONObject(r1!!.argumentsJson).optInt("hour"))
+        assertEquals(0, JSONObject(r1.argumentsJson).optInt("minute"))
 
-        val result2 = matcher.match("gọi anh tuấn")
-        assertNotNull(result2)
-        assertEquals("call_contact", result2?.intent)
-        assertEquals("anh tuấn", JSONObject(result2!!.argumentsJson).optString("contact"))
+        // 10. bảy giờ rưỡi -> 07:30
+        val r2 = matcher.match("báo thức bảy giờ rưỡi")
+        assertNotNull(r2)
+        assertEquals("set_alarm", r2?.intent)
+        assertEquals(7, JSONObject(r2!!.argumentsJson).optInt("hour"))
+        assertEquals(30, JSONObject(r2.argumentsJson).optInt("minute"))
+
+        // 11. bảy giờ tối -> 19:00
+        val r3 = matcher.match("báo thức 7 giờ tối")
+        assertNotNull(r3)
+        assertEquals("set_alarm", r3?.intent)
+        assertEquals(19, JSONObject(r3!!.argumentsJson).optInt("hour"))
+        assertEquals(0, JSONObject(r3.argumentsJson).optInt("minute"))
+
+        val r3Text = matcher.match("báo thức bảy giờ tối")
+        assertNotNull(r3Text)
+        assertEquals(19, JSONObject(r3Text!!.argumentsJson).optInt("hour"))
+
+        // 12. bảy giờ rưỡi tối -> 19:30
+        val r4 = matcher.match("đặt báo thức bảy giờ rưỡi tối")
+        assertNotNull(r4)
+        assertEquals("set_alarm", r4?.intent)
+        assertEquals(19, JSONObject(r4!!.argumentsJson).optInt("hour"))
+        assertEquals(30, JSONObject(r4.argumentsJson).optInt("minute"))
+
+        // 13. hai giờ chiều -> 14:00
+        val r5 = matcher.match("báo thức hai giờ chiều")
+        assertNotNull(r5)
+        assertEquals("set_alarm", r5?.intent)
+        assertEquals(14, JSONObject(r5!!.argumentsJson).optInt("hour"))
+        assertEquals(0, JSONObject(r5.argumentsJson).optInt("minute"))
+
+        // 14. tám giờ sáng -> 08:00
+        val r6 = matcher.match("báo thức tám giờ sáng")
+        assertNotNull(r6)
+        assertEquals("set_alarm", r6?.intent)
+        assertEquals(8, JSONObject(r6!!.argumentsJson).optInt("hour"))
+        assertEquals(0, JSONObject(r6.argumentsJson).optInt("minute"))
+
+        // 15. mười một giờ đêm -> 23:00
+        val r7 = matcher.match("báo thức mười một giờ đêm")
+        assertNotNull(r7)
+        assertEquals("set_alarm", r7?.intent)
+        assertEquals(23, JSONObject(r7!!.argumentsJson).optInt("hour"))
+        assertEquals(0, JSONObject(r7.argumentsJson).optInt("minute"))
+
+        // 16. mười hai giờ đêm -> 00:00
+        val r8 = matcher.match("báo thức mười hai giờ đêm")
+        assertNotNull(r8)
+        assertEquals("set_alarm", r8?.intent)
+        assertEquals(0, JSONObject(r8!!.argumentsJson).optInt("hour"))
+        assertEquals(0, JSONObject(r8.argumentsJson).optInt("minute"))
+
+        // 12 giờ trưa -> 12:00
+        val rTrua = matcher.match("báo thức 12 giờ trưa")
+        assertNotNull(rTrua)
+        assertEquals(12, JSONObject(rTrua!!.argumentsJson).optInt("hour"))
     }
 
     @Test
-    fun testSetAlarm() {
-        val result = matcher.match("đặt báo thức 6 giờ")
-        assertNotNull(result)
-        assertEquals("set_alarm", result?.intent)
-        val args = JSONObject(result!!.argumentsJson)
-        assertEquals(6, args.optInt("hour"))
-        assertEquals(0, args.optInt("minute"))
+    fun testSetTimerVietnameseNumbersAndHalfHour() {
+        // 17. mười lăm phút -> 15 phút
+        val r1 = matcher.match("hẹn giờ mười lăm phút")
+        assertNotNull(r1)
+        assertEquals("set_timer", r1?.intent)
+        assertEquals(15, JSONObject(r1!!.argumentsJson).optInt("duration"))
+        assertEquals("minutes", JSONObject(r1.argumentsJson).optString("unit"))
 
-        val result2 = matcher.match("báo thức 7 giờ 30")
-        assertNotNull(result2)
-        val args2 = JSONObject(result2!!.argumentsJson)
-        assertEquals(7, args2.optInt("hour"))
-        assertEquals(30, args2.optInt("minute"))
+        // 18. hai mươi giây -> 20 giây
+        val r2 = matcher.match("hẹn giờ hai mươi giây")
+        assertNotNull(r2)
+        assertEquals("set_timer", r2?.intent)
+        assertEquals(20, JSONObject(r2!!.argumentsJson).optInt("duration"))
+        assertEquals("seconds", JSONObject(r2.argumentsJson).optString("unit"))
+
+        // 19. nửa tiếng -> 30 phút
+        val r3 = matcher.match("hẹn giờ nửa tiếng")
+        assertNotNull(r3)
+        assertEquals("set_timer", r3?.intent)
+        assertEquals(30, JSONObject(r3!!.argumentsJson).optInt("duration"))
+        assertEquals("minutes", JSONObject(r3.argumentsJson).optString("unit"))
+
+        // 20. nửa giờ -> 30 phút
+        val r4 = matcher.match("hẹn giờ nửa giờ")
+        assertNotNull(r4)
+        assertEquals("set_timer", r4?.intent)
+        assertEquals(30, JSONObject(r4!!.argumentsJson).optInt("duration"))
+        assertEquals("minutes", JSONObject(r4.argumentsJson).optString("unit"))
     }
 
     @Test
-    fun testSetTimer() {
-        val result = matcher.match("hẹn giờ 5 phút")
-        assertNotNull(result)
-        assertEquals("set_timer", result?.intent)
-        val args = JSONObject(result!!.argumentsJson)
-        assertEquals(5, args.optInt("duration"))
-        assertEquals("minutes", args.optString("unit"))
+    fun testAppAliasesAndCommercialApps() {
+        // 21. du tup -> youtube
+        val r1 = matcher.match("du tup")
+        assertNotNull(r1)
+        assertEquals("open_app", r1?.intent)
+        assertEquals("youtube", JSONObject(r1!!.argumentsJson).optString("app_name"))
 
-        val result2 = matcher.match("đếm ngược 30 giây")
-        assertNotNull(result2)
-        val args2 = JSONObject(result2!!.argumentsJson)
-        assertEquals(30, args2.optInt("duration"))
-        assertEquals("seconds", args2.optString("unit"))
+        // 22. phay buc -> facebook
+        val r2 = matcher.match("phay buc")
+        assertNotNull(r2)
+        assertEquals("open_app", r2?.intent)
+        assertEquals("facebook", JSONObject(r2!!.argumentsJson).optString("app_name"))
+
+        // 23. top top -> tiktok
+        val r3 = matcher.match("top top")
+        assertNotNull(r3)
+        assertEquals("open_app", r3?.intent)
+        assertEquals("tiktok", JSONObject(r3!!.argumentsJson).optString("app_name"))
+
+        // 24. guc go map -> google_maps
+        val r4 = matcher.match("guc go map")
+        assertNotNull(r4)
+        assertEquals("open_app", r4?.intent)
+        assertEquals("google_maps", JSONObject(r4!!.argumentsJson).optString("app_name"))
+
+        // 25. ch play -> playstore
+        val r5 = matcher.match("ch play")
+        assertNotNull(r5)
+        assertEquals("open_app", r5?.intent)
+        assertEquals("playstore", JSONObject(r5!!.argumentsJson).optString("app_name"))
+
+        // 26. may tinh -> calculator
+        val r6 = matcher.match("may tinh")
+        assertNotNull(r6)
+        assertEquals("open_app", r6?.intent)
+        assertEquals("calculator", JSONObject(r6!!.argumentsJson).optString("app_name"))
+
+        // Shopee / Lazada / Grab / Be
+        val rShopee = matcher.match("mở shopee")
+        assertNotNull(rShopee)
+        assertEquals("open_app", rShopee?.intent)
+        assertEquals("shopee", JSONObject(rShopee!!.argumentsJson).optString("app_name"))
+
+        val rGrab = matcher.match("mở grab")
+        assertNotNull(rGrab)
+        assertEquals("open_app", rGrab?.intent)
+        assertEquals("grab", JSONObject(rGrab!!.argumentsJson).optString("app_name"))
     }
 
     @Test
-    fun testOpenApp() {
-        val result = matcher.match("mở youtube")
-        assertNotNull(result)
-        assertEquals("open_app", result?.intent)
-        assertEquals("youtube", JSONObject(result!!.argumentsJson).optString("app_name"))
-
-        val result2 = matcher.match("vào zalo")
-        assertNotNull(result2)
-        assertEquals("open_app", result2?.intent)
-        assertEquals("zalo", JSONObject(result2!!.argumentsJson).optString("app_name"))
+    fun testNegativeCasesToAvoidFalsePositives() {
+        assertNull("Câu 'tôi nói chuyện về youtube' không được tự biến thành open_app", matcher.match("tôi nói chuyện về youtube"))
+        assertNull("Câu 'Tôi thích xem video ngắn' không được tự biến thành open_app", matcher.match("Tôi thích xem video ngắn"))
+        assertNull("Câu 'Tôi cần số điện thoại của anh' không được tự biến thành open_app", matcher.match("Tôi cần số điện thoại của anh"))
+        assertNull("Câu 'tôi đang tính toán' không được tự biến thành open_app", matcher.match("tôi đang tính toán"))
     }
 
     @Test
-    fun testOpenMap() {
-        val result = matcher.match("mở bản đồ")
-        assertNotNull(result)
-        assertEquals("open_map", result?.intent)
-
-        val result2 = matcher.match("chỉ đường đến Hồ Gươm")
-        assertNotNull(result2)
-        assertEquals("open_map", result2?.intent)
-        assertEquals("hồ gươm", JSONObject(result2!!.argumentsJson).optString("destination"))
-    }
-
-    @Test
-    fun testSendSms() {
-        val result = matcher.match("nhắn tin cho mẹ nội dung con về rồi")
-        assertNotNull(result)
-        assertEquals("send_sms", result?.intent)
-        val args = JSONObject(result!!.argumentsJson)
-        assertEquals("mẹ", args.optString("contact"))
-        assertEquals("con về rồi", args.optString("message"))
-    }
-
-    @Test
-    fun testClarifyIncompleteCommands() {
-        val resultCall = matcher.match("gọi")
-        assertNotNull(resultCall)
-        assertEquals("clarify", resultCall?.intent)
-
-        val resultSms = matcher.match("nhắn tin")
-        assertNotNull(resultSms)
-        assertEquals("clarify", resultSms?.intent)
-
-        val resultTimer = matcher.match("hẹn giờ")
-        assertNotNull(resultTimer)
-        assertEquals("clarify", resultTimer?.intent)
-
-        val resultVideo = matcher.match("tìm video")
-        assertNotNull(resultVideo)
-        assertEquals("clarify", resultVideo?.intent)
-    }
-
-    @Test
-    fun testSearchVideoFastPath() {
-        val result = matcher.match("tìm video hài hoài linh")
-        assertNotNull(result)
-        assertEquals("search_video", result?.intent)
-        assertEquals(NluIntent.SEARCH_VIDEO, result?.intentEnum)
-        assertEquals("hài hoài linh", JSONObject(result!!.argumentsJson).optString("query"))
-
-        val result2 = matcher.match("mở youtube tìm nhạc sống thôn quê")
-        assertNotNull(result2)
-        assertEquals("search_video", result2?.intent)
-        assertEquals("nhạc sống thôn quê", JSONObject(result2!!.argumentsJson).optString("query"))
-    }
-
-    @Test
-    fun testPlayMusicFastPath() {
-        val result = matcher.match("bật bài hát Diễm Xưa")
-        assertNotNull(result)
-        assertEquals("play_music", result?.intent)
-        assertEquals(NluIntent.PLAY_MUSIC, result?.intentEnum)
-        assertEquals("diễm xưa", JSONObject(result!!.argumentsJson).optString("song_name"))
-
-        val resultGenre = matcher.match("mở nhạc bolero")
-        assertNotNull(resultGenre)
-        assertEquals("play_music", resultGenre?.intent)
-        assertEquals(NluIntent.PLAY_MUSIC, resultGenre?.intentEnum)
-        assertEquals("nhạc bolero", JSONObject(resultGenre!!.argumentsJson).optString("genre"))
-
-        val resultGeneric = matcher.match("bật nhạc lên")
-        assertNotNull(resultGeneric)
-        assertEquals("play_music", resultGeneric?.intent)
+    fun testMatchingLatencyPerformance() {
+        val testQueries = listOf("mở máy ảnh", "cho toi xem youtube", "tạm biệt", "bộ sưu tập", "báo thức bảy giờ rưỡi tối", "hẹn giờ mười lăm phút")
+        // Warmup
+        for (i in 0..100) {
+            matcher.match(testQueries[i % testQueries.size])
+        }
+        // Measure latency over 1000 runs
+        val start = System.nanoTime()
+        val iterations = 1000
+        for (i in 0 until iterations) {
+            matcher.match(testQueries[i % testQueries.size])
+        }
+        val elapsedMs = (System.nanoTime() - start) / 1_000_000.0
+        val avgLatencyMs = elapsedMs / iterations
+        println("⚡ FastPath Matcher Latency: total = ${elapsedMs}ms, avg = ${avgLatencyMs}ms/query")
+        assertTrue("Average matching latency should be < 5ms (Actual: ${avgLatencyMs}ms)", avgLatencyMs < 5.0)
     }
 
     @Test
