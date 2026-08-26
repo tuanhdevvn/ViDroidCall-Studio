@@ -59,21 +59,18 @@ class FastPathMatcherTest {
 
     @Test
     fun testSetAlarmVietnameseTimeAndPeriods() {
-        // 9. bảy giờ -> 07:00
         val r1 = matcher.match("báo thức bảy giờ")
         assertNotNull(r1)
         assertEquals("set_alarm", r1?.intent)
         assertEquals(7, JSONObject(r1!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(r1.argumentsJson).optInt("minute"))
 
-        // 10. bảy giờ rưỡi -> 07:30
         val r2 = matcher.match("báo thức bảy giờ rưỡi")
         assertNotNull(r2)
         assertEquals("set_alarm", r2?.intent)
         assertEquals(7, JSONObject(r2!!.argumentsJson).optInt("hour"))
         assertEquals(30, JSONObject(r2.argumentsJson).optInt("minute"))
 
-        // 11. bảy giờ tối -> 19:00
         val r3 = matcher.match("báo thức 7 giờ tối")
         assertNotNull(r3)
         assertEquals("set_alarm", r3?.intent)
@@ -84,116 +81,154 @@ class FastPathMatcherTest {
         assertNotNull(r3Text)
         assertEquals(19, JSONObject(r3Text!!.argumentsJson).optInt("hour"))
 
-        // 12. bảy giờ rưỡi tối -> 19:30
         val r4 = matcher.match("đặt báo thức bảy giờ rưỡi tối")
         assertNotNull(r4)
         assertEquals("set_alarm", r4?.intent)
         assertEquals(19, JSONObject(r4!!.argumentsJson).optInt("hour"))
         assertEquals(30, JSONObject(r4.argumentsJson).optInt("minute"))
 
-        // 13. hai giờ chiều -> 14:00
         val r5 = matcher.match("báo thức hai giờ chiều")
         assertNotNull(r5)
         assertEquals("set_alarm", r5?.intent)
         assertEquals(14, JSONObject(r5!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(r5.argumentsJson).optInt("minute"))
 
-        // 14. tám giờ sáng -> 08:00
         val r6 = matcher.match("báo thức tám giờ sáng")
         assertNotNull(r6)
         assertEquals("set_alarm", r6?.intent)
         assertEquals(8, JSONObject(r6!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(r6.argumentsJson).optInt("minute"))
 
-        // 15. mười một giờ đêm -> 23:00
         val r7 = matcher.match("báo thức mười một giờ đêm")
         assertNotNull(r7)
         assertEquals("set_alarm", r7?.intent)
         assertEquals(23, JSONObject(r7!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(r7.argumentsJson).optInt("minute"))
 
-        // 16. mười hai giờ đêm -> 00:00
         val r8 = matcher.match("báo thức mười hai giờ đêm")
         assertNotNull(r8)
         assertEquals("set_alarm", r8?.intent)
         assertEquals(0, JSONObject(r8!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(r8.argumentsJson).optInt("minute"))
 
-        // 12 giờ trưa -> 12:00
         val rTrua = matcher.match("báo thức 12 giờ trưa")
         assertNotNull(rTrua)
         assertEquals(12, JSONObject(rTrua!!.argumentsJson).optInt("hour"))
 
-        // Giờ kém: 8 giờ kém 15 -> 07:45
         val rKem1 = matcher.match("báo thức 8 giờ kém 15")
         assertNotNull(rKem1)
         assertEquals("set_alarm", rKem1?.intent)
         assertEquals(7, JSONObject(rKem1!!.argumentsJson).optInt("hour"))
         assertEquals(45, JSONObject(rKem1.argumentsJson).optInt("minute"))
 
-        // Giờ kém có khoảng trắng: 2 h kém 10 -> 01:50
         val rKem3 = matcher.match("báo thức 2 h kém 10")
         assertNotNull(rKem3)
         assertEquals("set_alarm", rKem3?.intent)
         assertEquals(1, JSONObject(rKem3!!.argumentsJson).optInt("hour"))
         assertEquals(50, JSONObject(rKem3.argumentsJson).optInt("minute"))
 
-        // Giờ kém có khoảng trắng: 3 h kém 10 -> 02:50
         val rKem4 = matcher.match("báo thức 3 h kém 10")
         assertNotNull(rKem4)
         assertEquals("set_alarm", rKem4?.intent)
         assertEquals(2, JSONObject(rKem4!!.argumentsJson).optInt("hour"))
         assertEquals(50, JSONObject(rKem4.argumentsJson).optInt("minute"))
 
-        // Giờ kém dạng chữ & buổi: tám giờ kém mười lăm tối -> 19:45
         val rKem2 = matcher.match("báo thức tám giờ kém mười lăm tối")
         assertNotNull(rKem2)
         assertEquals("set_alarm", rKem2?.intent)
         assertEquals(19, JSONObject(rKem2!!.argumentsJson).optInt("hour"))
         assertEquals(45, JSONObject(rKem2.argumentsJson).optInt("minute"))
 
-        // Khẩu ngữ Miền Nam: 8 giờ thiếu 15 -> 07:45
         val rThieu = matcher.match("báo thức 8 giờ thiếu 15")
         assertNotNull(rThieu)
         assertEquals("set_alarm", rThieu?.intent)
         assertEquals(7, JSONObject(rThieu!!.argumentsJson).optInt("hour"))
         assertEquals(45, JSONObject(rThieu.argumentsJson).optInt("minute"))
 
-        // Khẩu ngữ Miền Nam: 1 giờ khuya -> 01:00
         val rKhuya = matcher.match("báo thức 1 giờ khuya")
         assertNotNull(rKhuya)
         assertEquals("set_alarm", rKhuya?.intent)
         assertEquals(1, JSONObject(rKhuya!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(rKhuya.argumentsJson).optInt("minute"))
 
-        // Từ đệm "tầm" / "khoảng": báo thức tầm 7 giờ sáng -> 07:00
         val rTam = matcher.match("báo thức tầm 7 giờ sáng")
         assertNotNull(rTam)
         assertEquals("set_alarm", rTam?.intent)
         assertEquals(7, JSONObject(rTam!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(rTam.argumentsJson).optInt("minute"))
 
-        // Từ đệm "đúng": báo thức 7 giờ đúng -> 07:00
         val rDung = matcher.match("báo thức 7 giờ đúng")
         assertNotNull(rDung)
         assertEquals("set_alarm", rDung?.intent)
         assertEquals(7, JSONObject(rDung!!.argumentsJson).optInt("hour"))
         assertEquals(0, JSONObject(rDung.argumentsJson).optInt("minute"))
 
-        // Từ ngữ dân dã / truyền thống: báo thức 4 giờ tờ mờ sáng -> 04:00
         val rToMo = matcher.match("báo thức 4 giờ tờ mờ sáng")
         assertNotNull(rToMo)
         assertEquals(4, JSONObject(rToMo!!.argumentsJson).optInt("hour"))
 
-        // Từ ngữ dân dã / truyền thống: báo thức 4 giờ xế chiều -> 16:00
         val rXeChieu = matcher.match("báo thức 4 giờ xế chiều")
         assertNotNull(rXeChieu)
         assertEquals(16, JSONObject(rXeChieu!!.argumentsJson).optInt("hour"))
 
-        // Từ ngữ dân dã / truyền thống: báo thức 6 giờ chạng vạng -> 18:00
         val rChangVang = matcher.match("báo thức 6 giờ chạng vạng")
         assertNotNull(rChangVang)
         assertEquals(18, JSONObject(rChangVang!!.argumentsJson).optInt("hour"))
+    }
+
+    @Test
+    fun testKiemAndThieu20RequiredTestCases() {
+        val testMap = listOf(
+            // 1. 2 giờ kém 10 -> 01:50
+            "báo thức 2 giờ kém 10" to Pair(1, 50),
+            // 2. 2 giờ kém 10 phút -> 01:50
+            "báo thức 2 giờ kém 10 phút" to Pair(1, 50),
+            // 3. hai giờ kém mười -> 01:50
+            "báo thức hai giờ kém mười" to Pair(1, 50),
+            // 4. hai giờ kém mười phút -> 01:50
+            "báo thức hai giờ kém mười phút" to Pair(1, 50),
+            // 5. 7 giờ kém 15 -> 06:45
+            "báo thức 7 giờ kém 15" to Pair(6, 45),
+            // 6. bảy giờ kém mười lăm -> 06:45
+            "báo thức bảy giờ kém mười lăm" to Pair(6, 45),
+            // 7. 8 giờ kém 5 -> 07:55
+            "báo thức 8 giờ kém 5" to Pair(7, 55),
+            // 8. tám giờ kém năm -> 07:55
+            "báo thức tám giờ kém năm" to Pair(7, 55),
+            // 9. 8 giờ kém 5 sáng -> 07:55
+            "báo thức 8 giờ kém 5 sáng" to Pair(7, 55),
+            // 10. 2 giờ kém 10 chiều -> 13:50
+            "báo thức 2 giờ kém 10 chiều" to Pair(13, 50),
+            // 11. 2 giờ kém 10 tối -> 19:50
+            "báo thức 2 giờ kém 10 tối" to Pair(19, 50),
+            // 12. 7 giờ kém 15 tối -> 18:45
+            "báo thức 7 giờ kém 15 tối" to Pair(18, 45),
+            // 13. 8 giờ kém 5 tối -> 19:55
+            "báo thức 8 giờ kém 5 tối" to Pair(19, 55),
+            // 14. 11 giờ kém 10 đêm -> 22:50
+            "báo thức 11 giờ kém 10 đêm" to Pair(22, 50),
+            // 15. 12 giờ kém 10 -> 11:50
+            "báo thức 12 giờ kém 10" to Pair(11, 50),
+            // 16. 1 giờ kém 10 -> 00:50
+            "báo thức 1 giờ kém 10" to Pair(0, 50),
+            // 17. 2 giờ 10 -> 02:10
+            "báo thức 2 giờ 10" to Pair(2, 10),
+            // 18. 2 giờ 10 phút -> 02:10
+            "báo thức 2 giờ 10 phút" to Pair(2, 10),
+            // 19. 2 giờ rưỡi -> 02:30
+            "báo thức 2 giờ rưỡi" to Pair(2, 30),
+            // 20. 2 giờ thiếu 10 -> 01:50
+            "báo thức 2 giờ thiếu 10" to Pair(1, 50)
+        )
+
+        for ((query, expected) in testMap) {
+            val result = matcher.match(query)
+            assertNotNull("Query '$query' must match alarm", result)
+            assertEquals("set_alarm", result?.intent)
+            val json = JSONObject(result!!.argumentsJson)
+            assertEquals("Hour mismatch for query: '$query'", expected.first, json.optInt("hour"))
+            assertEquals("Minute mismatch for query: '$query'", expected.second, json.optInt("minute"))
+        }
     }
 
     @Test
@@ -218,99 +253,82 @@ class FastPathMatcherTest {
 
     @Test
     fun testRelativeTimeAndClockInjection() {
-        // Mock current time = 10:20:00
         val fixedTimeProvider = TimeProvider.createFixed(hour = 10, minute = 20, second = 0)
         val relativeMatcher = FastPathMatcher(context = null, timeProvider = fixedTimeProvider)
 
-        // 1. sau 5 phút -> timer 5 min
         val r1 = relativeMatcher.match("sau 5 phút")
         assertNotNull(r1)
         assertEquals("set_timer", r1?.intent)
         assertEquals(5, JSONObject(r1!!.argumentsJson).optInt("duration"))
         assertEquals("minutes", JSONObject(r1.argumentsJson).optString("unit"))
 
-        // 2. sau năm phút -> timer 5 min
         val r2 = relativeMatcher.match("sau năm phút")
         assertNotNull(r2)
         assertEquals("set_timer", r2?.intent)
         assertEquals(5, JSONObject(r2!!.argumentsJson).optInt("duration"))
 
-        // 3. 5 phút nữa -> timer 5 min
         val r3 = relativeMatcher.match("5 phút nữa")
         assertNotNull(r3)
         assertEquals("set_timer", r3?.intent)
         assertEquals(5, JSONObject(r3!!.argumentsJson).optInt("duration"))
 
-        // 4. năm phút nữa -> timer 5 min
         val r4 = relativeMatcher.match("năm phút nữa")
         assertNotNull(r4)
         assertEquals("set_timer", r4?.intent)
         assertEquals(5, JSONObject(r4!!.argumentsJson).optInt("duration"))
 
-        // 5. sau 1 giờ -> timer 1 hour
         val r5 = relativeMatcher.match("sau 1 giờ")
         assertNotNull(r5)
         assertEquals("set_timer", r5?.intent)
         assertEquals(1, JSONObject(r5!!.argumentsJson).optInt("duration"))
         assertEquals("hours", JSONObject(r5.argumentsJson).optString("unit"))
 
-        // 6. sau một giờ -> timer 1 hour
         val r6 = relativeMatcher.match("sau một giờ")
         assertNotNull(r6)
         assertEquals("set_timer", r6?.intent)
         assertEquals(1, JSONObject(r6!!.argumentsJson).optInt("duration"))
 
-        // 7. 2 tiếng nữa -> timer 2 hours
         val r7 = relativeMatcher.match("2 tiếng nữa")
         assertNotNull(r7)
         assertEquals("set_timer", r7?.intent)
         assertEquals(2, JSONObject(r7!!.argumentsJson).optInt("duration"))
         assertEquals("hours", JSONObject(r7.argumentsJson).optString("unit"))
 
-        // 8. hai tiếng nữa -> timer 2 hours
         val r8 = relativeMatcher.match("hai tiếng nữa")
         assertNotNull(r8)
         assertEquals("set_timer", r8?.intent)
         assertEquals(2, JSONObject(r8!!.argumentsJson).optInt("duration"))
 
-        // 9. nửa tiếng nữa -> timer 30 min
         val r9 = relativeMatcher.match("nửa tiếng nữa")
         assertNotNull(r9)
         assertEquals("set_timer", r9?.intent)
         assertEquals(30, JSONObject(r9!!.argumentsJson).optInt("duration"))
 
-        // 10. sau nửa giờ -> timer 30 min
         val r10 = relativeMatcher.match("sau nửa giờ")
         assertNotNull(r10)
         assertEquals("set_timer", r10?.intent)
         assertEquals(30, JSONObject(r10!!.argumentsJson).optInt("duration"))
 
-        // 11. sau 20 giây -> timer 20 sec
         val r11 = relativeMatcher.match("sau 20 giây")
         assertNotNull(r11)
         assertEquals("set_timer", r11?.intent)
         assertEquals(20, JSONObject(r11!!.argumentsJson).optInt("duration"))
         assertEquals("seconds", JSONObject(r11.argumentsJson).optString("unit"))
 
-        // 12. hai mươi giây nữa -> timer 20 sec
         val r12 = relativeMatcher.match("hai mươi giây nữa")
         assertNotNull(r12)
         assertEquals("set_timer", r12?.intent)
         assertEquals(20, JSONObject(r12!!.argumentsJson).optInt("duration"))
 
-        // 14. bây giờ + 10 phút (báo thức bây giờ cộng 10 phút) -> set_alarm: 10:20 + 10 = 10:30
         val r14 = relativeMatcher.match("báo thức bây giờ cộng 10 phút")
         assertNotNull(r14)
         assertEquals("set_alarm", r14?.intent)
         assertEquals(10, JSONObject(r14!!.argumentsJson).optInt("hour"))
         assertEquals(30, JSONObject(r14.argumentsJson).optInt("minute"))
 
-        // 15. Phân biệt set_timer vs set_alarm:
-        // "sau 10 phút" -> set_timer
         val rTimer = relativeMatcher.match("sau 10 phút")
         assertEquals("set_timer", rTimer?.intent)
 
-        // "báo thức sau 10 phút" -> set_alarm
         val rAlarm = relativeMatcher.match("báo thức sau 10 phút")
         assertEquals("set_alarm", rAlarm?.intent)
         assertEquals(10, JSONObject(rAlarm!!.argumentsJson).optInt("hour"))
@@ -319,11 +337,9 @@ class FastPathMatcherTest {
 
     @Test
     fun testCrossDayRolloverForRelativeAlarm() {
-        // 13. Mock current time = 23:50:00 (vượt 24:00)
         val midnightTimeProvider = TimeProvider.createFixed(hour = 23, minute = 50, second = 0)
         val midnightMatcher = FastPathMatcher(context = null, timeProvider = midnightTimeProvider)
 
-        // "báo thức sau 20 phút" -> 23:50 + 20 min = 00:10 ngày hôm sau
         val rCrossDay = midnightMatcher.match("báo thức sau 20 phút")
         assertNotNull(rCrossDay)
         assertEquals("set_alarm", rCrossDay?.intent)
@@ -333,28 +349,24 @@ class FastPathMatcherTest {
 
     @Test
     fun testSetTimerVietnameseNumbersAndHalfHour() {
-        // 17. mười lăm phút -> 15 phút
         val r1 = matcher.match("hẹn giờ mười lăm phút")
         assertNotNull(r1)
         assertEquals("set_timer", r1?.intent)
         assertEquals(15, JSONObject(r1!!.argumentsJson).optInt("duration"))
         assertEquals("minutes", JSONObject(r1.argumentsJson).optString("unit"))
 
-        // 18. hai mươi giây -> 20 giây
         val r2 = matcher.match("hẹn giờ hai mươi giây")
         assertNotNull(r2)
         assertEquals("set_timer", r2?.intent)
         assertEquals(20, JSONObject(r2!!.argumentsJson).optInt("duration"))
         assertEquals("seconds", JSONObject(r2.argumentsJson).optString("unit"))
 
-        // 19. nửa tiếng -> 30 phút
         val r3 = matcher.match("hẹn giờ nửa tiếng")
         assertNotNull(r3)
         assertEquals("set_timer", r3?.intent)
         assertEquals(30, JSONObject(r3!!.argumentsJson).optInt("duration"))
         assertEquals("minutes", JSONObject(r3.argumentsJson).optString("unit"))
 
-        // 20. nửa giờ -> 30 phút
         val r4 = matcher.match("hẹn giờ nửa giờ")
         assertNotNull(r4)
         assertEquals("set_timer", r4?.intent)
@@ -381,43 +393,36 @@ class FastPathMatcherTest {
 
     @Test
     fun testAppAliasesAndCommercialApps() {
-        // 21. du tup -> youtube
         val r1 = matcher.match("du tup")
         assertNotNull(r1)
         assertEquals("open_app", r1?.intent)
         assertEquals("youtube", JSONObject(r1!!.argumentsJson).optString("app_name"))
 
-        // 22. phay buc -> facebook
         val r2 = matcher.match("phay buc")
         assertNotNull(r2)
         assertEquals("open_app", r2?.intent)
         assertEquals("facebook", JSONObject(r2!!.argumentsJson).optString("app_name"))
 
-        // 23. top top -> tiktok
         val r3 = matcher.match("top top")
         assertNotNull(r3)
         assertEquals("open_app", r3?.intent)
         assertEquals("tiktok", JSONObject(r3!!.argumentsJson).optString("app_name"))
 
-        // 24. guc go map -> google_maps
         val r4 = matcher.match("guc go map")
         assertNotNull(r4)
         assertEquals("open_app", r4?.intent)
         assertEquals("google_maps", JSONObject(r4!!.argumentsJson).optString("app_name"))
 
-        // 25. ch play -> playstore
         val r5 = matcher.match("ch play")
         assertNotNull(r5)
         assertEquals("open_app", r5?.intent)
         assertEquals("playstore", JSONObject(r5!!.argumentsJson).optString("app_name"))
 
-        // 26. may tinh -> calculator
         val r6 = matcher.match("may tinh")
         assertNotNull(r6)
         assertEquals("open_app", r6?.intent)
         assertEquals("calculator", JSONObject(r6!!.argumentsJson).optString("app_name"))
 
-        // Shopee / Lazada / Grab / Be
         val rShopee = matcher.match("mở shopee")
         assertNotNull(rShopee)
         assertEquals("open_app", rShopee?.intent)
@@ -461,7 +466,6 @@ class FastPathMatcherTest {
             "sau nửa tiếng"
         )
 
-        // Warmup 500 iterations
         for (i in 0..500) {
             matcher.match(queries[i % queries.size])
         }

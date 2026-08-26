@@ -447,6 +447,45 @@ class FastPathMatcher(
         return buildNluResult("set_alarm", args, "low", "success", false)
     }
 
+    private fun normalizeHourPeriod(
+        hour: Int,
+        isSang: Boolean,
+        isTrua: Boolean,
+        isChieu: Boolean,
+        isToi: Boolean,
+        isDem: Boolean
+    ): Int {
+        var h = hour
+        if (isDem) {
+            if (h == 12) {
+                h = 0
+            } else if (h in 9..11) {
+                h += 12
+            }
+        } else if (isSang) {
+            if (h == 12) {
+                h = 0
+            }
+        } else if (isTrua) {
+            if (h == 12) {
+                h = 12
+            } else if (h in 1..4) {
+                h += 12
+            }
+        } else if (isChieu) {
+            if (h in 1..11) {
+                h += 12
+            }
+        } else if (isToi) {
+            if (h in 6..11) {
+                h += 12
+            } else if (h in 1..5) {
+                h += 18
+            }
+        }
+        return h % 24
+    }
+
     private fun parseAlarmCommand(text: String): NluResult? {
         val unaccented = stripAccents(text.lowercase())
 
@@ -457,6 +496,7 @@ class FastPathMatcher(
         val isDem = unaccented.contains("dem") || unaccented.contains("khuya")
 
         // Xử lý kịch bản "Giờ kém" hoặc "Giờ thiếu" (Khẩu ngữ Miền Nam)
+        // QUY TẮC: Parse X, Parse Y -> totalMinutes = X * 60 - Y -> Normalize 0..1439 -> rawHour/minute -> Period Normalization
         val isKem = unaccented.contains("kem") || unaccented.contains("thieu")
         if (isKem) {
             val payloadKem = unaccented
@@ -486,23 +526,17 @@ class FastPathMatcher(
                 val rawHourPart = kemParts[0].replace(Regex("\\s*(?:gio|giờ)\\s*|(?<=\\d)\\s*h\\b"), "").trim()
                 val rawMinPart = kemParts[1].replace("phut", "").replace("p", "").trim()
 
-                var parsedTargetHour = VietnameseNumberParser.parse(rawHourPart)
+                val parsedTargetHour = VietnameseNumberParser.parse(rawHourPart)
                 val parsedKemMin = VietnameseNumberParser.parse(rawMinPart)
 
                 if (parsedTargetHour != null && parsedKemMin != null && parsedKemMin in 1..59) {
-                    if (isDem) {
-                        if (parsedTargetHour == 12) parsedTargetHour = 0 else if (parsedTargetHour in 9..11) parsedTargetHour += 12
-                    } else if (isSang) {
-                        if (parsedTargetHour == 12) parsedTargetHour = 0
-                    } else if (isChieu || isToi) {
-                        if (parsedTargetHour in 1..11) parsedTargetHour += 12
-                    }
-
                     var totalMins = parsedTargetHour * 60 - parsedKemMin
                     if (totalMins < 0) totalMins += 24 * 60
 
-                    val hour = (totalMins / 60) % 24
+                    val rawHour = (totalMins / 60) % 24
                     val minute = totalMins % 60
+
+                    val hour = normalizeHourPeriod(rawHour, isSang, isTrua, isChieu, isToi, isDem)
 
                     val args = JSONObject().apply {
                         put("hour", hour)
@@ -574,30 +608,7 @@ class FastPathMatcher(
 
         if (parsedHour == null) return null
 
-        var hour = parsedHour
-
-        // Time Period Normalizer: Xử lý quy tắc buổi trong ngày & edge cases 12h
-        if (isDem) {
-            if (hour == 12) {
-                hour = 0
-            } else if (hour in 9..11) {
-                hour += 12
-            }
-        } else if (isSang) {
-            if (hour == 12) {
-                hour = 0
-            }
-        } else if (isTrua) {
-            if (hour == 12) {
-                hour = 12
-            } else if (hour in 1..4) {
-                hour += 12
-            }
-        } else if (isChieu || isToi) {
-            if (hour in 1..11) {
-                hour += 12
-            }
-        }
+        val hour = normalizeHourPeriod(parsedHour, isSang, isTrua, isChieu, isToi, isDem)
 
         if (hour in 0..23 && minute in 0..59) {
             val args = JSONObject().apply {
