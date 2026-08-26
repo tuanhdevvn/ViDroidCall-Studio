@@ -11,7 +11,7 @@ import java.util.regex.Pattern
 /**
  * Bộ tiền xử lý và khớp quy tắc nhanh (Fast-Path Matcher)
  * Giúp nhận diện và phản hồi tức thì (< 5ms) cho các câu lệnh ngắn gọn,
- * tích hợp VietnameseNumberParser, chuẩn hóa thời gian theo buổi và từ lóng ứng dụng.
+ * tích hợp VietnameseNumberParser, chuẩn hóa thời gian theo buổi, giờ kém, và từ lóng ứng dụng.
  */
 class FastPathMatcher(private val context: Context? = null) {
 
@@ -216,7 +216,7 @@ class FastPathMatcher(private val context: Context? = null) {
             return buildNluResult("goodbye", JSONObject(), "low", "success", false)
         }
 
-        // c. Đặt báo thức (set_alarm) với VietnameseNumberParser & Time Period Normalizer
+        // c. Đặt báo thức (set_alarm) với VietnameseNumberParser, Time Period Normalizer & Giờ kém
         if (unaccentedText.startsWith("bao thuc") || unaccentedText.startsWith("dat bao thuc") || unaccentedText.startsWith("hen bao thuc") || unaccentedText.startsWith("cai bao thuc")) {
             val alarmResult = parseAlarmCommand(text)
             if (alarmResult != null) return alarmResult
@@ -340,6 +340,54 @@ class FastPathMatcher(private val context: Context? = null) {
         val isChieu = unaccented.contains("chieu")
         val isToi = unaccented.contains("toi")
         val isDem = unaccented.contains("dem")
+
+        // Xử lý kịch bản "Giờ kém" (ví dụ: "báo thức 8 giờ kém 15", "8h kém 20 tối", "báo thức tám giờ kém mười lăm")
+        if (unaccented.contains("kem")) {
+            val payloadKem = unaccented
+                .replace("dat bao thuc", "")
+                .replace("hen bao thuc", "")
+                .replace("cai bao thuc", "")
+                .replace("bao thuc", "")
+                .replace("luc", "")
+                .replace("sang", "")
+                .replace("trua", "")
+                .replace("chieu", "")
+                .replace("toi", "")
+                .replace("dem", "")
+                .trim()
+
+            val kemParts = payloadKem.split(Regex("\\s+kem\\s+"))
+            if (kemParts.size == 2) {
+                val rawHourPart = kemParts[0].replace(Regex("\\s*(?:gio|giờ)\\s*|(?<=\\d)\\s*h\\b"), "").trim()
+                val rawMinPart = kemParts[1].replace("phut", "").replace("p", "").trim()
+
+                var parsedTargetHour = VietnameseNumberParser.parse(rawHourPart)
+                val parsedKemMin = VietnameseNumberParser.parse(rawMinPart)
+
+                if (parsedTargetHour != null && parsedKemMin != null && parsedKemMin in 1..59) {
+                    if (isDem) {
+                        if (parsedTargetHour == 12) parsedTargetHour = 0 else if (parsedTargetHour in 1..11) parsedTargetHour += 12
+                    } else if (isSang) {
+                        if (parsedTargetHour == 12) parsedTargetHour = 0
+                    } else if (isChieu || isToi) {
+                        if (parsedTargetHour in 1..11) parsedTargetHour += 12
+                    }
+
+                    var totalMins = parsedTargetHour * 60 - parsedKemMin
+                    if (totalMins < 0) totalMins += 24 * 60
+
+                    val hour = (totalMins / 60) % 24
+                    val minute = totalMins % 60
+
+                    val args = JSONObject().apply {
+                        put("hour", hour)
+                        put("minute", minute)
+                        put("label", "Báo thức")
+                    }
+                    return buildNluResult("set_alarm", args, "low", "success", false)
+                }
+            }
+        }
 
         val isRuoi = unaccented.contains("ruoi")
         var minute = if (isRuoi) 30 else 0
