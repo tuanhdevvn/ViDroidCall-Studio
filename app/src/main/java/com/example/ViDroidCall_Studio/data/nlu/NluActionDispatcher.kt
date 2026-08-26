@@ -280,9 +280,19 @@ class NluActionDispatcher(
 
                         // 1. System Intent đặc biệt
                         val systemIntent = when (cleanAppName) {
-                            "camera", "máy ảnh", "chụp ảnh" -> Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
-                            "cài đặt", "settings" -> Intent(Settings.ACTION_SETTINGS)
-                            "gọi điện", "điện thoại", "danh bạ" -> Intent(Intent.ACTION_DIAL)
+                            "camera", "máy ảnh", "chụp ảnh", "chụp hình" -> Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+                            "gallery", "bộ sưu tập", "thư viện", "thư viện ảnh", "album ảnh" -> Intent(Intent.ACTION_VIEW, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+                            "calculator", "máy tính", "bàn tính" -> Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_CALCULATOR) }
+                            "contacts", "danh bạ", "số điện thoại", "danh sách gọi" -> Intent(Intent.ACTION_VIEW, Uri.parse("content://contacts/people"))
+                            "clock", "đồng hồ", "báo thức", "đồng hồ báo thức" -> Intent(AlarmClock.ACTION_SHOW_ALARMS)
+                            "settings", "cài đặt", "thiết lập", "cài đặt máy", "cài đặt điện thoại" -> Intent(Settings.ACTION_SETTINGS)
+                            "recorder", "ghi âm", "máy ghi âm", "thu âm" -> Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION)
+                            "files", "quản lý tệp", "tệp tin", "file của bạn", "quản lý file" -> Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)
+                            "playstore", "ch play", "cửa hàng", "tải ứng dụng", "cửa hàng ứng dụng" -> Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.gms"))
+                            "chrome", "trình duyệt", "mở trình duyệt" -> Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com")).apply {
+                                setPackage("com.android.chrome")
+                            }
+                            "gọi điện", "điện thoại" -> Intent(Intent.ACTION_DIAL)
                             "tin nhắn", "sms" -> Intent(Intent.ACTION_MAIN).apply {
                                 addCategory(Intent.CATEGORY_APP_MESSAGING)
                             }
@@ -304,6 +314,9 @@ class NluActionDispatcher(
                             "youtube" -> "com.google.android.youtube"
                             "tiktok" -> "com.ss.android.ugc.trill"
                             "chrome" -> "com.android.chrome"
+                            "google_maps", "google map", "google maps", "bản đồ" -> "com.google.android.apps.maps"
+                            "playstore", "ch play" -> "com.android.vending"
+                            "calculator", "máy tính" -> "com.google.android.calculator"
                             "shopee" -> "com.shopee.vn"
                             "messenger" -> "com.facebook.orca"
                             "instagram" -> "com.instagram.android"
