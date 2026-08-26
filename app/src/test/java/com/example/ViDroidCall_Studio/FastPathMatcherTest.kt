@@ -130,6 +130,20 @@ class FastPathMatcherTest {
         assertEquals(7, JSONObject(rKem1!!.argumentsJson).optInt("hour"))
         assertEquals(45, JSONObject(rKem1.argumentsJson).optInt("minute"))
 
+        // Giờ kém có khoảng trắng: 2 h kém 10 -> 01:50
+        val rKem3 = matcher.match("báo thức 2 h kém 10")
+        assertNotNull(rKem3)
+        assertEquals("set_alarm", rKem3?.intent)
+        assertEquals(1, JSONObject(rKem3!!.argumentsJson).optInt("hour"))
+        assertEquals(50, JSONObject(rKem3.argumentsJson).optInt("minute"))
+
+        // Giờ kém có khoảng trắng: 3 h kém 10 -> 02:50
+        val rKem4 = matcher.match("báo thức 3 h kém 10")
+        assertNotNull(rKem4)
+        assertEquals("set_alarm", rKem4?.intent)
+        assertEquals(2, JSONObject(rKem4!!.argumentsJson).optInt("hour"))
+        assertEquals(50, JSONObject(rKem4.argumentsJson).optInt("minute"))
+
         // Giờ kém dạng chữ & buổi: tám giờ kém mười lăm tối -> 19:45
         val rKem2 = matcher.match("báo thức tám giờ kém mười lăm tối")
         assertNotNull(rKem2)
