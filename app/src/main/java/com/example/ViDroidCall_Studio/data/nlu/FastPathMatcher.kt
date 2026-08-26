@@ -621,7 +621,7 @@ class FastPathMatcher(
             }
         }
 
-        if (parsedHour == null) return null
+        if (parsedHour == null || parsedHour !in 0..23) return null
 
         val hour = normalizeHourPeriod(parsedHour, isSang, isTrua, isChieu, isToi, isDem)
 
