@@ -12,7 +12,7 @@ import java.util.regex.Pattern
  * Bộ tiền xử lý và khớp quy tắc nhanh (Fast-Path Matcher)
  * Giúp nhận diện và phản hồi tức thì (< 5ms) cho các câu lệnh ngắn gọn,
  * hỗ trợ khẩu ngữ toàn diện 3 miền (Bắc - Trung - Nam), từ ngữ truyền thống (tờ mờ sáng, xế chiều, chạng vạng, khuya),
- * người cao tuổi, giờ kém/thiếu, từ đệm, biến thể STT thực tế & TimeProvider injection.
+ * giờ trưa (11h-15h trưa), giờ chiều (1h-6h chiều), người cao tuổi, giờ kém/thiếu, từ đệm, biến thể STT thực tế & TimeProvider injection.
  */
 class FastPathMatcher(
     private val context: Context? = null,
@@ -220,7 +220,7 @@ class FastPathMatcher(
             return buildNluResult("goodbye", JSONObject(), "low", "success", false)
         }
 
-        // c. Xử lý thời gian tương đối cho set_alarm (ví dụ "báo thức sau 10 phút", "nhắc tôi sau 10 phút")
+        // c. Xử lý thời gian tương đối cho set_alarm
         if (unaccentedText.contains("bao thuc") || unaccentedText.startsWith("nhac toi")) {
             if (unaccentedText.contains("sau ") || unaccentedText.contains("nua") || unaccentedText.contains("bay gio") || unaccentedText.contains("hien tai")) {
                 val relAlarmResult = parseRelativeAlarmCommand(text)
@@ -481,11 +481,13 @@ class FastPathMatcher(
         } else if (isTrua) {
             if (h == 12) {
                 h = 12
-            } else if (h in 1..4) {
+            } else if (h in 1..5) {
                 h += 12
             }
         } else if (isChieu) {
-            if (h in 1..11) {
+            if (h == 12) {
+                h = 12
+            } else if (h in 1..11) {
                 h += 12
             }
         } else if (isToi) {
