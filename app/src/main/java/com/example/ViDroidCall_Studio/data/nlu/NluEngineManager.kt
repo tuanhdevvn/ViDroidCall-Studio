@@ -120,7 +120,7 @@ class NluEngineManager(
                     try {
                         dir.walkTopDown()
                             .maxDepth(3)
-                            .onTreeFail { _, _ -> true }
+                            .onFail { _, _ -> }
                             .filter { file ->
                                 file.isFile &&
                                 file.name.endsWith(".gguf", ignoreCase = true) &&
