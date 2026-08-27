@@ -1,17 +1,29 @@
 package com.example.ViDroidCall_Studio.feature.speech
 
+import android.Manifest
 import android.content.Context
-import android.content.Intent
-import android.os.Bundle
+import android.content.pm.PackageManager
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
 import android.os.Handler
 import android.os.Looper
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
 import android.util.Log
+import androidx.core.content.ContextCompat
+import com.k2fsa.sherpa.onnx.FeatureConfig
+import com.k2fsa.sherpa.onnx.OfflineModelConfig
+import com.k2fsa.sherpa.onnx.OfflineRecognizer
+import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
+import com.k2fsa.sherpa.onnx.OfflineTransducerModelConfig
+import com.k2fsa.sherpa.onnx.SileroVadModelConfig
+import com.k2fsa.sherpa.onnx.Vad
+import com.k2fsa.sherpa.onnx.VadModelConfig
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Quản lý nhận diện giọng nói 100% In-App (SpeechRecognizer), chạy ngầm trực tiếp trong App, không dùng popup Google.
+ * Quản lý nhận diện giọng nói tiếng Việt 100% Offline cục bộ bằng Sherpa-ONNX Zipformer & Silero VAD.
+ * Sử dụng cơ chế VAD Endpoint chuẩn xác để giải mã trọn vẹn ngữ cảnh câu nói, tránh hiện tượng đoán sai từ dở dang.
  */
 class SpeechToTextManager(
     private val context: Context,
@@ -24,205 +36,297 @@ class SpeechToTextManager(
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var speechRecognizer: SpeechRecognizer? = null
-    private var isListeningActive = false
-    private var isCancelled = false
+    private val executor = Executors.newSingleThreadExecutor()
 
-    private val recognitionListener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) {
-            if (isCancelled) return
-            isListeningActive = true
-            mainHandler.post {
-                callbacks.onListeningChanged(true)
-                callbacks.onTextChanged("") // Reset văn bản khi bắt đầu lắng nghe mới
-            }
-            Log.d(TAG, "SpeechRecognizer: Sẵn sàng nhận giọng nói trong App")
-        }
+    private var recognizer: OfflineRecognizer? = null
+    private var vad: Vad? = null
+    private var audioRecord: AudioRecord? = null
 
-        override fun onBeginningOfSpeech() {
-            if (isCancelled) return
-            Log.d(TAG, "SpeechRecognizer: Người dùng bắt đầu nói...")
-        }
+    private val isListeningActive = AtomicBoolean(false)
+    private val isCancelled = AtomicBoolean(false)
+    private var isModelInitialized = false
+    private var isInitializingModel = false
 
-        override fun onRmsChanged(rmsdB: Float) = Unit
-
-        override fun onBufferReceived(buffer: ByteArray?) = Unit
-
-        override fun onEndOfSpeech() {
-            if (isCancelled) return
-            isListeningActive = false
-            mainHandler.post {
-                callbacks.onListeningChanged(false)
-            }
-            Log.d(TAG, "SpeechRecognizer: Người dùng đã ngưng nói, đang phân tích...")
-        }
-
-        override fun onError(error: Int) {
-            if (isCancelled) {
-                Log.d(TAG, "SpeechRecognizer onError ($error) bỏ qua vì người dùng đã hủy.")
-                return
-            }
-            isListeningActive = false
-            val errorMessage = when (error) {
-                SpeechRecognizer.ERROR_AUDIO -> "Lỗi thu âm. Vui lòng thử lại."
-                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> PERMISSION_DENIED_MESSAGE
-                SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Lỗi kết nối mạng."
-                SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> ""
-                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> ""
-                else -> ERROR_MESSAGE
-            }
-
-            mainHandler.post {
-                callbacks.onListeningChanged(false)
-                if (errorMessage.isNotEmpty()) {
-                    callbacks.onTextChanged(errorMessage)
-                }
-            }
-            Log.w(TAG, "SpeechRecognizer onError: $error ($errorMessage)")
-        }
-
-        override fun onResults(results: Bundle?) {
-            if (isCancelled) {
-                Log.d(TAG, "SpeechRecognizer onResults bỏ qua vì người dùng đã hủy.")
-                return
-            }
-            isListeningActive = false
-            val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: emptyList<String>()
-
-            // Ưu tiên chọn ứng viên (candidate) chứa từ khẩu ngữ nguyên bản (kém, thiếu, rưỡi) nếu Google ITN tự ý đổi số
-            val recognized = matches.firstOrNull { candidate ->
-                candidate.isNotBlank() && (
-                    candidate.contains("kém", ignoreCase = true) ||
-                    candidate.contains("thiếu", ignoreCase = true) ||
-                    candidate.contains("rưỡi", ignoreCase = true)
-                )
-            } ?: matches.firstOrNull { it.isNotBlank() }
-
-            mainHandler.post {
-                callbacks.onListeningChanged(false)
-                if (!recognized.isNullOrBlank()) {
-                    Log.i(TAG, "🎤 [Nhận diện thành công 100% In-App]: \"$recognized\"")
-                    callbacks.onTextChanged(recognized)
-                    callbacks.onFinalResult(recognized)
-                } else {
-                    Log.w(TAG, "Không nhận diện được từ nào, không gọi model AI.")
-                }
-            }
-        }
-
-        override fun onPartialResults(partialResults: Bundle?) {
-            if (isCancelled) return
-            val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            val partial = matches?.firstOrNull { it.isNotBlank() }
-            if (!partial.isNullOrBlank()) {
-                mainHandler.post {
-                    callbacks.onTextChanged(partial)
-                }
-            }
-        }
-
-        override fun onEvent(eventType: Int, params: Bundle?) = Unit
+    init {
+        // Khởi tạo trước mô hình trên background thread để giảm thiểu độ trễ lần đầu bấm mic
+        initModelAsync()
     }
 
-    private fun ensureRecognizer(): Boolean {
-        if (speechRecognizer != null) return true
-        return try {
-            if (SpeechRecognizer.isRecognitionAvailable(context)) {
-                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
-                    setRecognitionListener(recognitionListener)
+    private fun initModelAsync(onComplete: (() -> Unit)? = null) {
+        if (isModelInitialized) {
+            onComplete?.invoke()
+            return
+        }
+        if (isInitializingModel) return
+        isInitializingModel = true
+
+        executor.execute {
+            try {
+                Log.d(TAG, "Đang nạp mô hình Sherpa-ONNX Zipformer tiếng Việt & Silero VAD...")
+                val assetManager = context.assets
+
+                // 1. Cấu hình OfflineRecognizer (Zipformer 30M Int8 Tiếng Việt)
+                val recognizerConfig = OfflineRecognizerConfig(
+                    featConfig = FeatureConfig(sampleRate = SAMPLE_RATE, featureDim = 80),
+                    modelConfig = OfflineModelConfig(
+                        transducer = OfflineTransducerModelConfig(
+                            encoder = "sherpa-onnx-vi/encoder.int8.onnx",
+                            decoder = "sherpa-onnx-vi/decoder.onnx",
+                            joiner = "sherpa-onnx-vi/joiner.int8.onnx"
+                        ),
+                        tokens = "sherpa-onnx-vi/tokens.txt",
+                        bpeVocab = "sherpa-onnx-vi/bpe.model",
+                        numThreads = 2,
+                        debug = false,
+                        provider = "cpu",
+                        modelType = "zipformer2"
+                    )
+                )
+                recognizer = OfflineRecognizer(assetManager = assetManager, config = recognizerConfig)
+
+                // 2. Cấu hình VAD (Silero VAD)
+                val vadConfig = VadModelConfig(
+                    sileroVadModelConfig = SileroVadModelConfig(
+                        model = "sherpa-onnx-vi/silero_vad.onnx",
+                        threshold = 0.5f,
+                        minSilenceDuration = 0.7f, // 700ms im lặng để ngắt câu lệnh dứt khoát
+                        minSpeechDuration = 0.2f,
+                        windowSize = 512,
+                        maxSpeechDuration = 15.0f
+                    ),
+                    sampleRate = SAMPLE_RATE,
+                    numThreads = 1,
+                    provider = "cpu",
+                    debug = false
+                )
+                vad = Vad(assetManager = assetManager, config = vadConfig)
+
+                isModelInitialized = true
+                Log.i(TAG, "Sherpa-ONNX & Silero VAD đã sẵn sàng 100% Offline!")
+            } catch (e: Exception) {
+                Log.e(TAG, "Lỗi khi khởi tạo Sherpa-ONNX: ${e.message}", e)
+            } finally {
+                isInitializingModel = false
+                mainHandler.post {
+                    onComplete?.invoke()
                 }
-                true
-            } else {
-                Log.w(TAG, "SpeechRecognizer không khả dụng trên thiết bị này")
-                callbacks.onTextChanged("Thiết bị chưa hỗ trợ bộ nhận diện giọng nói.")
-                false
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khởi tạo SpeechRecognizer: ${e.message}", e)
-            false
         }
     }
 
     fun startListening() {
-        mainHandler.post {
-            try {
-                if (isListeningActive) {
-                    stopListening()
-                    return@post
-                }
+        if (isListeningActive.get()) {
+            stopListening()
+            return
+        }
 
-                if (!ensureRecognizer()) return@post
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
 
-                isCancelled = false
-                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, LANGUAGE_VI_VN)
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, LANGUAGE_VI_VN)
-                    putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, LANGUAGE_VI_VN)
-                    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
-                    
-                    // Cấu hình khoảng lặng để tránh ngắt mic sớm cho người lớn tuổi
-                    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
-                    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-                    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 3000L)
-                }
-                speechRecognizer?.startListening(intent)
-            } catch (e: Exception) {
-                Log.e(TAG, "Lỗi khi gọi startListening: ${e.message}", e)
-                isListeningActive = false
+        if (!hasPermission) {
+            callbacks.onTextChanged(PERMISSION_DENIED_MESSAGE)
+            callbacks.onListeningChanged(false)
+            return
+        }
+
+        isCancelled.set(false)
+        isListeningActive.set(true)
+        callbacks.onListeningChanged(true)
+        callbacks.onTextChanged(LISTENING_PLACEHOLDER)
+
+        initModelAsync {
+            if (!isModelInitialized || recognizer == null || vad == null) {
+                Log.e(TAG, "Không thể khởi động STT vì mô hình chưa nạp thành công.")
+                isListeningActive.set(false)
                 callbacks.onListeningChanged(false)
+                callbacks.onTextChanged("Lỗi nạp mô hình nhận dạng giọng nói.")
+                return@initModelAsync
+            }
+
+            executor.execute {
+                startAudioRecordingLoop()
             }
         }
     }
 
+    private fun startAudioRecordingLoop() {
+        val minBufferSize = AudioRecord.getMinBufferSize(
+            SAMPLE_RATE,
+            AudioFormat.CHANNEL_IN_MONO,
+            AudioFormat.ENCODING_PCM_16BIT
+        )
+        val bufferSize = maxOf(minBufferSize, 2048)
+
+        try {
+            audioRecord = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            )
+
+            if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
+                Log.e(TAG, "AudioRecord khởi tạo thất bại!")
+                handleStopListeningInternal()
+                return
+            }
+
+            audioRecord?.startRecording()
+            vad?.reset()
+
+            val audioBuffer = ShortArray(512)
+            val floatBuffer = FloatArray(512)
+            var speechDetected = false
+
+            Log.d(TAG, "Bắt đầu thu âm PCM 16kHz & phát hiện giọng nói On-Device...")
+
+            while (isListeningActive.get() && !isCancelled.get()) {
+                val readCount = audioRecord?.read(audioBuffer, 0, audioBuffer.size) ?: 0
+                if (readCount <= 0) continue
+
+                // Chuyển short PCM (-32768..32767) sang float (-1.0f..1.0f)
+                for (i in 0 until readCount) {
+                    floatBuffer[i] = audioBuffer[i] / 32768.0f
+                }
+
+                val curVad = vad ?: break
+                curVad.acceptWaveform(if (readCount == floatBuffer.size) floatBuffer else floatBuffer.copyOf(readCount))
+
+                // Kiểm tra trạng thái phát hiện tiếng nói
+                if (curVad.isSpeechDetected()) {
+                    if (!speechDetected) {
+                        speechDetected = true
+                        mainHandler.post {
+                            if (isListeningActive.get() && !isCancelled.get()) {
+                                callbacks.onTextChanged("Đang lắng nghe câu lệnh...")
+                            }
+                        }
+                    }
+                }
+
+                // Khi VAD phát hiện đã nói xong một đoạn trọn vẹn
+                while (!curVad.empty()) {
+                    val segment = curVad.front()
+                    curVad.pop()
+
+                    if (isCancelled.get()) break
+
+                    Log.d(TAG, "VAD đã phát hiện câu hoàn chỉnh (${segment.samples.size} mẫu), đang giải mã...")
+                    val curRecognizer = recognizer ?: break
+                    val stream = curRecognizer.createStream()
+                    stream.acceptWaveform(segment.samples, SAMPLE_RATE)
+                    curRecognizer.decode(stream)
+                    val result = curRecognizer.getResult(stream)
+                    val recognizedText = result.text.trim()
+                    stream.release()
+
+                    if (recognizedText.isNotBlank()) {
+                        val normalizedText = VietnameseNumberNormalizer.normalize(recognizedText)
+                        Log.i(TAG, "🎤 [Sherpa-ONNX 100% Offline Raw]: \"$recognizedText\" -> Normalized: \"$normalizedText\"")
+                        mainHandler.post {
+                            callbacks.onTextChanged(normalizedText)
+                            callbacks.onFinalResult(normalizedText)
+                        }
+                        // Tự động dừng thu âm sau khi đã nhận diện xong câu lệnh
+                        handleStopListeningInternal()
+                        return
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Lỗi trong luồng thu âm: ${e.message}", e)
+        } finally {
+            handleStopListeningInternal()
+        }
+    }
+
     fun stopListening() {
-        mainHandler.post {
+        if (!isListeningActive.get()) return
+        isListeningActive.set(false)
+        executor.execute {
             try {
-                if (isListeningActive) {
-                    speechRecognizer?.stopListening()
+                vad?.flush()
+                val curVad = vad
+                val curRecognizer = recognizer
+                if (curVad != null && curRecognizer != null && !isCancelled.get()) {
+                    while (!curVad.empty()) {
+                        val segment = curVad.front()
+                        curVad.pop()
+                        val stream = curRecognizer.createStream()
+                        stream.acceptWaveform(segment.samples, SAMPLE_RATE)
+                        curRecognizer.decode(stream)
+                        val result = curRecognizer.getResult(stream)
+                        val recognizedText = result.text.trim()
+                        stream.release()
+                        if (recognizedText.isNotBlank()) {
+                            val normalizedText = VietnameseNumberNormalizer.normalize(recognizedText)
+                            mainHandler.post {
+                                callbacks.onTextChanged(normalizedText)
+                                callbacks.onFinalResult(normalizedText)
+                            }
+                        }
+                    }
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Lỗi khi gọi stopListening: ${e.message}")
+                Log.w(TAG, "Lỗi khi flush VAD: ${e.message}")
             } finally {
-                isListeningActive = false
-                callbacks.onListeningChanged(false)
+                handleStopListeningInternal()
             }
         }
     }
 
     fun cancelListening() {
-        mainHandler.post {
-            try {
-                isCancelled = true
-                isListeningActive = false
-                speechRecognizer?.cancel()
-            } catch (e: Exception) {
-                Log.w(TAG, "Lỗi khi gọi cancelListening: ${e.message}")
-            } finally {
+        isCancelled.set(true)
+        isListeningActive.set(false)
+        executor.execute {
+            handleStopListeningInternal()
+            mainHandler.post {
                 callbacks.onListeningChanged(false)
                 callbacks.onTextChanged("")
             }
         }
     }
 
-    fun destroy() {
+    private fun handleStopListeningInternal() {
+        isListeningActive.set(false)
+        try {
+            if (audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                audioRecord?.stop()
+            }
+            audioRecord?.release()
+        } catch (e: Exception) {
+            Log.w(TAG, "Lỗi giải phóng AudioRecord: ${e.message}")
+        } finally {
+            audioRecord = null
+        }
         mainHandler.post {
+            callbacks.onListeningChanged(false)
+        }
+    }
+
+    fun destroy() {
+        cancelListening()
+        executor.execute {
             try {
-                isCancelled = true
-                speechRecognizer?.cancel()
-                speechRecognizer?.destroy()
+                recognizer?.release()
+                vad?.release()
             } catch (e: Exception) {
-                Log.w(TAG, "Lỗi khi destroy: ${e.message}")
+                Log.w(TAG, "Lỗi giải phóng Sherpa-ONNX: ${e.message}")
             } finally {
-                speechRecognizer = null
-                isListeningActive = false
+                recognizer = null
+                vad = null
+                isModelInitialized = false
             }
         }
+        executor.shutdown()
     }
 
     companion object {
         private const val TAG = "SpeechToTextManager"
+        private const val SAMPLE_RATE = 16000
         const val LANGUAGE_VI_VN = "vi-VN"
         const val LISTENING_PLACEHOLDER = "Đang lắng nghe..."
         const val ERROR_MESSAGE = "Không nghe rõ. Vui lòng thử lại."
