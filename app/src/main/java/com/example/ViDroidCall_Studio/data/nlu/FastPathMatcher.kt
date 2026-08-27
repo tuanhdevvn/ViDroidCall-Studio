@@ -820,8 +820,7 @@ class FastPathMatcher(
         }
 
         val minutePartClean = minutePartRaw
-            .replace("phut", "")
-            .replace("p", "")
+            .replace(Regex("\\b(phut|p)\\b"), "")
             .replace("to mo sang", "")
             .replace("to mo", "")
             .replace("xe chieu", "")
