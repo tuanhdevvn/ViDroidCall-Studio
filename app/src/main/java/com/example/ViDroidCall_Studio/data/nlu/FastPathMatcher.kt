@@ -1130,21 +1130,8 @@ class FastPathMatcher(
         val compactTimeMatcher = COLON_TIME_PATTERN.matcher(payload)
 
         if (compactTimeMatcher.find()) {
-            var rawH = compactTimeMatcher.group(1)?.toIntOrNull() ?: 0
+            val rawH = compactTimeMatcher.group(1)?.toIntOrNull() ?: 0
             val rawM = compactTimeMatcher.group(2)?.toIntOrNull() ?: 0
-
-            // Sửa lỗi Google STT ITN: Google STT tự đổi "2 giờ kém 15" -> "2:45" (quên trừ 1h).
-            // Nếu chuỗi chứa dấu hai chấm ':' và phút >= 35 (45, 50, 55, 40, 35), trừ 1h để ra giờ thực sự người dùng đọc.
-            if (payload.contains(":") && rawM in listOf(
-                    35,
-                    40,
-                    45,
-                    50,
-                    55
-                ) && !unaccented.contains("kem") && !unaccented.contains("thieu")
-            ) {
-                rawH = if (rawH == 0) 23 else rawH - 1
-            }
 
             parsedHour = rawH
             parsedMinute = rawM

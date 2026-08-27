@@ -1055,7 +1055,7 @@ class FastPathMatcherTest {
     @Test
     fun testGoogleSttItnCorrection_2_45() {
         val r = matcher.match("Đặt báo thức 2:45"); assertNotNull(r); assertEquals(
-            1,
+            2,
             JSONObject(r!!.argumentsJson).optInt("hour")
         ); assertEquals(45, JSONObject(r.argumentsJson).optInt("minute"))
     }
@@ -1063,7 +1063,23 @@ class FastPathMatcherTest {
     @Test
     fun testGoogleSttItnCorrection_2_50() {
         val r = matcher.match("Đặt báo thức 2:50"); assertNotNull(r); assertEquals(
-            1,
+            2,
+            JSONObject(r!!.argumentsJson).optInt("hour")
+        ); assertEquals(50, JSONObject(r.argumentsJson).optInt("minute"))
+    }
+
+    @Test
+    fun testGoogleSttItnCorrection_15_50() {
+        val r = matcher.match("Đặt báo thức 15:50"); assertNotNull(r); assertEquals(
+            15,
+            JSONObject(r!!.argumentsJson).optInt("hour")
+        ); assertEquals(50, JSONObject(r.argumentsJson).optInt("minute"))
+    }
+
+    @Test
+    fun testGoogleSttSpoken_15Gio50() {
+        val r = matcher.match("báo thức 15 giờ 50"); assertNotNull(r); assertEquals(
+            15,
             JSONObject(r!!.argumentsJson).optInt("hour")
         ); assertEquals(50, JSONObject(r.argumentsJson).optInt("minute"))
     }
