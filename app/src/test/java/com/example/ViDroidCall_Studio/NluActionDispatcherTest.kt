@@ -152,4 +152,33 @@ class NluActionDispatcherTest {
         dispatcher.executeNluResponse("""{"intent": "play_music", "status": "unsupported"}""")
         assertEquals("Xin lỗi, tôi chưa hỗ trợ tính năng này.", spokenText)
     }
+
+    @Test
+    fun testConfirmationDescriptions() {
+        val callAction = com.example.ViDroidCall_Studio.domain.model.NativeAction.CallContact(
+            contact = "mẹ",
+            phoneNumber = "0912345678"
+        )
+        assertEquals("Bạn có muốn gọi tới mẹ (0912345678) không?", callAction.getConfirmationDescription())
+
+        val callActionNumberOnly = com.example.ViDroidCall_Studio.domain.model.NativeAction.CallContact(
+            contact = "",
+            phoneNumber = "113"
+        )
+        assertEquals("Bạn có muốn gọi tới 113 không?", callActionNumberOnly.getConfirmationDescription())
+
+        val smsAction = com.example.ViDroidCall_Studio.domain.model.NativeAction.SendSms(
+            contact = "mẹ",
+            phoneNumber = "0912345678",
+            message = "Con về muộn nhé"
+        )
+        assertEquals("Bạn có muốn gửi tin nhắn cho mẹ với nội dung 'Con về muộn nhé' không?", smsAction.getConfirmationDescription())
+
+        val smsActionNoMsg = com.example.ViDroidCall_Studio.domain.model.NativeAction.SendSms(
+            contact = "bố",
+            phoneNumber = "",
+            message = ""
+        )
+        assertEquals("Bạn có muốn soạn tin nhắn gửi cho bố không?", smsActionNoMsg.getConfirmationDescription())
+    }
 }

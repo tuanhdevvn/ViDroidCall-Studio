@@ -1647,4 +1647,79 @@ class FastPathMatcherTest {
             assertEquals("App name mismatch for '$query'", expectedApp, json.optString("app_name"))
         }
     }
+
+    @Test
+    fun testCallContactMatching() {
+        val callCases = mapOf(
+            "gọi 113" to "113",
+            "gọi 0912345678" to "0912345678",
+            "gọi số 0912345678" to "0912345678",
+            "gọi +84912345678" to "+84912345678",
+            "gọi mẹ" to "mẹ",
+            "gọi cho mẹ" to "mẹ",
+            "gọi điện cho mẹ" to "mẹ",
+            "gọi bố" to "bố",
+            "gọi cho bố" to "bố",
+            "gọi ba" to "ba",
+            "gọi vợ" to "vợ",
+            "gọi chồng" to "chồng",
+            "gọi anh hai" to "anh hai",
+            "gọi chị" to "chị",
+            "gọi em" to "em",
+            "gọi con trai" to "con trai",
+            "gọi con gái" to "con gái",
+            "gọi bác sĩ" to "bác sĩ"
+        )
+
+        for ((query, expectedContact) in callCases) {
+            val res = matcher.match(query)
+            assertNotNull("Call query '$query' must not be null", res)
+            assertEquals("call_contact", res?.intent)
+            val json = JSONObject(res!!.argumentsJson)
+            assertEquals("Contact mismatch for '$query'", expectedContact, json.optString("contact"))
+            assertTrue(res.requiresConfirmation)
+        }
+    }
+
+    @Test
+    fun testSendSmsMatching() {
+        // Simple SMS without message
+        val simpleSmsCases = mapOf(
+            "nhắn tin cho mẹ" to "mẹ",
+            "nhắn tin bố" to "bố",
+            "gửi tin nhắn cho mẹ" to "mẹ",
+            "gửi tin nhắn cho bố" to "bố",
+            "nhắn mẹ" to "mẹ",
+            "nhắn cho mẹ" to "mẹ",
+            "gửi mẹ tin nhắn" to "mẹ"
+        )
+        for ((query, expectedContact) in simpleSmsCases) {
+            val res = matcher.match(query)
+            assertNotNull("Simple SMS query '$query' must not be null", res)
+            assertEquals("send_sms", res?.intent)
+            val json = JSONObject(res!!.argumentsJson)
+            assertEquals("Contact mismatch for '$query'", expectedContact, json.optString("contact"))
+            assertTrue(res.requiresConfirmation)
+        }
+
+        // Content SMS with separator or colon
+        val contentSmsCases = listOf(
+            Triple("Nhắn tin cho mẹ: Con về muộn nhé", "mẹ", "Con về muộn nhé"),
+            Triple("Gửi tin nhắn cho bố: Con đang ở trường", "bố", "Con đang ở trường"),
+            Triple("Nhắn tin cho mẹ rằng con về muộn", "mẹ", "con về muộn"),
+            Triple("Gửi tin nhắn cho bố với nội dung con đang ở trường", "bố", "con đang ở trường"),
+            Triple("Nhắn mẹ con về muộn nhé", "mẹ", "con về muộn nhé"),
+            Triple("Gửi tin nhắn cho anh hai với nội dung tối nay đi đá bóng", "anh hai", "tối nay đi đá bóng")
+        )
+
+        for ((query, expectedContact, expectedMsg) in contentSmsCases) {
+            val res = matcher.match(query)
+            assertNotNull("Content SMS query '$query' must not be null", res)
+            assertEquals("send_sms", res?.intent)
+            val json = JSONObject(res!!.argumentsJson)
+            assertEquals("Contact mismatch for '$query'", expectedContact, json.optString("contact"))
+            assertEquals("Message mismatch for '$query'", expectedMsg, json.optString("message"))
+            assertTrue(res.requiresConfirmation)
+        }
+    }
 }

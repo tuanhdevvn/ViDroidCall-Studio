@@ -103,6 +103,297 @@
     },
     {
       "patterns": [
+        "gọi mẹ",
+        "gọi cho mẹ",
+        "gọi điện cho mẹ",
+        "gọi điện mẹ",
+        "alo cho mẹ",
+        "goi me",
+        "goi cho me"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "mẹ"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi bố",
+        "gọi cho bố",
+        "gọi điện cho bố",
+        "gọi điện bố",
+        "gọi ba",
+        "gọi cho ba",
+        "alo cho bố",
+        "goi bo",
+        "goi cho bo",
+        "goi ba"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "bố"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi vợ",
+        "gọi cho vợ",
+        "gọi bà xã",
+        "gọi cho bà xã",
+        "goi vo",
+        "goi cho vo"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "vợ"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi chồng",
+        "gọi cho chồng",
+        "gọi ông xã",
+        "gọi cho ông xã",
+        "goi chong",
+        "goi cho chong"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "chồng"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi anh hai",
+        "gọi cho anh hai",
+        "goi anh hai",
+        "goi cho anh hai"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "anh hai"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi chị",
+        "gọi cho chị",
+        "gọi chị gái",
+        "gọi cho chị gái",
+        "goi chi",
+        "goi cho chi"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "chị"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi em",
+        "gọi cho em",
+        "gọi em gái",
+        "gọi em trai",
+        "goi em",
+        "goi cho em"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "em"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi con trai",
+        "gọi cho con trai",
+        "goi con trai",
+        "goi cho con trai"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "con trai"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi con gái",
+        "gọi cho con gái",
+        "goi con gai",
+        "goi cho con gai"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "con gái"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "gọi bác sĩ",
+        "gọi cho bác sĩ",
+        "gọi bác sỹ",
+        "gọi cho bác sỹ",
+        "goi bac si",
+        "goi cho bac si"
+      ],
+      "intent": "call_contact",
+      "arguments": {
+        "contact": "bác sĩ"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "nhắn tin cho mẹ",
+        "nhắn tin mẹ",
+        "gửi tin nhắn cho mẹ",
+        "gửi tin nhắn mẹ",
+        "nhắn mẹ",
+        "nhắn cho mẹ",
+        "gửi mẹ tin nhắn",
+        "nhan tin cho me",
+        "nhan me",
+        "gui tin nhan cho me"
+      ],
+      "intent": "send_sms",
+      "arguments": {
+        "contact": "mẹ",
+        "message": ""
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "nhắn tin cho bố",
+        "nhắn tin bố",
+        "gửi tin nhắn cho bố",
+        "gửi tin nhắn bố",
+        "nhắn bố",
+        "nhắn cho bố",
+        "gửi bố tin nhắn",
+        "nhắn ba",
+        "nhắn cho ba",
+        "nhắn tin cho ba",
+        "nhan tin cho bo",
+        "nhan bo",
+        "gui tin nhan cho bo"
+      ],
+      "intent": "send_sms",
+      "arguments": {
+        "contact": "bố",
+        "message": ""
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "nhắn tin cho vợ",
+        "nhắn vợ",
+        "gửi tin nhắn cho vợ",
+        "nhắn cho vợ",
+        "gửi vợ tin nhắn",
+        "nhan tin cho vo",
+        "nhan vo"
+      ],
+      "intent": "send_sms",
+      "arguments": {
+        "contact": "vợ",
+        "message": ""
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "nhắn tin cho chồng",
+        "nhắn chồng",
+        "gửi tin nhắn cho chồng",
+        "nhắn cho chồng",
+        "gửi chồng tin nhắn",
+        "nhan tin cho chong",
+        "nhan chong"
+      ],
+      "intent": "send_sms",
+      "arguments": {
+        "contact": "chồng",
+        "message": ""
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "nhắn tin cho anh hai",
+        "nhắn anh hai",
+        "gửi tin nhắn cho anh hai",
+        "nhắn cho anh hai",
+        "gửi anh hai tin nhắn",
+        "nhan tin cho anh hai",
+        "nhan anh hai"
+      ],
+      "intent": "send_sms",
+      "arguments": {
+        "contact": "anh hai",
+        "message": ""
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
+        "nhắn tin cho bác sĩ",
+        "nhắn bác sĩ",
+        "gửi tin nhắn cho bác sĩ",
+        "nhắn cho bác sĩ",
+        "nhan tin cho bac si",
+        "nhan bac si"
+      ],
+      "intent": "send_sms",
+      "arguments": {
+        "contact": "bác sĩ",
+        "message": ""
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": true
+    },
+    {
+      "patterns": [
         "chup anh",
         "chup hinh",
         "may anh",

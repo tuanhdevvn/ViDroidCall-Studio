@@ -14,6 +14,7 @@ import android.widget.Toast
 import com.example.ViDroidCall_Studio.data.model.NluJsonParser
 import com.example.ViDroidCall_Studio.domain.model.NativeAction
 import com.example.ViDroidCall_Studio.util.AppResolver
+import com.example.ViDroidCall_Studio.util.ContactResolver
 import org.json.JSONObject
 
 /**
@@ -23,14 +24,15 @@ class NluActionDispatcher(
     private val context: Context?,
     private val enableAppLaunch: Boolean = true,
     private val onActionError: (String) -> Unit = {},
-    private val onSpeakFeedback: (String) -> Unit = {}
+    private val onSpeakFeedback: (String) -> Unit = {},
+    private val onRequestPermission: (String) -> Unit = {}
 ) {
     // Secondary constructor for backwards compatibility with tests and callers
     constructor(
         context: Context?,
         enableAppLaunch: Boolean = true,
         onSpeakFeedback: (String) -> Unit
-    ) : this(context, enableAppLaunch, {}, onSpeakFeedback)
+    ) : this(context, enableAppLaunch, {}, onSpeakFeedback, {})
 
     private val mainHandler by lazy {
         try {
@@ -214,26 +216,196 @@ class NluActionDispatcher(
             return
         }
 
-        showToast("📞 Đang mở cuộc gọi tới: $target...")
-        val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-            data = Uri.parse("tel:${Uri.encode(target)}")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        // 1. Nếu là số điện thoại trực tiếp hoặc số khẩn cấp
+        if (ContactResolver.isPhoneNumber(target)) {
+            showToast("📞 Đang mở cuộc gọi tới: $target...")
+            val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                data = Uri.parse("tel:${Uri.encode(target)}")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            try {
+                context.startActivity(dialIntent)
+                logLifecycle("ACTION_SUCCESS", "intent=call_contact, target=$target, type=direct_number")
+            } catch (e: ActivityNotFoundException) {
+                val errorMsg = "Thiết bị không có ứng dụng phù hợp để thực hiện cuộc gọi."
+                showToast(errorMsg)
+                speakText(errorMsg)
+                onActionError(errorMsg)
+            }
+            return
         }
-        context.startActivity(dialIntent)
-        logLifecycle("ACTION_SUCCESS", "intent=call_contact, target=$target")
+
+        // 2. Nếu là tên liên hệ trong Danh bạ (ContactsContract)
+        when (val searchResult = ContactResolver.searchContact(context, target)) {
+            is ContactResolver.ContactSearchResult.PermissionDenied -> {
+                val errorMsg = "Ứng dụng cần quyền truy cập danh bạ để tìm số điện thoại."
+                showToast("⚠️ $errorMsg")
+                speakText(errorMsg)
+                onActionError(errorMsg)
+                logLifecycle("ACTION_FAILED", "intent=call_contact, target=$target, error=PermissionDenied")
+                runOnMainThread {
+                    onRequestPermission(android.Manifest.permission.READ_CONTACTS)
+                }
+            }
+            is ContactResolver.ContactSearchResult.NotFound -> {
+                val errorMsg = "Tôi không tìm thấy $target trong danh bạ."
+                showToast(errorMsg)
+                speakText(errorMsg)
+                onActionError(errorMsg)
+                logLifecycle("ACTION_FAILED", "intent=call_contact, target=$target, error=NotFound")
+                openContactsApp(context)
+            }
+            is ContactResolver.ContactSearchResult.NoPhoneNumber -> {
+                val errorMsg = "Liên hệ này không có số điện thoại."
+                showToast(errorMsg)
+                speakText(errorMsg)
+                onActionError(errorMsg)
+                logLifecycle("ACTION_FAILED", "intent=call_contact, target=$target, error=NoPhoneNumber")
+                openContactsApp(context)
+            }
+            is ContactResolver.ContactSearchResult.Success -> {
+                val contactInfo = searchResult.contact
+                showToast("📞 Đang gọi ${contactInfo.name} (${contactInfo.phoneNumber})...")
+                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:${Uri.encode(contactInfo.phoneNumber)}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                try {
+                    context.startActivity(dialIntent)
+                    logLifecycle("ACTION_SUCCESS", "intent=call_contact, contact=${contactInfo.name}, number=${contactInfo.phoneNumber}")
+                } catch (e: ActivityNotFoundException) {
+                    val errorMsg = "Thiết bị không có ứng dụng phù hợp để thực hiện cuộc gọi."
+                    showToast(errorMsg)
+                    speakText(errorMsg)
+                    onActionError(errorMsg)
+                }
+            }
+            is ContactResolver.ContactSearchResult.MultipleNumbers -> {
+                val primaryNumber = searchResult.phoneNumbers.firstOrNull() ?: ""
+                showToast("📞 Đang gọi ${searchResult.name} ($primaryNumber)...")
+                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:${Uri.encode(primaryNumber)}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                try {
+                    context.startActivity(dialIntent)
+                    logLifecycle("ACTION_SUCCESS", "intent=call_contact, contact=${searchResult.name}, number=$primaryNumber")
+                } catch (e: ActivityNotFoundException) {
+                    val errorMsg = "Thiết bị không có ứng dụng phù hợp để thực hiện cuộc gọi."
+                    showToast(errorMsg)
+                    speakText(errorMsg)
+                    onActionError(errorMsg)
+                }
+            }
+        }
     }
 
     private fun executeSendSms(context: Context, action: NativeAction.SendSms) {
         val target = if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
-        showToast("💬 Đang mở tin nhắn gửi tới: $target...")
 
-        val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("smsto:${Uri.encode(target)}")
-            putExtra("sms_body", action.message)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        // 1. Kiểm tra nội dung tin nhắn
+        if (action.message.isBlank()) {
+            val contactName = if (target.isNotBlank()) target else "người này"
+            val errorMsg = "Bạn muốn nhắn nội dung gì cho $contactName?"
+            showToast("Vui lòng cung cấp nội dung tin nhắn.")
+            speakText(errorMsg)
+            onActionError(errorMsg)
+            logLifecycle("ACTION_FAILED", "intent=send_sms, target=$target, error=EmptyMessage")
+            return
         }
-        context.startActivity(smsIntent)
-        logLifecycle("ACTION_SUCCESS", "intent=send_sms, target=$target")
+
+        if (target.isBlank()) {
+            val error = "Vui lòng chỉ định người nhận tin nhắn."
+            showToast(error)
+            speakText(error)
+            onActionError(error)
+            return
+        }
+
+        // 2. Nếu target là số điện thoại trực tiếp
+        if (ContactResolver.isPhoneNumber(target)) {
+            showToast("💬 Đang mở tin nhắn gửi tới: $target...")
+            val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("smsto:${Uri.encode(target)}")
+                putExtra("sms_body", action.message)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            try {
+                context.startActivity(smsIntent)
+                logLifecycle("ACTION_SUCCESS", "intent=send_sms, target=$target, type=direct_number")
+            } catch (e: ActivityNotFoundException) {
+                val errorMsg = "Thiết bị không có ứng dụng nhắn tin phù hợp."
+                showToast(errorMsg)
+                speakText(errorMsg)
+                onActionError(errorMsg)
+                logLifecycle("ACTION_FAILED", "intent=send_sms, error=ActivityNotFoundException: ${e.message}")
+            }
+            return
+        }
+
+        // 3. Nếu target là tên liên hệ trong Danh bạ (ContactsContract)
+        when (val searchResult = ContactResolver.searchContact(context, target)) {
+            is ContactResolver.ContactSearchResult.PermissionDenied -> {
+                val errorMsg = "Ứng dụng cần quyền truy cập danh bạ để tìm số điện thoại."
+                showToast("⚠️ $errorMsg")
+                speakText(errorMsg)
+                onActionError(errorMsg)
+                logLifecycle("ACTION_FAILED", "intent=send_sms, target=$target, error=PermissionDenied")
+                runOnMainThread {
+                    onRequestPermission(android.Manifest.permission.READ_CONTACTS)
+                }
+            }
+            is ContactResolver.ContactSearchResult.NotFound -> {
+                val errorMsg = "Tôi không tìm thấy $target trong danh bạ."
+                showToast(errorMsg)
+                speakText(errorMsg)
+                onActionError(errorMsg)
+                logLifecycle("ACTION_FAILED", "intent=send_sms, target=$target, error=NotFound")
+            }
+            is ContactResolver.ContactSearchResult.NoPhoneNumber -> {
+                val errorMsg = "Liên hệ này không có số điện thoại."
+                showToast(errorMsg)
+                speakText(errorMsg)
+                onActionError(errorMsg)
+                logLifecycle("ACTION_FAILED", "intent=send_sms, target=$target, error=NoPhoneNumber")
+            }
+            is ContactResolver.ContactSearchResult.Success -> {
+                val contactInfo = searchResult.contact
+                showToast("💬 Đang mở tin nhắn gửi tới ${contactInfo.name} (${contactInfo.phoneNumber})...")
+                val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = Uri.parse("smsto:${Uri.encode(contactInfo.phoneNumber)}")
+                    putExtra("sms_body", action.message)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                try {
+                    context.startActivity(smsIntent)
+                    logLifecycle("ACTION_SUCCESS", "intent=send_sms, contact=${contactInfo.name}, number=${contactInfo.phoneNumber}")
+                } catch (e: ActivityNotFoundException) {
+                    val errorMsg = "Thiết bị không có ứng dụng nhắn tin phù hợp."
+                    showToast(errorMsg)
+                    speakText(errorMsg)
+                    onActionError(errorMsg)
+                }
+            }
+            is ContactResolver.ContactSearchResult.MultipleNumbers -> {
+                val primaryNumber = searchResult.phoneNumbers.firstOrNull() ?: ""
+                showToast("💬 Đang mở tin nhắn gửi tới ${searchResult.name} ($primaryNumber)...")
+                val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = Uri.parse("smsto:${Uri.encode(primaryNumber)}")
+                    putExtra("sms_body", action.message)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                try {
+                    context.startActivity(smsIntent)
+                    logLifecycle("ACTION_SUCCESS", "intent=send_sms, contact=${searchResult.name}, number=$primaryNumber")
+                } catch (e: ActivityNotFoundException) {
+                    val errorMsg = "Thiết bị không có ứng dụng nhắn tin phù hợp."
+                    showToast(errorMsg)
+                    speakText(errorMsg)
+                    onActionError(errorMsg)
+                }
+            }
+        }
     }
 
     private fun executeOpenMap(context: Context, action: NativeAction.OpenMap) {
@@ -383,6 +555,27 @@ class NluActionDispatcher(
             }
             context.startActivity(ytMusicIntent)
             logLifecycle("ACTION_SUCCESS", "intent=play_music, type=youtube_fallback")
+        }
+    }
+
+    private fun openContactsApp(context: Context) {
+        val contactsIntent = Intent(Intent.ACTION_VIEW, Uri.parse("content://contacts/people")).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        try {
+            if (contactsIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(contactsIntent)
+            } else {
+                val mainContactsIntent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_APP_CONTACTS)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                if (mainContactsIntent.resolveActivity(context.packageManager) != null) {
+                    context.startActivity(mainContactsIntent)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Không thể mở ứng dụng Danh bạ dự phòng: ${e.message}")
         }
     }
 

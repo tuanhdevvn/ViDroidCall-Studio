@@ -595,14 +595,14 @@ class FastPathMatcher(
             }
 
             // 3. Khớp Regex Pattern động kết hợp VietnameseNumberParser, Time Period Normalizer & Relative Time
-            matchDynamicPatterns(rawClean)
+            matchDynamicPatterns(rawClean, normalizedQuery.trim())
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi trong quá trình Fast-Path match: ${e.message}", e)
             null
         }
     }
 
-    private fun matchDynamicPatterns(text: String): NluResult? {
+    private fun matchDynamicPatterns(text: String, originalText: String = text): NluResult? {
         val unaccentedText = normalizeText(text)
 
         // a. Lời chào
@@ -708,31 +708,33 @@ class FastPathMatcher(
             }
         }
 
-        // k. Gửi tin nhắn có nội dung
-        val smsContentMatcher = SMS_CONTENT_PATTERN.matcher(text)
-        if (smsContentMatcher.find()) {
-            val contact = smsContentMatcher.group(1)?.trim() ?: ""
-            val message = smsContentMatcher.group(2)?.trim() ?: ""
-            if (contact.isNotEmpty()) {
-                val args = JSONObject().apply {
-                    put("contact", contact)
-                    put("message", message)
-                }
-                return buildNluResult("send_sms", args, "medium", "success", false)
-            }
+        // k. Gửi tin nhắn có nội dung (send_sms with content)
+        val smsContentResult = parseSmsCommand(text, originalText)
+        if (smsContentResult != null) {
+            return smsContentResult
         }
 
-        // l. Soạn tin nhắn không nội dung
+        // l. Soạn tin nhắn không nội dung (send_sms without content)
         val smsSimpleMatcher = SMS_SIMPLE_PATTERN.matcher(text)
         if (smsSimpleMatcher.find()) {
-            val contact = smsSimpleMatcher.group(1)?.trim() ?: ""
+            var contact = smsSimpleMatcher.group(1)?.trim() ?: ""
+            if (contact.endsWith(" tin nhắn", ignoreCase = true)) {
+                contact = contact.substring(0, contact.length - 9).trim()
+            } else if (contact.endsWith(" tin nhan", ignoreCase = true)) {
+                contact = contact.substring(0, contact.length - 9).trim()
+            } else if (contact.endsWith(" tin", ignoreCase = true)) {
+                contact = contact.substring(0, contact.length - 4).trim()
+            }
+            if (contact.startsWith("cho ", ignoreCase = true)) {
+                contact = contact.substring(4).trim()
+            }
             val unaccentedContact = stripAccents(contact.lowercase())
             if (contact.isNotEmpty() && !unaccentedContact.contains("noi dung") && !unaccentedContact.contains(" la ")) {
                 val args = JSONObject().apply {
                     put("contact", contact)
                     put("message", "")
                 }
-                return buildNluResult("send_sms", args, "medium", "success", false)
+                return buildNluResult("send_sms", args, "low", "success", true)
             }
         }
 
@@ -747,10 +749,115 @@ class FastPathMatcher(
                 }
             }
             if (contact.isNotEmpty()) {
+                val isEmergency = contact in setOf("113", "114", "115", "111", "112", "911", "công an", "cứu hỏa", "cấp cứu", "cứu thương")
+                val risk = if (isEmergency) "high" else "low"
                 val args = JSONObject().apply {
                     put("contact", contact)
                 }
-                return buildNluResult("call_contact", args, "high", "success", true)
+                return buildNluResult("call_contact", args, risk, "success", true)
+            }
+        }
+
+        return null
+    }
+
+    private fun parseSmsCommand(text: String, originalText: String = text): NluResult? {
+        val unaccented = stripAccents(originalText.lowercase()).trim()
+        val isSmsPrefix = unaccented.startsWith("nhan tin") ||
+                unaccented.startsWith("gui tin nhan") ||
+                unaccented.startsWith("gui tin") ||
+                unaccented.startsWith("soan tin nhan") ||
+                unaccented.startsWith("soan tin") ||
+                unaccented.startsWith("nhan cho") ||
+                unaccented.startsWith("nhan ") ||
+                unaccented.startsWith("gui ")
+
+        if (!isSmsPrefix) return null
+
+        // 1. Dạng có dấu hai chấm ":" hoặc gạch ngang "-"
+        if (originalText.contains(":") || originalText.contains(" - ")) {
+            val parts = if (originalText.contains(":")) originalText.split(":", limit = 2) else originalText.split(" - ", limit = 2)
+            val header = parts[0].trim()
+            val message = parts.getOrNull(1)?.trim() ?: ""
+            val matcher = SMS_SIMPLE_PATTERN.matcher(header)
+            if (matcher.find()) {
+                var contact = matcher.group(1)?.trim() ?: ""
+                if (contact.endsWith(" tin nhắn", ignoreCase = true)) {
+                    contact = contact.substring(0, contact.length - 9).trim()
+                } else if (contact.endsWith(" tin nhan", ignoreCase = true)) {
+                    contact = contact.substring(0, contact.length - 9).trim()
+                } else if (contact.endsWith(" tin", ignoreCase = true)) {
+                    contact = contact.substring(0, contact.length - 4).trim()
+                }
+                if (contact.startsWith("cho ", ignoreCase = true)) {
+                    contact = contact.substring(4).trim()
+                }
+                if (contact.isNotEmpty()) {
+                    val args = JSONObject().apply {
+                        put("contact", contact)
+                        put("message", message)
+                    }
+                    return buildNluResult("send_sms", args, "low", "success", true)
+                }
+            }
+        }
+
+        // 2. Dạng khớp với SMS_CONTENT_PATTERN (với nội dung, rằng, là, bảo...)
+        val smsContentMatcher = SMS_CONTENT_PATTERN.matcher(originalText)
+        if (smsContentMatcher.find()) {
+            var contact = smsContentMatcher.group(1)?.trim() ?: ""
+            val message = smsContentMatcher.group(2)?.trim() ?: ""
+            if (contact.startsWith("cho ", ignoreCase = true)) {
+                contact = contact.substring(4).trim()
+            }
+            if (contact.endsWith(" tin nhắn", ignoreCase = true)) {
+                contact = contact.substring(0, contact.length - 9).trim()
+            } else if (contact.endsWith(" tin nhan", ignoreCase = true)) {
+                contact = contact.substring(0, contact.length - 9).trim()
+            } else if (contact.endsWith(" tin", ignoreCase = true)) {
+                contact = contact.substring(0, contact.length - 4).trim()
+            }
+            if (contact.isNotEmpty() && message.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("contact", contact)
+                    put("message", message)
+                }
+                return buildNluResult("send_sms", args, "low", "success", true)
+            }
+        }
+
+        // 3. Dạng câu nói tự nhiên: "nhắn mẹ con về muộn nhé", "gửi bố con đang ở trường"
+        val naturalPronouns = listOf(
+            "con ", "em ", "anh ", "cháu ", "chau ", "tôi ", "toi ", "mình ", "minh ",
+            "bác ", "bac ", "chú ", "chu ", "hôm nay ", "hom nay ", "mai ", "đang ", "dang ",
+            "về ", "ve ", "chút nữa ", "chut nua "
+        )
+        val simpleMatcher = SMS_SIMPLE_PATTERN.matcher(originalText)
+        if (simpleMatcher.find()) {
+            val fullTarget = simpleMatcher.group(1)?.trim() ?: ""
+            for (pronoun in naturalPronouns) {
+                val idx = fullTarget.indexOf(pronoun, ignoreCase = true)
+                if (idx > 0) {
+                    var potentialContact = fullTarget.substring(0, idx).trim()
+                    val potentialMessage = fullTarget.substring(idx).trim()
+                    if (potentialContact.endsWith(" tin nhắn", ignoreCase = true)) {
+                        potentialContact = potentialContact.substring(0, potentialContact.length - 9).trim()
+                    } else if (potentialContact.endsWith(" tin nhan", ignoreCase = true)) {
+                        potentialContact = potentialContact.substring(0, potentialContact.length - 9).trim()
+                    } else if (potentialContact.endsWith(" tin", ignoreCase = true)) {
+                        potentialContact = potentialContact.substring(0, potentialContact.length - 4).trim()
+                    }
+                    if (potentialContact.startsWith("cho ", ignoreCase = true)) {
+                        potentialContact = potentialContact.substring(4).trim()
+                    }
+                    if (potentialContact.isNotEmpty() && potentialMessage.isNotEmpty()) {
+                        val args = JSONObject().apply {
+                            put("contact", potentialContact)
+                            put("message", potentialMessage)
+                        }
+                        return buildNluResult("send_sms", args, "low", "success", true)
+                    }
+                }
             }
         }
 
@@ -1482,15 +1589,15 @@ class FastPathMatcher(
             Pattern.CASE_INSENSITIVE
         )
         private val SMS_CONTENT_PATTERN = Pattern.compile(
-            "^(?:nhắn\\s+tin|nhan\\s+tin|gửi\\s+tin\\s+nhắn|gui\\s+tin\\s+nhan|nhắn|nhan)(?:\\s+cho)?\\s+(.+?)(?:\\s+(?:nội\\s+dung|noi\\s+dung|là|la|với\\s+nội\\s+dung|voi\\s+noi\\s+dung))\\s+(.+)$",
+            "^(?:nhắn\\s+tin|nhan\\s+tin|gửi\\s+tin\\s+nhắn|gui\\s+tin\\s+nhan|soạn\\s+tin\\s+nhắn|soan\\s+tin\\s+nhan|gửi\\s+tin|gui\\s+tin|nhắn|nhan|gửi|gui)(?:\\s+cho)?\\s+(.+?)(?:\\s*(?:[:\\-])\\s*|\\s+(?:với\\s+nội\\s+dung|voi\\s+noi\\s+dung|nội\\s+dung\\s+là|noi\\s+dung\\s+la|nội\\s+dung|noi\\s+dung|rằng\\s+là|rang\\s+la|rằng|rang|bảo\\s+là|bao\\s+la|bảo|bao|là|la)\\s+)(.+)$",
             Pattern.CASE_INSENSITIVE
         )
         private val SMS_SIMPLE_PATTERN = Pattern.compile(
-            "^(?:nhắn\\s+tin|nhan\\s+tin|gửi\\s+tin\\s+nhắn|gui\\s+tin\\s+nhan|nhắn|nhan)(?:\\s+cho)?\\s+(.+)$",
+            "^(?:nhắn\\s+tin|nhan\\s+tin|gửi\\s+tin\\s+nhắn|gui\\s+tin\\s+nhan|soạn\\s+tin\\s+nhắn|soan\\s+tin\\s+nhan|gửi\\s+tin|gui\\s+tin|nhắn|nhan|gửi|gui)(?:\\s+cho)?\\s+(.+)$",
             Pattern.CASE_INSENSITIVE
         )
         private val CALL_PATTERN = Pattern.compile(
-            "^(?:gọi\\s+điện(?:\\s+(?:cho|đến))?|goi\\s+dien(?:\\s+(?:cho|den))?|gọi(?:\\s+(?:cho|đến))?|goi(?:\\s+(?:cho|den))?|alo\\s+cho)\\s+(.+)$",
+            "^(?:gọi\\s+điện\\s+thoại(?:\\s+(?:cho|đến|den|tới|toi))?|goi\\s+dien\\s+thoai(?:\\s+(?:cho|den|toi))?|gọi\\s+điện(?:\\s+(?:cho|đến|den|tới|toi))?|goi\\s+dien(?:\\s+(?:cho|den|toi))?|gọi(?:\\s+(?:cho|đến|den|tới|toi))?|goi(?:\\s+(?:cho|den|toi))?|alo(?:\\s+(?:cho))?)\\s+(.+)$",
             Pattern.CASE_INSENSITIVE
         )
         private val VIDEO_PATTERN = Pattern.compile(
