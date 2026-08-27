@@ -86,41 +86,435 @@ class FastPathMatcher(
     }
 
     private fun loadDefaultRules() {
-        addRule(patterns = listOf("xin chào", "chào em", "chào bạn", "chào emma", "hello", "hi", "alo", "hey emma", "chào em gái", "có ai ở đó không", "chào", "hello emma"), intent = "greeting", args = JSONObject(), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("tạm biệt", "chào tạm biệt", "bye", "bye bye", "hẹn gặp lại", "tắt đi", "kết thúc", "dừng lại", "đóng lại", "thoát ra"), intent = "goodbye", args = JSONObject(), risk = "low", status = "success", confirm = false)
+        addRule(
+            patterns = listOf(
+                "xin chào",
+                "chào em",
+                "chào bạn",
+                "chào emma",
+                "hello",
+                "hi",
+                "alo",
+                "hey emma",
+                "chào em gái",
+                "có ai ở đó không",
+                "chào",
+                "hello emma"
+            ), intent = "greeting", args = JSONObject(), risk = "low", status = "success", confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "tạm biệt",
+                "chào tạm biệt",
+                "bye",
+                "bye bye",
+                "hẹn gặp lại",
+                "tắt đi",
+                "kết thúc",
+                "dừng lại",
+                "đóng lại",
+                "thoát ra"
+            ), intent = "goodbye", args = JSONObject(), risk = "low", status = "success", confirm = false
+        )
 
-        addRule(patterns = listOf("gọi 113", "gọi cảnh sát", "gọi công an", "báo công an"), intent = "call_contact", args = JSONObject().put("contact", "113"), risk = "high", status = "success", confirm = true)
-        addRule(patterns = listOf("gọi 114", "gọi cứu hỏa", "báo cháy"), intent = "call_contact", args = JSONObject().put("contact", "114"), risk = "high", status = "success", confirm = true)
-        addRule(patterns = listOf("gọi 115", "gọi cấp cứu"), intent = "call_contact", args = JSONObject().put("contact", "115"), risk = "high", status = "success", confirm = true)
+        addRule(
+            patterns = listOf("gọi 113", "gọi cảnh sát", "gọi công an", "báo công an"),
+            intent = "call_contact",
+            args = JSONObject().put("contact", "113"),
+            risk = "high",
+            status = "success",
+            confirm = true
+        )
+        addRule(
+            patterns = listOf("gọi 114", "gọi cứu hỏa", "báo cháy"),
+            intent = "call_contact",
+            args = JSONObject().put("contact", "114"),
+            risk = "high",
+            status = "success",
+            confirm = true
+        )
+        addRule(
+            patterns = listOf("gọi 115", "gọi cấp cứu"),
+            intent = "call_contact",
+            args = JSONObject().put("contact", "115"),
+            risk = "high",
+            status = "success",
+            confirm = true
+        )
 
-        addRule(patterns = listOf("chup anh", "chup hinh", "may anh", "mo may anh", "mo camera", "camera", "ca me ra", "chụp ảnh", "chụp hình", "máy ảnh", "mở máy ảnh"), intent = "open_app", args = JSONObject().put("app_name", "camera"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("xem anh", "xem hinh", "bo suu tap", "album anh", "mo anh", "thu vien anh", "thu vien", "gallery", "xem ảnh", "xem hình", "bộ sưu tập", "album ảnh", "thư viện ảnh", "anh", "ảnh", "mở ảnh"), intent = "open_app", args = JSONObject().put("app_name", "gallery"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("may tinh", "tinh tien", "tinh toan", "ban tinh", "mo may tinh", "calculator", "máy tính", "tính tiền", "tính toán", "bàn tính"), intent = "open_app", args = JSONObject().put("app_name", "calculator"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("danh ba", "so dien thoai", "danh sach goi", "mo danh ba", "danh bạ", "số điện thoại", "danh sách gọi"), intent = "open_app", args = JSONObject().put("app_name", "contacts"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("xem gio", "dong ho", "dong ho bao thuc", "mo dong ho", "xem giờ", "đồng hồ", "đồng hồ báo thức"), intent = "open_app", args = JSONObject().put("app_name", "clock"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("cai dat", "thiet lap", "cai dat may", "mo cai dat", "cai dat dien thoai", "settings", "cài đặt", "thiết lập", "cài đặt máy", "cài đặt điện thoại"), intent = "open_app", args = JSONObject().put("app_name", "settings"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("ghi am", "may ghi am", "thu am", "mo ghi am", "ghi âm", "máy ghi âm", "thu âm"), intent = "open_app", args = JSONObject().put("app_name", "recorder"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("quan ly tep", "file cua ban", "tep tin", "mo file", "quan ly file", "file", "quản lý tệp", "file của bạn", "tệp tin", "mở file", "quản lý file"), intent = "open_app", args = JSONObject().put("app_name", "files"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("tai ung dung", "cai tro choi", "ch play", "cua hang", "cua hang ung dung", "google play", "play store", "tải ứng dụng", "cài trò chơi", "CH Play", "cửa hàng", "cửa hàng ứng dụng"), intent = "open_app", args = JSONObject().put("app_name", "playstore"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("doc bao", "xem tin tuc", "len mang", "guc go", "google", "mo trinh duyet", "trinh duyet", "chrome", "đọc báo", "xem tin tức", "lên mạng", "mở trình duyệt", "trình duyệt"), intent = "open_app", args = JSONObject().put("app_name", "chrome"), risk = "low", status = "success", confirm = false)
+        addRule(
+            patterns = listOf(
+                "chup anh",
+                "chup hinh",
+                "may anh",
+                "mo may anh",
+                "mo camera",
+                "camera",
+                "ca me ra",
+                "chụp ảnh",
+                "chụp hình",
+                "máy ảnh",
+                "mở máy ảnh"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "camera"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "xem anh",
+                "xem hinh",
+                "bo suu tap",
+                "album anh",
+                "mo anh",
+                "thu vien anh",
+                "thu vien",
+                "gallery",
+                "xem ảnh",
+                "xem hình",
+                "bộ sưu tập",
+                "album ảnh",
+                "thư viện ảnh",
+                "anh",
+                "ảnh",
+                "mở ảnh"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "gallery"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "may tinh",
+                "tinh tien",
+                "tinh toan",
+                "ban tinh",
+                "mo may tinh",
+                "calculator",
+                "máy tính",
+                "tính tiền",
+                "tính toán",
+                "bàn tính"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "calculator"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "danh ba",
+                "so dien thoai",
+                "danh sach goi",
+                "mo danh ba",
+                "danh bạ",
+                "số điện thoại",
+                "danh sách gọi"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "contacts"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "xem gio",
+                "dong ho",
+                "dong ho bao thuc",
+                "mo dong ho",
+                "xem giờ",
+                "đồng hồ",
+                "đồng hồ báo thức"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "clock"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "cai dat",
+                "thiet lap",
+                "cai dat may",
+                "mo cai dat",
+                "cai dat dien thoai",
+                "settings",
+                "cài đặt",
+                "thiết lập",
+                "cài đặt máy",
+                "cài đặt điện thoại"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "settings"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("ghi am", "may ghi am", "thu am", "mo ghi am", "ghi âm", "máy ghi âm", "thu âm"),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "recorder"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "quan ly tep",
+                "file cua ban",
+                "tep tin",
+                "mo file",
+                "quan ly file",
+                "file",
+                "quản lý tệp",
+                "file của bạn",
+                "tệp tin",
+                "mở file",
+                "quản lý file"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "files"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "tai ung dung",
+                "cai tro choi",
+                "ch play",
+                "cua hang",
+                "cua hang ung dung",
+                "google play",
+                "play store",
+                "tải ứng dụng",
+                "cài trò chơi",
+                "CH Play",
+                "cửa hàng",
+                "cửa hàng ứng dụng"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "playstore"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "doc bao",
+                "xem tin tuc",
+                "len mang",
+                "guc go",
+                "google",
+                "mo trinh duyet",
+                "trinh duyet",
+                "chrome",
+                "đọc báo",
+                "xem tin tức",
+                "lên mạng",
+                "mở trình duyệt",
+                "trình duyệt"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "chrome"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
 
-        addRule(patterns = listOf("diu tup", "du tup", "dut tup", "yutube", "youtube", "xem ca nhac", "xem video", "mo youtube", "diu túp", "du túp", "đút túp", "xem ca nhạc", "nhac youtube", "nhạc youtube", "nghe nhac youtube"), intent = "open_app", args = JSONObject().put("app_name", "youtube"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("da lo", "za lo", "da ro", "zalo", "nhan da lo", "goi da lo", "mo zalo", "da-lô", "za-lô", "nhắn da lô"), intent = "open_app", args = JSONObject().put("app_name", "zalo"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("phay", "phay buc", "phay bup", "fb", "xem phay", "facebook", "mo facebook", "phây", "phây búc", "phây búp", "face", "mo face", "mở face", "vào face", "xem face"), intent = "open_app", args = JSONObject().put("app_name", "facebook"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("top top", "toc toc", "tik tok", "tiktok", "xem video ngan", "mo tiktok", "tóp tóp", "tóc tóc", "xem video ngắn"), intent = "open_app", args = JSONObject().put("app_name", "tiktok"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("ban do", "chi duong", "guc go map", "tim duong", "google map", "google maps", "mo ban do", "bản đồ", "chỉ đường", "tìm đường"), intent = "open_app", args = JSONObject().put("app_name", "google_maps"), risk = "low", status = "success", confirm = false)
+        addRule(
+            patterns = listOf(
+                "diu tup",
+                "du tup",
+                "dut tup",
+                "yutube",
+                "youtube",
+                "xem ca nhac",
+                "xem video",
+                "mo youtube",
+                "diu túp",
+                "du túp",
+                "đút túp",
+                "xem ca nhạc",
+                "nhac youtube",
+                "nhạc youtube",
+                "nghe nhac youtube"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "youtube"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "da lo",
+                "za lo",
+                "da ro",
+                "zalo",
+                "nhan da lo",
+                "goi da lo",
+                "mo zalo",
+                "da-lô",
+                "za-lô",
+                "nhắn da lô"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "zalo"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "phay",
+                "phay buc",
+                "phay bup",
+                "fb",
+                "xem phay",
+                "facebook",
+                "mo facebook",
+                "phây",
+                "phây búc",
+                "phây búp",
+                "face",
+                "mo face",
+                "mở face",
+                "vào face",
+                "xem face"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "facebook"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "top top",
+                "toc toc",
+                "tik tok",
+                "tiktok",
+                "xem video ngan",
+                "mo tiktok",
+                "tóp tóp",
+                "tóc tóc",
+                "xem video ngắn"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "tiktok"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf(
+                "ban do",
+                "chi duong",
+                "guc go map",
+                "tim duong",
+                "google map",
+                "google maps",
+                "mo ban do",
+                "bản đồ",
+                "chỉ đường",
+                "tìm đường"
+            ),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "google_maps"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
 
-        addRule(patterns = listOf("shopee", "shop pi", "shoppe", "mo shopee"), intent = "open_app", args = JSONObject().put("app_name", "shopee"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("lazada", "la da da", "mo lazada"), intent = "open_app", args = JSONObject().put("app_name", "lazada"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("grab", "grab bike", "mo grab"), intent = "open_app", args = JSONObject().put("app_name", "grab"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("be", "be bike", "be taxi", "mo be"), intent = "open_app", args = JSONObject().put("app_name", "be"), risk = "low", status = "success", confirm = false)
+        addRule(
+            patterns = listOf("shopee", "shop pi", "shoppe", "mo shopee"),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "shopee"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("lazada", "la da da", "mo lazada"),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "lazada"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("grab", "grab bike", "mo grab"),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "grab"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("be", "be bike", "be taxi", "mo be"),
+            intent = "open_app",
+            args = JSONObject().put("app_name", "be"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
 
-        addRule(patterns = listOf("gọi", "gọi điện", "gọi điện thoại"), intent = "clarify", args = JSONObject().put("missing", JSONArray().put("contact")), risk = "low", status = "needs_clarification", confirm = false)
-        addRule(patterns = listOf("nhắn tin", "gửi tin nhắn", "soạn tin nhắn", "gửi tin"), intent = "clarify", args = JSONObject().put("missing", JSONArray().put("contact").put("message")), risk = "low", status = "needs_clarification", confirm = false)
-        addRule(patterns = listOf("hẹn giờ", "đếm ngược"), intent = "clarify", args = JSONObject().put("missing", JSONArray().put("duration").put("unit")), risk = "low", status = "needs_clarification", confirm = false)
-        addRule(patterns = listOf("đặt báo thức", "báo thức", "hẹn báo thức", "cài báo thức"), intent = "clarify", args = JSONObject().put("missing", JSONArray().put("hour").put("minute")), risk = "low", status = "needs_clarification", confirm = false)
-        addRule(patterns = listOf("bật nhạc", "mở nhạc", "nghe nhạc", "phát nhạc", "bật nhạc lên", "mở nhạc lên"), intent = "play_music", args = JSONObject(), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("tìm video", "mở video", "xem video", "bật video", "tìm clip", "xem clip"), intent = "clarify", args = JSONObject().put("missing", JSONArray().put("query")), risk = "low", status = "needs_clarification", confirm = false)
+        addRule(
+            patterns = listOf("gọi", "gọi điện", "gọi điện thoại"),
+            intent = "clarify",
+            args = JSONObject().put("missing", JSONArray().put("contact")),
+            risk = "low",
+            status = "needs_clarification",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("nhắn tin", "gửi tin nhắn", "soạn tin nhắn", "gửi tin"),
+            intent = "clarify",
+            args = JSONObject().put("missing", JSONArray().put("contact").put("message")),
+            risk = "low",
+            status = "needs_clarification",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("hẹn giờ", "đếm ngược"),
+            intent = "clarify",
+            args = JSONObject().put("missing", JSONArray().put("duration").put("unit")),
+            risk = "low",
+            status = "needs_clarification",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("đặt báo thức", "báo thức", "hẹn báo thức", "cài báo thức"),
+            intent = "clarify",
+            args = JSONObject().put("missing", JSONArray().put("hour").put("minute")),
+            risk = "low",
+            status = "needs_clarification",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("bật nhạc", "mở nhạc", "nghe nhạc", "phát nhạc", "bật nhạc lên", "mở nhạc lên"),
+            intent = "play_music",
+            args = JSONObject(),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("tìm video", "mở video", "xem video", "bật video", "tìm clip", "xem clip"),
+            intent = "clarify",
+            args = JSONObject().put("missing", JSONArray().put("query")),
+            risk = "low",
+            status = "needs_clarification",
+            confirm = false
+        )
     }
 
     private fun addRule(
@@ -222,7 +616,10 @@ class FastPathMatcher(
 
         // c. Xử lý thời gian tương đối cho set_alarm
         if (unaccentedText.contains("bao thuc") || unaccentedText.startsWith("nhac toi")) {
-            if (unaccentedText.contains("sau ") || unaccentedText.contains("nua") || unaccentedText.contains("bay gio") || unaccentedText.contains("hien tai")) {
+            if (unaccentedText.contains("sau ") || unaccentedText.contains("nua") || unaccentedText.contains("bay gio") || unaccentedText.contains(
+                    "hien tai"
+                )
+            ) {
                 val relAlarmResult = parseRelativeAlarmCommand(text)
                 if (relAlarmResult != null) return relAlarmResult
             }
@@ -284,7 +681,12 @@ class FastPathMatcher(
         if (openAppMatcher.find()) {
             val targetApp = openAppMatcher.group(1)?.trim() ?: ""
             val unaccentedTarget = stripAccents(targetApp.lowercase())
-            if (targetApp.isNotEmpty() && (COMMON_APPS.contains(unaccentedTarget) || APP_ALIAS_MAP.containsKey(unaccentedTarget) || unaccentedText.startsWith("mo ung dung") || unaccentedText.startsWith("mo app") || unaccentedText.startsWith("bat ung dung") || unaccentedText.startsWith("vao app"))) {
+            if (targetApp.isNotEmpty() && (COMMON_APPS.contains(unaccentedTarget) || APP_ALIAS_MAP.containsKey(
+                    unaccentedTarget
+                ) || unaccentedText.startsWith("mo ung dung") || unaccentedText.startsWith("mo app") || unaccentedText.startsWith(
+                    "bat ung dung"
+                ) || unaccentedText.startsWith("vao app"))
+            ) {
                 val mappedAppName = APP_ALIAS_MAP[unaccentedTarget] ?: targetApp
                 val args = JSONObject().apply {
                     put("app_name", mappedAppName)
@@ -547,32 +949,32 @@ class FastPathMatcher(
 
         val isSang =
             unaccented.contains(" sang") ||
-            unaccented.startsWith("sang ") ||
-            unaccented.contains(" som ") ||
-            unaccented.endsWith(" som") ||
-            isToMo
+                    unaccented.startsWith("sang ") ||
+                    unaccented.contains(" som ") ||
+                    unaccented.endsWith(" som") ||
+                    isToMo
 
         val isTrua =
             unaccented.contains(" trua") ||
-            unaccented.startsWith("trua ")
+                    unaccented.startsWith("trua ")
 
         val isChieu =
             unaccented.contains(" chieu") ||
-            unaccented.startsWith("chieu ") ||
-            isXeChieu
+                    unaccented.startsWith("chieu ") ||
+                    isXeChieu
 
         val isToi =
             unaccented.contains(" toi") ||
-            unaccented.startsWith("toi ") ||
-            isChangVang ||
-            isSamToi ||
-            isChapToi
+                    unaccented.startsWith("toi ") ||
+                    isChangVang ||
+                    isSamToi ||
+                    isChapToi
 
         val isDem =
             unaccented.contains(" dem") ||
-            unaccented.startsWith("dem ") ||
-            unaccented.contains(" khuya") ||
-            unaccented.startsWith("khuya")
+                    unaccented.startsWith("dem ") ||
+                    unaccented.contains(" khuya") ||
+                    unaccented.startsWith("khuya")
 
         // ============================================================
         // 2. XÁC ĐỊNH "KÉM / THIẾU" VÀ "RƯỠI"
@@ -607,7 +1009,7 @@ class FastPathMatcher(
 
                 var targetHour: Int? = null
 
-        
+
                 val colonInHour = COLON_TIME_PATTERN.matcher(hourPartRaw)
                 if (colonInHour.find()) {
                     targetHour = colonInHour.group(1)?.toIntOrNull()
@@ -639,11 +1041,11 @@ class FastPathMatcher(
 
                 val minusMinutes: Int? = when {
                     minutePartClean == "1/4" ||
-                    minutePartClean.contains("phan tu") ||
-                    minutePartClean == "mot phan tu" -> 15
+                            minutePartClean.contains("phan tu") ||
+                            minutePartClean == "mot phan tu" -> 15
 
                     minutePartClean == "1/2" ||
-                    minutePartClean.contains("nua") -> 30
+                            minutePartClean.contains("nua") -> 30
 
                     else -> VietnameseNumberParser.parse(minutePartClean)
                 }
@@ -733,7 +1135,14 @@ class FastPathMatcher(
 
             // Sửa lỗi Google STT ITN: Google STT tự đổi "2 giờ kém 15" -> "2:45" (quên trừ 1h).
             // Nếu chuỗi chứa dấu hai chấm ':' và phút >= 35 (45, 50, 55, 40, 35), trừ 1h để ra giờ thực sự người dùng đọc.
-            if (payload.contains(":") && rawM in listOf(35, 40, 45, 50, 55) && !unaccented.contains("kem") && !unaccented.contains("thieu")) {
+            if (payload.contains(":") && rawM in listOf(
+                    35,
+                    40,
+                    45,
+                    50,
+                    55
+                ) && !unaccented.contains("kem") && !unaccented.contains("thieu")
+            ) {
                 rawH = if (rawH == 0) 23 else rawH - 1
             }
 
@@ -989,9 +1398,37 @@ class FastPathMatcher(
         private val FILLER_WORDS = listOf("cai ", "app ", "ung dung ")
 
         private val COMMON_APPS = listOf(
-            "youtube", "zalo", "facebook", "tiktok", "chrome", "camera", "may anh", "cai dat", "messenger", "ban do",
-            "shopee", "shop pi", "shoppe", "lazada", "la da da", "grab", "be", "momo", "spotify", "may tinh", "bo suu tap",
-            "anh", "danh ba", "ch play", "guc go map", "chi duong", "nhac youtube", "face", "fe", "mess", "mes"
+            "youtube",
+            "zalo",
+            "facebook",
+            "tiktok",
+            "chrome",
+            "camera",
+            "may anh",
+            "cai dat",
+            "messenger",
+            "ban do",
+            "shopee",
+            "shop pi",
+            "shoppe",
+            "lazada",
+            "la da da",
+            "grab",
+            "be",
+            "momo",
+            "spotify",
+            "may tinh",
+            "bo suu tap",
+            "anh",
+            "danh ba",
+            "ch play",
+            "guc go map",
+            "chi duong",
+            "nhac youtube",
+            "face",
+            "fe",
+            "mess",
+            "mes"
         )
 
         private val APP_ALIAS_MAP = mapOf(
@@ -1032,15 +1469,43 @@ class FastPathMatcher(
             "ch play" to "playstore"
         )
 
-        private val GREETING_PATTERN = Pattern.compile("^(?:xin\\s+)?chào(?:\\s+em|\\s+bạn|\\s+emma|\\s+trợ\\s+lý)?$|^(?:hello|hi|hey)(?:\\s+emma)?$", Pattern.CASE_INSENSITIVE)
-        private val GOODBYE_PATTERN = Pattern.compile("^(?:tạm\\s+biệt|tam\\s+biet|bye(?:\\s+bye)?|hẹn\\s+gặp\\s+lại|hen\\s+gap\\s+lai|chào\\s+nhé|chao\\s+nhe|nghỉ\\s+thôi|nghi\\s+thoi)$", Pattern.CASE_INSENSITIVE)
-        private val MAP_PATTERN = Pattern.compile("^(?:chỉ\\s+đường|chi\\s+duong|tìm\\s+đường|tim\\s+duong|đường\\s+đi|duong\\s+di|dẫn\\s+đường|dan\\s+duong)(?:\\s+(?:đến|den|tới|toi|về|ve|qua))?\\s+(.+)$", Pattern.CASE_INSENSITIVE)
-        private val OPEN_APP_PATTERN = Pattern.compile("^(?:mở|mo|bật|bat|vào|vao)(?:\\s+(?:ứng\\s+dụng|ung\\s+dung|app))?\\s+(.+)$", Pattern.CASE_INSENSITIVE)
-        private val SMS_CONTENT_PATTERN = Pattern.compile("^(?:nhắn\\s+tin|nhan\\s+tin|gửi\\s+tin\\s+nhắn|gui\\s+tin\\s+nhan|nhắn|nhan)(?:\\s+cho)?\\s+(.+?)(?:\\s+(?:nội\\s+dung|noi\\s+dung|là|la|với\\s+nội\\s+dung|voi\\s+noi\\s+dung))\\s+(.+)$", Pattern.CASE_INSENSITIVE)
-        private val SMS_SIMPLE_PATTERN = Pattern.compile("^(?:nhắn\\s+tin|nhan\\s+tin|gửi\\s+tin\\s+nhắn|gui\\s+tin\\s+nhan|nhắn|nhan)(?:\\s+cho)?\\s+(.+)$", Pattern.CASE_INSENSITIVE)
-        private val CALL_PATTERN = Pattern.compile("^(?:gọi\\s+điện(?:\\s+(?:cho|đến))?|goi\\s+dien(?:\\s+(?:cho|den))?|gọi(?:\\s+(?:cho|đến))?|goi(?:\\s+(?:cho|den))?|alo\\s+cho)\\s+(.+)$", Pattern.CASE_INSENSITIVE)
-        private val VIDEO_PATTERN = Pattern.compile("^(?:mở\\s+youtube\\s+tìm|mo\\s+youtube\\s+tim|tìm\\s+video|tim\\s+video|xem\\s+video|bật\\s+video|bat\\s+video|tìm\\s+clip|tim\\s+clip)\\s+(.+)$", Pattern.CASE_INSENSITIVE)
-        private val SONG_PATTERN = Pattern.compile("^(?:mở|mo|bật|bat|phát|phat|nghe)(?:\\s+bài\\s+hát|\\s+bai\\s+hat|\\s+bài|\\s+bai|\\s+ca\\s+khúc|\\s+ca\\s+khuc)\\s+(.+)$", Pattern.CASE_INSENSITIVE)
-        private val GENRE_MUSIC_PATTERN = Pattern.compile("^(?:mở|mo|bật|bat|phát|phat|nghe)\\s+nhạc\\s+(.+)$", Pattern.CASE_INSENSITIVE)
+        private val GREETING_PATTERN = Pattern.compile(
+            "^(?:xin\\s+)?chào(?:\\s+em|\\s+bạn|\\s+emma|\\s+trợ\\s+lý)?$|^(?:hello|hi|hey)(?:\\s+emma)?$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val GOODBYE_PATTERN = Pattern.compile(
+            "^(?:tạm\\s+biệt|tam\\s+biet|bye(?:\\s+bye)?|hẹn\\s+gặp\\s+lại|hen\\s+gap\\s+lai|chào\\s+nhé|chao\\s+nhe|nghỉ\\s+thôi|nghi\\s+thoi)$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val MAP_PATTERN = Pattern.compile(
+            "^(?:chỉ\\s+đường|chi\\s+duong|tìm\\s+đường|tim\\s+duong|đường\\s+đi|duong\\s+di|dẫn\\s+đường|dan\\s+duong)(?:\\s+(?:đến|den|tới|toi|về|ve|qua))?\\s+(.+)$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val OPEN_APP_PATTERN = Pattern.compile(
+            "^(?:mở|mo|bật|bat|vào|vao)(?:\\s+(?:ứng\\s+dụng|ung\\s+dung|app))?\\s+(.+)$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val SMS_CONTENT_PATTERN = Pattern.compile(
+            "^(?:nhắn\\s+tin|nhan\\s+tin|gửi\\s+tin\\s+nhắn|gui\\s+tin\\s+nhan|nhắn|nhan)(?:\\s+cho)?\\s+(.+?)(?:\\s+(?:nội\\s+dung|noi\\s+dung|là|la|với\\s+nội\\s+dung|voi\\s+noi\\s+dung))\\s+(.+)$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val SMS_SIMPLE_PATTERN = Pattern.compile(
+            "^(?:nhắn\\s+tin|nhan\\s+tin|gửi\\s+tin\\s+nhắn|gui\\s+tin\\s+nhan|nhắn|nhan)(?:\\s+cho)?\\s+(.+)$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val CALL_PATTERN = Pattern.compile(
+            "^(?:gọi\\s+điện(?:\\s+(?:cho|đến))?|goi\\s+dien(?:\\s+(?:cho|den))?|gọi(?:\\s+(?:cho|đến))?|goi(?:\\s+(?:cho|den))?|alo\\s+cho)\\s+(.+)$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val VIDEO_PATTERN = Pattern.compile(
+            "^(?:mở\\s+youtube\\s+tìm|mo\\s+youtube\\s+tim|tìm\\s+video|tim\\s+video|xem\\s+video|bật\\s+video|bat\\s+video|tìm\\s+clip|tim\\s+clip)\\s+(.+)$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val SONG_PATTERN = Pattern.compile(
+            "^(?:mở|mo|bật|bat|phát|phat|nghe)(?:\\s+bài\\s+hát|\\s+bai\\s+hat|\\s+bài|\\s+bai|\\s+ca\\s+khúc|\\s+ca\\s+khuc)\\s+(.+)$",
+            Pattern.CASE_INSENSITIVE
+        )
+        private val GENRE_MUSIC_PATTERN =
+            Pattern.compile("^(?:mở|mo|bật|bat|phát|phat|nghe)\\s+nhạc\\s+(.+)$", Pattern.CASE_INSENSITIVE)
     }
 }
