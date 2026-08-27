@@ -480,7 +480,9 @@
       ],
       "intent": "clarify",
       "arguments": {
-        "missing": ["contact"]
+        "missing": [
+          "contact"
+        ]
       },
       "risk_level": "low",
       "status": "needs_clarification",
@@ -495,7 +497,10 @@
       ],
       "intent": "clarify",
       "arguments": {
-        "missing": ["contact", "message"]
+        "missing": [
+          "contact",
+          "message"
+        ]
       },
       "risk_level": "low",
       "status": "needs_clarification",
@@ -508,7 +513,10 @@
       ],
       "intent": "clarify",
       "arguments": {
-        "missing": ["duration", "unit"]
+        "missing": [
+          "duration",
+          "unit"
+        ]
       },
       "risk_level": "low",
       "status": "needs_clarification",
@@ -522,7 +530,10 @@
       ],
       "intent": "clarify",
       "arguments": {
-        "missing": ["hour", "minute"]
+        "missing": [
+          "hour",
+          "minute"
+        ]
       },
       "risk_level": "low",
       "status": "needs_clarification",
@@ -554,7 +565,9 @@
       ],
       "intent": "clarify",
       "arguments": {
-        "missing": ["query"]
+        "missing": [
+          "query"
+        ]
       },
       "risk_level": "low",
       "status": "needs_clarification",

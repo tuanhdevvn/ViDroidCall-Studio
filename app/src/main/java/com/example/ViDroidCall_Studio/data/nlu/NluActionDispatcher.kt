@@ -31,6 +31,7 @@ class NluActionDispatcher(
         enableAppLaunch: Boolean = true,
         onSpeakFeedback: (String) -> Unit
     ) : this(context, enableAppLaunch, {}, onSpeakFeedback)
+
     private val mainHandler by lazy {
         try {
             Handler(Looper.getMainLooper())
@@ -74,7 +75,10 @@ class NluActionDispatcher(
      * Xử lý điều phối hành động NativeAction
      */
     fun dispatch(action: NativeAction) {
-        logLifecycle("ACTION_DISPATCH", "intent=${action.intentName}, requiresConfirmation=${action.requiresConfirmation}")
+        logLifecycle(
+            "ACTION_DISPATCH",
+            "intent=${action.intentName}, requiresConfirmation=${action.requiresConfirmation}"
+        )
 
         // 1. Phát phản hồi giọng nói (TTS)
         val speech = action.getSpeechFeedbackText()
@@ -88,10 +92,12 @@ class NluActionDispatcher(
                 showToast(action.message)
                 return
             }
+
             is NativeAction.Unsupported -> {
                 showToast(action.message)
                 return
             }
+
             else -> {}
         }
 
@@ -257,7 +263,8 @@ class NluActionDispatcher(
                 context.startActivity(genericMapIntent)
                 logLifecycle("ACTION_SUCCESS", "intent=open_map, provider=generic_map")
             } else {
-                val browserUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=" + Uri.encode(action.destination))
+                val browserUri =
+                    Uri.parse("https://www.google.com/maps/search/?api=1&query=" + Uri.encode(action.destination))
                 val webIntent = Intent(Intent.ACTION_VIEW, browserUri).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
