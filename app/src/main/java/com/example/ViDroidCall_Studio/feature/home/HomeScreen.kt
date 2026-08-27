@@ -38,10 +38,13 @@ import com.example.ViDroidCall_Studio.feature.history.HistoryScreen
 import com.example.ViDroidCall_Studio.feature.settings.SettingsScreen
 import com.example.ViDroidCall_Studio.feature.speech.rememberSpeechToText
 import com.example.ViDroidCall_Studio.feature.speech.rememberTextToSpeech
+import com.example.ViDroidCall_Studio.ui.component.ContactPermissionDialog
 import com.example.ViDroidCall_Studio.ui.component.CustomBottomMenuBar
 import com.example.ViDroidCall_Studio.ui.component.NavTab
 import com.example.ViDroidCall_Studio.ui.component.StoragePermissionDialog
+import com.example.ViDroidCall_Studio.ui.component.openAppSettings
 import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
+import com.example.ViDroidCall_Studio.util.ContactResolver
 import com.example.ViDroidCall_Studio.util.StoragePermissionHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -74,6 +77,7 @@ fun HomeScreen(
         mutableStateOf(StoragePermissionHelper.hasStoragePermission(context))
     }
     var showStoragePermissionDialog by remember { mutableStateOf(false) }
+    var showContactPermissionDialog by remember { mutableStateOf(false) }
     var hasAutoPromptedPermission by remember { mutableStateOf(false) }
 
     // Danh sách quyền hệ thống thiết yếu cần yêu cầu khi người dùng khởi động vào App
@@ -142,7 +146,8 @@ fun HomeScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            Toast.makeText(context, "Đã cấp quyền thành công", Toast.LENGTH_SHORT).show()
+            showContactPermissionDialog = false
+            Toast.makeText(context, "Đã cấp quyền danh bạ thành công", Toast.LENGTH_SHORT).show()
             val action = pendingPermissionAction
             pendingPermissionAction = null
             if (action != null) {
@@ -150,7 +155,7 @@ fun HomeScreen(
                 actionDispatcherRef?.executeNativeAction(action)
             }
         } else {
-            Toast.makeText(context, "Bạn đã từ chối cấp quyền", Toast.LENGTH_SHORT).show()
+            showContactPermissionDialog = true
             pendingPermissionAction = null
         }
     }
@@ -165,6 +170,9 @@ fun HomeScreen(
                 textToSpeech.speak(speechText)
             },
             onRequestPermission = { permission ->
+                if (permission == Manifest.permission.READ_CONTACTS) {
+                    showContactPermissionDialog = true
+                }
                 runtimePermissionLauncher.launch(permission)
             }
         ).also { actionDispatcherRef = it }
@@ -181,20 +189,43 @@ fun HomeScreen(
                 historyRepository.addFromNluResult(query = query, nluResult = result)
 
                 val action = NativeAction.fromNluResult(result)
-                val speech = action.getSpeechFeedbackText()
-                if (speech.isNotBlank()) {
-                    textToSpeech.speak(speech)
-                }
 
                 if (result.status == "success") {
                     if (action.requiresConfirmation) {
                         pendingAction = action
                         showConfirmationDialog = true
+
+                        val confirmationSpeech = action.getConfirmationDescription()
+                        if (confirmationSpeech.isNotBlank()) {
+                            textToSpeech.speak(confirmationSpeech)
+                        }
+
+                        // Nếu là hành động danh bạ và chưa cấp quyền READ_CONTACTS, bật ngay popup quyền Android
+                        val target = when (action) {
+                            is NativeAction.CallContact -> if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
+                            is NativeAction.SendSms -> if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
+                            else -> ""
+                        }
+                        if (target.isNotBlank() && !ContactResolver.isPhoneNumber(target)) {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                                pendingPermissionAction = action
+                                runtimePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                            }
+                        }
                     } else if (action !is NativeAction.Informational && action !is NativeAction.Unsupported) {
+                        val speech = action.getSpeechFeedbackText()
+                        if (speech.isNotBlank()) {
+                            textToSpeech.speak(speech)
+                        }
                         // Delay 800ms cho hành động an toàn không cần xác nhận
                         delay(800)
                         pendingPermissionAction = action
-                        actionDispatcher?.executeNativeAction(action)
+                        actionDispatcher.executeNativeAction(action)
+                    }
+                } else {
+                    val speech = action.getSpeechFeedbackText()
+                    if (speech.isNotBlank()) {
+                        textToSpeech.speak(speech)
                     }
                 }
             }
@@ -207,7 +238,7 @@ fun HomeScreen(
         pendingAction = null
         if (action != null) {
             pendingPermissionAction = action
-            actionDispatcher?.executeNativeAction(action)
+            actionDispatcher.executeNativeAction(action)
         }
     }
 
@@ -315,6 +346,22 @@ fun HomeScreen(
                 StoragePermissionDialog(
                     onOpenSettings = handleOpenStorageSettings,
                     onDismiss = { showStoragePermissionDialog = false }
+                )
+            }
+
+            // Hộp thoại nhắc & hỗ trợ cấp quyền Danh bạ
+            if (showContactPermissionDialog) {
+                ContactPermissionDialog(
+                    onRequestPermission = {
+                        runtimePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                    },
+                    onOpenSettings = {
+                        showContactPermissionDialog = false
+                        openAppSettings(context)
+                    },
+                    onDismiss = {
+                        showContactPermissionDialog = false
+                    }
                 )
             }
         }
