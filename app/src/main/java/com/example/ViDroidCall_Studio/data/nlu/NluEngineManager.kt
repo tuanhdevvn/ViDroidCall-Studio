@@ -86,62 +86,69 @@ class NluEngineManager(
     }
 
     /**
-     * Tự động quét file mô hình .gguf trong bộ nhớ thiết bị
+     * Tự động quét và phát hiện file mô hình .gguf trong bộ nhớ thiết bị (kể cả thư mục con)
      */
     fun autoDetectAndLoadModel() {
         scope.launch(Dispatchers.IO) {
             _modelState.value = NluModelState.Loading
 
-            // Thư mục quét: Thư mục cá nhân của App (không cần quyền Storage) + Thư mục Download chung của máy
+            // Thư mục quét: Thư mục cá nhân của App + Thư mục Download/Documents/Models công cộng của máy
             val searchDirs = listOfNotNull(
                 context.getExternalFilesDir(null),
                 context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
                 context.filesDir,
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                File(Environment.getExternalStorageDirectory(), "Download"),
+                File(Environment.getExternalStorageDirectory(), "Documents"),
+                File(Environment.getExternalStorageDirectory(), "Models"),
+                File(Environment.getExternalStorageDirectory(), "model"),
                 File("/sdcard/Download"),
-                File(Environment.getExternalStorageDirectory(), "Download")
+                File("/sdcard/Documents"),
+                File("/sdcard/Models"),
+                File("/sdcard/model"),
+                Environment.getExternalStorageDirectory()
             ).distinctBy { it.absolutePath }
 
-            Log.d(TAG, "Đang quét file .gguf tại ${searchDirs.size} thư mục...")
+            Log.d(TAG, "Đang tự động tìm kiếm file .gguf tại ${searchDirs.size} vị trí bộ nhớ...")
 
-            var targetFile: File? = null
+            val foundGgufFiles = mutableListOf<File>()
 
-            // 1. Ưu tiên tìm file theo tên chuẩn MODEL_FILE_NAME
             for (dir in searchDirs) {
                 if (dir.exists() && dir.isDirectory) {
-                    val file = File(dir, NluConstants.MODEL_FILE_NAME)
-                    if (file.exists() && file.canRead() && file.length() > 0) {
-                        targetFile = file
-                        break
+                    try {
+                        dir.walkTopDown()
+                            .maxDepth(3)
+                            .onTreeFail { _, _ -> true }
+                            .filter { file ->
+                                file.isFile &&
+                                file.name.endsWith(".gguf", ignoreCase = true) &&
+                                file.canRead() &&
+                                file.length() > 0
+                            }
+                            .forEach { foundGgufFiles.add(it) }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Không thể duyệt thư mục ${dir.absolutePath}: ${e.message}")
                     }
                 }
             }
 
-            // 2. Nếu chưa thấy, tìm file bất kỳ có đuôi .gguf trong các thư mục
-            if (targetFile == null) {
-                for (dir in searchDirs) {
-                    if (dir.exists() && dir.isDirectory) {
-                        val ggufFile = dir.listFiles()?.firstOrNull { 
-                            it.isFile && it.name.endsWith(".gguf", ignoreCase = true) && it.length() > 0 
-                        }
-                        if (ggufFile != null) {
-                            targetFile = ggufFile
-                            break
-                        }
-                    }
-                }
-            }
+            val distinctGgufFiles = foundGgufFiles.distinctBy { it.absolutePath }
+
+            // Tự động chọn file .gguf đầu tiên tìm thấy trong bộ nhớ, không ưu tiên bất kỳ tên file nào
+            val targetFile = distinctGgufFiles.firstOrNull()
 
             if (targetFile != null) {
                 try {
-                    Log.i(TAG, "🔍 Tìm thấy file mô hình GGUF tại: ${targetFile.absolutePath} (${targetFile.length() / 1024 / 1024} MB)")
+                    Log.i(TAG, "🔍 Tự động phát hiện thấy mô hình GGUF tại: ${targetFile.absolutePath} (${targetFile.length() / 1024 / 1024} MB)")
                     loadNativeModel(targetFile)
                 } catch (e: Exception) {
                     Log.e(TAG, "❌ Lỗi khi nạp file GGUF qua LlamaHelper: ${e.message}", e)
                     _modelState.value = NluModelState.Error("Lỗi nạp GGUF: ${e.localizedMessage}")
                 }
             } else {
-                Log.w(TAG, "⚠️ Không tìm thấy bất kỳ file .gguf nào trong các thư mục quét!")
+                Log.w(TAG, "⚠️ Không tìm thấy bất kỳ file .gguf nào trong bộ nhớ thiết bị!")
                 _modelState.value = NluModelState.ModelNotFound
             }
         }

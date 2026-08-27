@@ -349,7 +349,12 @@ class FastPathMatcher(
     }
 
     private fun isAlarmCommand(text: String): Boolean {
-        return ALARM_PREFIXES.any { text.contains(it) } || text.contains("gio") || text.contains("h")
+        return ALARM_PREFIXES.any { text.contains(it) } ||
+                text.contains("gio") ||
+                text.contains("h") ||
+                text.contains("g") ||
+                text.contains("kem") ||
+                text.contains("thieu")
     }
 
     private fun isTimerCommand(text: String): Boolean {
@@ -587,7 +592,7 @@ class FastPathMatcher(
 
         var payload = unaccented
 
-        for (prefix in ALARM_PREFIXES) {
+        for (prefix in SORTED_ALARM_PREFIXES) {
             if (payload.startsWith(prefix)) {
                 payload = payload.substring(prefix.length).trim()
                 break
@@ -599,94 +604,17 @@ class FastPathMatcher(
         // ============================================================
 
         if (isKem) {
-            val kemParts = KEM_PARTS_REGEX.find(payload) ?: KEM_PARTS_REGEX.find(unaccented)
-
-            if (kemParts != null) {
-                val hourPartRaw = kemParts.groupValues[1].trim()
-                val minutePartRaw = kemParts.groupValues[2].trim()
-
-                var targetHour: Int? = null
-
-        
-                val colonInHour = COLON_TIME_PATTERN.matcher(hourPartRaw)
-                if (colonInHour.find()) {
-                    targetHour = colonInHour.group(1)?.toIntOrNull()
-                } else {
-                    val hourPartClean = hourPartRaw.replace(CLEAN_HOUR_PART_REGEX, "").trim()
-                    targetHour = VietnameseNumberParser.parse(hourPartClean)
-                }
-
-                if (targetHour == null) {
-                    return null
-                }
-
-                val minutePartClean = minutePartRaw
-                    .replace("phut", "")
-                    .replace("to mo sang", "")
-                    .replace("to mo", "")
-                    .replace("xe chieu", "")
-                    .replace("chang vang", "")
-                    .replace("sam toi", "")
-                    .replace("chap toi", "")
-                    .replace("sang", "")
-                    .replace("som", "")
-                    .replace("trua", "")
-                    .replace("chieu", "")
-                    .replace("toi", "")
-                    .replace("dem", "")
-                    .replace("khuya", "")
-                    .trim()
-
-                val minusMinutes: Int? = when {
-                    minutePartClean == "1/4" ||
-                    minutePartClean.contains("phan tu") ||
-                    minutePartClean == "mot phan tu" -> 15
-
-                    minutePartClean == "1/2" ||
-                    minutePartClean.contains("nua") -> 30
-
-                    else -> VietnameseNumberParser.parse(minutePartClean)
-                }
-
-                if (minusMinutes == null || minusMinutes !in 1..59 || targetHour !in 0..23) {
-                    return null
-                }
-
-                var normalizedTargetHour = targetHour
-                if (isToi && normalizedTargetHour in 1..5) {
-                    normalizedTargetHour += 6
-                }
-
-                val hour24 = normalizeHourPeriod(
-                    hour = normalizedTargetHour,
-                    isSang = isSang,
-                    isTrua = isTrua,
-                    isChieu = isChieu,
-                    isToi = isToi,
-                    isDem = isDem
-                )
-
-                var totalMinutes = hour24 * 60 - minusMinutes
-                if (totalMinutes < 0) {
-                    totalMinutes += 24 * 60
-                }
-
-                val resultHour = (totalMinutes / 60) % 24
-                val resultMinute = totalMinutes % 60
-
-                val args = JSONObject().apply {
-                    put("hour", resultHour)
-                    put("minute", resultMinute)
-                    put("label", "Báo thức")
-                }
-
-                return buildNluResult(
-                    intent = "set_alarm",
-                    arguments = args,
-                    riskLevel = "low",
-                    status = "success",
-                    requiresConfirmation = false
-                )
+            val minusResult = parseMinusTimeExpression(
+                payload = payload,
+                unaccented = unaccented,
+                isSang = isSang,
+                isTrua = isTrua,
+                isChieu = isChieu,
+                isToi = isToi,
+                isDem = isDem
+            )
+            if (minusResult != null) {
+                return minusResult
             }
         }
 
@@ -862,6 +790,103 @@ class FastPathMatcher(
         return null
     }
 
+    private fun parseMinusTimeExpression(
+        payload: String,
+        unaccented: String,
+        isSang: Boolean,
+        isTrua: Boolean,
+        isChieu: Boolean,
+        isToi: Boolean,
+        isDem: Boolean
+    ): NluResult? {
+        val kemParts = KEM_PARTS_REGEX.find(payload) ?: KEM_PARTS_REGEX.find(unaccented) ?: return null
+
+        val hourPartRaw = kemParts.groupValues[1].trim()
+        val minutePartRaw = kemParts.groupValues[2].trim()
+
+        var targetHour: Int? = null
+
+        val colonInHour = COLON_TIME_PATTERN.matcher(hourPartRaw)
+        if (colonInHour.find()) {
+            targetHour = colonInHour.group(1)?.toIntOrNull()
+        } else {
+            var hourPartClean = hourPartRaw.replace(CLEAN_HOUR_PART_REGEX, "").trim()
+            hourPartClean = TIME_PREFIX_CLEAN_REGEX.replace(hourPartClean, "").trim()
+            targetHour = VietnameseNumberParser.parse(hourPartClean)
+        }
+
+        if (targetHour == null) {
+            return null
+        }
+
+        val minutePartClean = minutePartRaw
+            .replace("phut", "")
+            .replace("p", "")
+            .replace("to mo sang", "")
+            .replace("to mo", "")
+            .replace("xe chieu", "")
+            .replace("chang vang", "")
+            .replace("sam toi", "")
+            .replace("chap toi", "")
+            .replace("sang", "")
+            .replace("som", "")
+            .replace("trua", "")
+            .replace("chieu", "")
+            .replace("toi", "")
+            .replace("dem", "")
+            .replace("khuya", "")
+            .trim()
+
+        val minusMinutes: Int? = when {
+            minutePartClean == "1/4" ||
+            minutePartClean.contains("phan tu") ||
+            minutePartClean == "mot phan tu" -> 15
+
+            minutePartClean == "1/2" ||
+            minutePartClean.contains("nua") -> 30
+
+            else -> VietnameseNumberParser.parse(minutePartClean)
+        }
+
+        if (minusMinutes == null || minusMinutes !in 1..59 || targetHour !in 0..23) {
+            return null
+        }
+
+        var normalizedTargetHour = targetHour
+        if (isToi && normalizedTargetHour in 1..5) {
+            normalizedTargetHour += 6
+        }
+
+        val hour24 = normalizeHourPeriod(
+            hour = normalizedTargetHour,
+            isSang = isSang,
+            isTrua = isTrua,
+            isChieu = isChieu,
+            isToi = isToi,
+            isDem = isDem
+        )
+
+        val totalMinutes = hour24 * 60 - minusMinutes
+        val normalizedMinutes = ((totalMinutes % 1440) + 1440) % 1440
+
+        val resultHour = normalizedMinutes / 60
+        val resultMinute = normalizedMinutes % 60
+
+        val args = JSONObject().apply {
+            put("hour", resultHour)
+            put("minute", resultMinute)
+            put("label", "Báo thức")
+        }
+
+        return buildNluResult(
+            intent = "set_alarm",
+            arguments = args,
+            riskLevel = "low",
+            status = "success",
+            requiresConfirmation = false
+        )
+    }
+
     private fun buildNluResult(
         intent: String,
         arguments: JSONObject,
@@ -921,7 +946,8 @@ class FastPathMatcher(
 
         private val KEM_MATCHER_PATTERN = Pattern.compile("\\b(kem|thieu)\\b")
         private val KEM_PARTS_REGEX = Regex("^(.+?)\\s+(?:kem|thieu)\\s+(.+)$")
-        private val CLEAN_HOUR_PART_REGEX = Regex("\\b(?:gio|giờ|h|(?<=\\d)g)\\b")
+        private val CLEAN_HOUR_PART_REGEX = Regex("""\s*(?:gio|giờ)\b|(?<=\d)\s*[hg]\b|\b[hg]\b""")
+        private val TIME_PREFIX_CLEAN_REGEX = Regex("^(?:noi|dat|cai|bat|mo|hen|nhac|bao thuc|bao|vui long|giup toi|khoang|tam|vao luc|luc|vao)\\s+")
         private val HOUR_MATCHER_PATTERN = Pattern.compile("^(.+?)\\s*(?:gio|giờ|h|(?<=\\d)g)\\b\\s*(.*)$")
         private val MULTI_SPACE_REGEX = Regex("\\s+")
 
@@ -933,6 +959,11 @@ class FastPathMatcher(
         private val TAM_MODIFIER_REGEX = Regex("\\btam\\b(?!\\s*(?:gio|giờ|h\\b))")
 
         private val ALARM_PREFIXES = listOf(
+            "dat chuong bao thuc vao luc",
+            "dat bao thuc vao luc",
+            "dat chuong bao thuc luc",
+            "dat bao thuc luc",
+            "bao thuc vao luc",
             "dat chuong bao thuc",
             "chuong bao thuc",
             "nhac giup toi",
@@ -941,11 +972,23 @@ class FastPathMatcher(
             "cai bao thuc",
             "bat bao thuc",
             "mo bao thuc",
+            "bao thuc luc",
             "nhac toi",
             "bao thuc",
             "bao toi",
-            "nhac"
+            "vui long dat",
+            "vui long hen",
+            "vui long cai",
+            "vui long",
+            "nhac",
+            "noi",
+            "dat",
+            "cai",
+            "bat",
+            "mo",
+            "hen"
         )
+        private val SORTED_ALARM_PREFIXES = ALARM_PREFIXES.sortedByDescending { it.length }
 
         private val TIMER_PREFIXES = listOf(
             "dong ho dem nguoc",

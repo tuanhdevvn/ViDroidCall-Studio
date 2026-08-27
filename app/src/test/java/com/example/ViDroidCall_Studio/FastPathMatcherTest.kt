@@ -904,4 +904,63 @@ class FastPathMatcherTest {
             assertEquals("App name mismatch for '$query'", expectedApp, json.optString("app_name"))
         }
     }
+
+    @Test
+    fun testVietnameseTimeKiemAndThieuBugFixes() {
+        val testCases = listOf(
+            "12 giờ kém 15" to Pair(11, 45),
+            "12h kém 15" to Pair(11, 45),
+            "12 kém 15" to Pair(11, 45),
+            "12 giờ kém 10" to Pair(11, 50),
+            "12h kém 10" to Pair(11, 50),
+            "1 giờ kém 10" to Pair(0, 50),
+            "1h kém 10" to Pair(0, 50),
+            "2 giờ kém 10" to Pair(1, 50),
+            "2h kém 10" to Pair(1, 50),
+            "nói 12 giờ kém 15" to Pair(11, 45),
+            "đặt 12h kém 15" to Pair(11, 45),
+            "báo thức 12 giờ kém 15" to Pair(11, 45),
+            "báo thức lúc 12 giờ kém 15" to Pair(11, 45),
+            "đặt báo thức vào lúc 12h kém 15" to Pair(11, 45),
+            "0 giờ kém 10" to Pair(23, 50),
+            "1 giờ kém 5" to Pair(0, 55),
+            "12 giờ kém 1" to Pair(11, 59),
+            "12 giờ kém 30" to Pair(11, 30),
+            "12 giờ kém 45" to Pair(11, 15),
+            "12 giờ kém 59" to Pair(11, 1),
+            "23 giờ kém 10" to Pair(22, 50),
+            "12 giờ thiếu 15" to Pair(11, 45),
+            "12h thiếu 15" to Pair(11, 45),
+            "12 thiếu 15" to Pair(11, 45)
+        )
+
+        for ((query, expected) in testCases) {
+            val result = matcher.match(query)
+            assertNotNull("Query '$query' should match set_alarm", result)
+            assertEquals("set_alarm", result?.intent)
+            val json = JSONObject(result!!.argumentsJson)
+            assertEquals("Hour mismatch for query '$query'", expected.first, json.optInt("hour"))
+            assertEquals("Minute mismatch for query '$query'", expected.second, json.optInt("minute"))
+        }
+    }
+
+    @Test
+    fun testCompactTimePreservation() {
+        val testCases = listOf(
+            "12h45" to Pair(12, 45),
+            "12h50" to Pair(12, 50),
+            "1h50" to Pair(1, 50),
+            "2h50" to Pair(2, 50)
+        )
+
+        for ((query, expected) in testCases) {
+            val result = matcher.match(query)
+            assertNotNull("Compact time query '$query' should match set_alarm", result)
+            assertEquals("set_alarm", result?.intent)
+            val json = JSONObject(result!!.argumentsJson)
+            assertEquals("Hour mismatch for compact time '$query'", expected.first, json.optInt("hour"))
+            assertEquals("Minute mismatch for compact time '$query'", expected.second, json.optInt("minute"))
+        }
+    }
+}
 }

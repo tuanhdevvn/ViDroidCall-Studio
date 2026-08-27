@@ -5,7 +5,7 @@ package com.example.ViDroidCall_Studio.data.nlu
  */
 object NluConstants {
 
-    const val MODEL_FILE_NAME = "qwen2.5-1.5b-nlu-q8_0.gguf"
+    const val GGUF_EXTENSION = ".gguf"
 
     /**
      * System prompt bắt buộc của mô hình Qwen2.5-1.5B-NLU

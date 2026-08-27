@@ -14,6 +14,7 @@ object VietnameseNumberParser {
     private val DIACRITICS_REGEX = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
     private val PUNCTUATION_REGEX = Pattern.compile("[.,?!;:'\"\\-_]")
     private val MULTIPLE_SPACES_REGEX = Pattern.compile("\\s+")
+    private val UNIT_TOKEN_REGEX = Regex("^(\\d+)[hgpms]$")
 
     private fun stripAccents(input: String): String {
         val normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
@@ -40,6 +41,13 @@ object VietnameseNumberParser {
         val directInt = rawTrim.toIntOrNull()
         if (directInt != null) {
             return if (directInt in 0..999) directInt else null
+        }
+
+        // 1b. Thử parse chữ số dính liền unit (ví dụ: "12h", "12g", "15p", "10m")
+        val unitMatch = UNIT_TOKEN_REGEX.find(rawTrim.lowercase())
+        if (unitMatch != null) {
+            val num = unitMatch.groupValues[1].toIntOrNull()
+            if (num != null && num in 0..999) return num
         }
 
         // 2. Chuẩn hóa văn bản
