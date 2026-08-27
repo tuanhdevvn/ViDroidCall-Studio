@@ -26,9 +26,11 @@ class SpeechToTextManager(
     private val mainHandler = Handler(Looper.getMainLooper())
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListeningActive = false
+    private var isCancelled = false
 
     private val recognitionListener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
+            if (isCancelled) return
             isListeningActive = true
             mainHandler.post {
                 callbacks.onListeningChanged(true)
@@ -38,6 +40,7 @@ class SpeechToTextManager(
         }
 
         override fun onBeginningOfSpeech() {
+            if (isCancelled) return
             Log.d(TAG, "SpeechRecognizer: Người dùng bắt đầu nói...")
         }
 
@@ -46,6 +49,7 @@ class SpeechToTextManager(
         override fun onBufferReceived(buffer: ByteArray?) = Unit
 
         override fun onEndOfSpeech() {
+            if (isCancelled) return
             isListeningActive = false
             mainHandler.post {
                 callbacks.onListeningChanged(false)
@@ -54,6 +58,10 @@ class SpeechToTextManager(
         }
 
         override fun onError(error: Int) {
+            if (isCancelled) {
+                Log.d(TAG, "SpeechRecognizer onError ($error) bỏ qua vì người dùng đã hủy.")
+                return
+            }
             isListeningActive = false
             val errorMessage = when (error) {
                 SpeechRecognizer.ERROR_AUDIO -> "Lỗi thu âm. Vui lòng thử lại."
@@ -74,6 +82,10 @@ class SpeechToTextManager(
         }
 
         override fun onResults(results: Bundle?) {
+            if (isCancelled) {
+                Log.d(TAG, "SpeechRecognizer onResults bỏ qua vì người dùng đã hủy.")
+                return
+            }
             isListeningActive = false
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: emptyList<String>()
 
@@ -99,6 +111,7 @@ class SpeechToTextManager(
         }
 
         override fun onPartialResults(partialResults: Bundle?) {
+            if (isCancelled) return
             val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             val partial = matches?.firstOrNull { it.isNotBlank() }
             if (!partial.isNullOrBlank()) {
@@ -140,6 +153,7 @@ class SpeechToTextManager(
 
                 if (!ensureRecognizer()) return@post
 
+                isCancelled = false
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE, LANGUAGE_VI_VN)
@@ -177,9 +191,25 @@ class SpeechToTextManager(
         }
     }
 
+    fun cancelListening() {
+        mainHandler.post {
+            try {
+                isCancelled = true
+                isListeningActive = false
+                speechRecognizer?.cancel()
+            } catch (e: Exception) {
+                Log.w(TAG, "Lỗi khi gọi cancelListening: ${e.message}")
+            } finally {
+                callbacks.onListeningChanged(false)
+                callbacks.onTextChanged("")
+            }
+        }
+    }
+
     fun destroy() {
         mainHandler.post {
             try {
+                isCancelled = true
                 speechRecognizer?.cancel()
                 speechRecognizer?.destroy()
             } catch (e: Exception) {

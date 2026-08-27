@@ -93,6 +93,7 @@ fun AssistantScreen(
     isListening: Boolean,
     speechText: String,
     onToggleListening: () -> Unit,
+    onCancelListening: () -> Unit = {},
     nluResult: NluResult?,
     isNluProcessing: Boolean,
     modelState: NluModelState,
@@ -127,7 +128,8 @@ fun AssistantScreen(
             isNluProcessing = isNluProcessing,
             modelState = modelState,
             isTtsSpeaking = isTtsSpeaking,
-            onToggleListening = onToggleListening
+            onToggleListening = onToggleListening,
+            onCancelListening = onCancelListening
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -210,7 +212,8 @@ private fun VoiceAssistantSection(
     isNluProcessing: Boolean,
     modelState: NluModelState,
     isTtsSpeaking: Boolean = false,
-    onToggleListening: () -> Unit
+    onToggleListening: () -> Unit,
+    onCancelListening: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val isAiReady = modelState is NluModelState.Ready
@@ -446,30 +449,78 @@ private fun VoiceAssistantSection(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            val buttonBgColor = when {
-                !isAiReady -> MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
-                isListening -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-                else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-            }
-            val buttonTextColor = when {
-                !isAiReady -> MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
-                else -> MaterialTheme.colorScheme.primary
-            }
+            if (isListening) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Nút Dừng nghe (Màu xanh)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
+                                shape = RoundedCornerShape(22.dp)
+                            )
+                            .bounceClick(scaleDown = 0.95f, onClick = handleActionClick)
+                            .padding(vertical = 18.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Dừng nghe",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(buttonBgColor, RoundedCornerShape(22.dp))
-                    .bounceClick(scaleDown = if (isAiReady) 0.95f else 0.98f, onClick = handleActionClick)
-                    .padding(vertical = 18.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (isListening) "Dừng nghe" else "Nhấn để bắt đầu nói",
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = buttonTextColor
-                )
+                    // Nút Hủy cuộc trò chuyện (Màu đỏ nhạt)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = Color(0xFFEF4444).copy(alpha = 0.14f),
+                                shape = RoundedCornerShape(22.dp)
+                            )
+                            .bounceClick(scaleDown = 0.95f, onClick = onCancelListening)
+                            .padding(vertical = 18.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Hủy cuộc trò chuyện",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFDC2626)
+                        )
+                    }
+                }
+            } else {
+                val buttonBgColor = if (!isAiReady) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                }
+                val buttonTextColor = if (!isAiReady) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(buttonBgColor, RoundedCornerShape(22.dp))
+                        .bounceClick(scaleDown = if (isAiReady) 0.95f else 0.98f, onClick = handleActionClick)
+                        .padding(vertical = 18.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Nhấn để bắt đầu nói",
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = buttonTextColor
+                    )
+                }
             }
         }
     }
