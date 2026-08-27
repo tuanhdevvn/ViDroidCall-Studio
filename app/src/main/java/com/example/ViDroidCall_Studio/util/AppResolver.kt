@@ -57,6 +57,32 @@ object AppResolver {
     }
 
     /**
+     * Lấy tên ứng dụng hiển thị đẹp (Viết hoa đúng chuẩn, dịch sang tiếng Việt)
+     */
+    fun getDisplayAppName(raw: String): String {
+        val clean = cleanAppName(raw)
+        return when (clean) {
+            "google_maps", "google map", "google maps" -> "Google Maps"
+            "ch play", "playstore", "play store" -> "CH Play"
+            "youtube", "yt" -> "YouTube"
+            "facebook", "fb" -> "Facebook"
+            "tiktok" -> "TikTok"
+            "zalo" -> "Zalo"
+            "shopee" -> "Shopee"
+            "lazada" -> "Lazada"
+            "gallery" -> "Bộ sưu tập"
+            "camera" -> "Máy ảnh"
+            "calculator" -> "Máy tính"
+            "contacts" -> "Danh bạ"
+            "clock" -> "Đồng hồ"
+            "settings" -> "Cài đặt"
+            "recorder" -> "Ghi âm"
+            "files" -> "Quản lý tệp"
+            else -> raw.replace("_", " ")
+        }
+    }
+
+    /**
      * Tìm package name của ứng dụng đã được cài đặt trên thiết bị
      */
     fun resolvePackageName(context: Context, appName: String): String? {

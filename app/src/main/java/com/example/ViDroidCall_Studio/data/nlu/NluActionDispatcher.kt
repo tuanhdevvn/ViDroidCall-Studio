@@ -163,8 +163,10 @@ class NluActionDispatcher(
             onActionError(error)
             return
         }
+        val displayAppName = AppResolver.getDisplayAppName(action.appName)
 
-        showToast("🚀 Đang mở ứng dụng ${action.appName}...")
+        showToast("🚀 Đang mở ứng dụng $displayAppName...")
+        speakText("Đang mở ứng dụng $displayAppName")
 
         // 1. Kiểm tra System Intent trước
         val systemIntent = AppResolver.resolveSystemIntent(cleanName)?.apply {

@@ -120,7 +120,10 @@
         "xem hình",
         "bộ sưu tập",
         "album ảnh",
-        "thư viện ảnh"
+        "thư viện ảnh",
+        "anh",
+        "ảnh",
+        "mở ảnh"
       ],
       "intent": "open_app",
       "arguments": {
@@ -308,7 +311,11 @@
         "diu túp",
         "du túp",
         "đút túp",
-        "xem ca nhạc"
+        "xem ca nhạc",
+        "nhac youtube",
+        "nhạc youtube",
+        "nghe nhac youtube",
+        "mở nhac youtube"
       ],
       "intent": "open_app",
       "arguments": {
@@ -350,7 +357,13 @@
         "mo facebook",
         "phây",
         "phây búc",
-        "phây búp"
+        "phây búp",
+        "face",
+        "mo face",
+        "mở face",
+        "vào face",
+        "xem face",
+        "fe"
       ],
       "intent": "open_app",
       "arguments": {

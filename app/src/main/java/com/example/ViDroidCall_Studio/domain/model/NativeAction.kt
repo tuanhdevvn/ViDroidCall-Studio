@@ -192,7 +192,10 @@ sealed class NativeAction {
      */
     fun getSpeechFeedbackText(): String {
         return when (this) {
-            is OpenApp -> "Đang mở ứng dụng $appName"
+            is OpenApp -> {
+                val displayName = com.example.ViDroidCall_Studio.util.AppResolver.getDisplayAppName(appName)
+                "Đang mở ứng dụng $displayName"
+            }
             is CallContact -> {
                 val target = if (contact.isNotBlank()) contact else phoneNumber
                 if (target.isNotBlank()) "Đang thực hiện cuộc gọi tới $target" else "Đang mở ứng dụng cuộc gọi"

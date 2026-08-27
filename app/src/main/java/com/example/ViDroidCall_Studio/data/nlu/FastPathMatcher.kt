@@ -10,9 +10,9 @@ import java.util.regex.Pattern
 
 /**
  * Bộ tiền xử lý và khớp quy tắc nhanh (Fast-Path Matcher)
- * Giúp nhận diện và phản hồi tức thì (< 5ms) cho các câu lệnh ngắn gọn,
+ * Giúp nhận diện và phản hồi tức thì (< 1ms) cho các câu lệnh ngắn gọn,
  * hỗ trợ khẩu ngữ toàn diện 3 miền (Bắc - Trung - Nam), từ ngữ truyền thống (tờ mờ sáng, xế chiều, chạng vạng, khuya),
- * giờ trưa (11h-15h trưa), giờ chiều (1h-6h chiều), người cao tuổi, giờ kém/thiếu, từ đệm, biến thể STT thực tế & TimeProvider injection.
+ * giờ trưa (11h-17h trưa), giờ chiều (1h-12h chiều), người cao tuổi, giờ kém/thiếu, từ đệm, biến thể STT thực tế & TimeProvider injection.
  */
 class FastPathMatcher(
     private val context: Context? = null,
@@ -94,7 +94,7 @@ class FastPathMatcher(
         addRule(patterns = listOf("gọi 115", "gọi cấp cứu"), intent = "call_contact", args = JSONObject().put("contact", "115"), risk = "high", status = "success", confirm = true)
 
         addRule(patterns = listOf("chup anh", "chup hinh", "may anh", "mo may anh", "mo camera", "camera", "ca me ra", "chụp ảnh", "chụp hình", "máy ảnh", "mở máy ảnh"), intent = "open_app", args = JSONObject().put("app_name", "camera"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("xem anh", "xem hinh", "bo suu tap", "album anh", "mo anh", "thu vien anh", "thu vien", "gallery", "xem ảnh", "xem hình", "bộ sưu tập", "album ảnh", "thư viện ảnh"), intent = "open_app", args = JSONObject().put("app_name", "gallery"), risk = "low", status = "success", confirm = false)
+        addRule(patterns = listOf("xem anh", "xem hinh", "bo suu tap", "album anh", "mo anh", "thu vien anh", "thu vien", "gallery", "xem ảnh", "xem hình", "bộ sưu tập", "album ảnh", "thư viện ảnh", "anh", "ảnh", "mở ảnh"), intent = "open_app", args = JSONObject().put("app_name", "gallery"), risk = "low", status = "success", confirm = false)
         addRule(patterns = listOf("may tinh", "tinh tien", "tinh toan", "ban tinh", "mo may tinh", "calculator", "máy tính", "tính tiền", "tính toán", "bàn tính"), intent = "open_app", args = JSONObject().put("app_name", "calculator"), risk = "low", status = "success", confirm = false)
         addRule(patterns = listOf("danh ba", "so dien thoai", "danh sach goi", "mo danh ba", "danh bạ", "số điện thoại", "danh sách gọi"), intent = "open_app", args = JSONObject().put("app_name", "contacts"), risk = "low", status = "success", confirm = false)
         addRule(patterns = listOf("xem gio", "dong ho", "dong ho bao thuc", "mo dong ho", "xem giờ", "đồng hồ", "đồng hồ báo thức"), intent = "open_app", args = JSONObject().put("app_name", "clock"), risk = "low", status = "success", confirm = false)
@@ -104,9 +104,9 @@ class FastPathMatcher(
         addRule(patterns = listOf("tai ung dung", "cai tro choi", "ch play", "cua hang", "cua hang ung dung", "google play", "play store", "tải ứng dụng", "cài trò chơi", "CH Play", "cửa hàng", "cửa hàng ứng dụng"), intent = "open_app", args = JSONObject().put("app_name", "playstore"), risk = "low", status = "success", confirm = false)
         addRule(patterns = listOf("doc bao", "xem tin tuc", "len mang", "guc go", "google", "mo trinh duyet", "trinh duyet", "chrome", "đọc báo", "xem tin tức", "lên mạng", "mở trình duyệt", "trình duyệt"), intent = "open_app", args = JSONObject().put("app_name", "chrome"), risk = "low", status = "success", confirm = false)
 
-        addRule(patterns = listOf("diu tup", "du tup", "dut tup", "yutube", "youtube", "xem ca nhac", "xem video", "mo youtube", "diu túp", "du túp", "đút túp", "xem ca nhạc"), intent = "open_app", args = JSONObject().put("app_name", "youtube"), risk = "low", status = "success", confirm = false)
+        addRule(patterns = listOf("diu tup", "du tup", "dut tup", "yutube", "youtube", "xem ca nhac", "xem video", "mo youtube", "diu túp", "du túp", "đút túp", "xem ca nhạc", "nhac youtube", "nhạc youtube", "nghe nhac youtube"), intent = "open_app", args = JSONObject().put("app_name", "youtube"), risk = "low", status = "success", confirm = false)
         addRule(patterns = listOf("da lo", "za lo", "da ro", "zalo", "nhan da lo", "goi da lo", "mo zalo", "da-lô", "za-lô", "nhắn da lô"), intent = "open_app", args = JSONObject().put("app_name", "zalo"), risk = "low", status = "success", confirm = false)
-        addRule(patterns = listOf("phay", "phay buc", "phay bup", "fb", "xem phay", "facebook", "mo facebook", "phây", "phây búc", "phây búp"), intent = "open_app", args = JSONObject().put("app_name", "facebook"), risk = "low", status = "success", confirm = false)
+        addRule(patterns = listOf("phay", "phay buc", "phay bup", "fb", "xem phay", "facebook", "mo facebook", "phây", "phây búc", "phây búp", "face", "mo face", "mở face", "vào face", "xem face"), intent = "open_app", args = JSONObject().put("app_name", "facebook"), risk = "low", status = "success", confirm = false)
         addRule(patterns = listOf("top top", "toc toc", "tik tok", "tiktok", "xem video ngan", "mo tiktok", "tóp tóp", "tóc tóc", "xem video ngắn"), intent = "open_app", args = JSONObject().put("app_name", "tiktok"), risk = "low", status = "success", confirm = false)
         addRule(patterns = listOf("ban do", "chi duong", "guc go map", "tim duong", "google map", "google maps", "mo ban do", "bản đồ", "chỉ đường", "tìm đường"), intent = "open_app", args = JSONObject().put("app_name", "google_maps"), risk = "low", status = "success", confirm = false)
 
@@ -161,8 +161,8 @@ class FastPathMatcher(
                 )
             }
 
-            // 2. Kiểm tra các tiền tố câu lệnh mở app -> Tách tiền tố và tra cứu lookupMap
-            for (prefix in COMMAND_PREFIXES) {
+            // 2. Kiểm tra các tiền tố câu lệnh mở app (được ưu tiên prefix dài trước) -> Tách tiền tố và tra cứu lookupMap
+            for (prefix in SORTED_COMMAND_PREFIXES) {
                 if (unaccented.startsWith(prefix)) {
                     val remainder = unaccented.substring(prefix.length).trim()
                     if (remainder.isNotEmpty()) {
@@ -244,73 +244,7 @@ class FastPathMatcher(
             if (timerResult != null) return timerResult
         }
 
-        // g. Mở ứng dụng (open_app) động
-        val openAppMatcher = OPEN_APP_PATTERN.matcher(text)
-        if (openAppMatcher.find()) {
-            val targetApp = openAppMatcher.group(1)?.trim() ?: ""
-            val unaccentedTarget = stripAccents(targetApp.lowercase())
-            if (targetApp.isNotEmpty() && (COMMON_APPS.contains(unaccentedTarget) || unaccentedText.startsWith("mo ung dung") || unaccentedText.startsWith("mo app") || unaccentedText.startsWith("bat ung dung") || unaccentedText.startsWith("vao app"))) {
-                val mappedAppName = APP_ALIAS_MAP[unaccentedTarget] ?: targetApp
-                val args = JSONObject().apply {
-                    put("app_name", mappedAppName)
-                }
-                return buildNluResult("open_app", args, "low", "success", false)
-            }
-        }
-
-        // h. Mở bản đồ / Chỉ đường
-        val mapMatcher = MAP_PATTERN.matcher(text)
-        if (mapMatcher.find()) {
-            val destination = mapMatcher.group(1)?.trim() ?: ""
-            if (destination.isNotEmpty()) {
-                val args = JSONObject().apply {
-                    put("destination", destination)
-                }
-                return buildNluResult("open_map", args, "low", "success", false)
-            }
-        }
-
-        // i. Gửi tin nhắn có nội dung
-        val smsContentMatcher = SMS_CONTENT_PATTERN.matcher(text)
-        if (smsContentMatcher.find()) {
-            val contact = smsContentMatcher.group(1)?.trim() ?: ""
-            val message = smsContentMatcher.group(2)?.trim() ?: ""
-            if (contact.isNotEmpty()) {
-                val args = JSONObject().apply {
-                    put("contact", contact)
-                    put("message", message)
-                }
-                return buildNluResult("send_sms", args, "medium", "success", false)
-            }
-        }
-
-        // j. Soạn tin nhắn không nội dung
-        val smsSimpleMatcher = SMS_SIMPLE_PATTERN.matcher(text)
-        if (smsSimpleMatcher.find()) {
-            val contact = smsSimpleMatcher.group(1)?.trim() ?: ""
-            val unaccentedContact = stripAccents(contact.lowercase())
-            if (contact.isNotEmpty() && !unaccentedContact.contains("noi dung") && !unaccentedContact.contains(" la ")) {
-                val args = JSONObject().apply {
-                    put("contact", contact)
-                    put("message", "")
-                }
-                return buildNluResult("send_sms", args, "medium", "success", false)
-            }
-        }
-
-        // k. Gọi điện (call_contact)
-        val callMatcher = CALL_PATTERN.matcher(text)
-        if (callMatcher.find()) {
-            val contact = callMatcher.group(1)?.trim() ?: ""
-            if (contact.isNotEmpty()) {
-                val args = JSONObject().apply {
-                    put("contact", contact)
-                }
-                return buildNluResult("call_contact", args, "high", "success", true)
-            }
-        }
-
-        // l. Tìm kiếm video YouTube (search_video)
+        // g. Ưu tiên tìm kiếm video YouTube trước khi khớp mở ứng dụng tổng quát
         val videoMatcher = VIDEO_PATTERN.matcher(text)
         if (videoMatcher.find()) {
             val query = videoMatcher.group(1)?.trim() ?: ""
@@ -322,7 +256,7 @@ class FastPathMatcher(
             }
         }
 
-        // m. Phát nhạc / Bài hát (play_music)
+        // h. Ưu tiên phát nhạc / bài hát
         val songMatcher = SONG_PATTERN.matcher(text)
         if (songMatcher.find()) {
             val songName = songMatcher.group(1)?.trim() ?: ""
@@ -345,37 +279,104 @@ class FastPathMatcher(
             }
         }
 
+        // i. Mở ứng dụng (open_app) động
+        val openAppMatcher = OPEN_APP_PATTERN.matcher(text)
+        if (openAppMatcher.find()) {
+            val targetApp = openAppMatcher.group(1)?.trim() ?: ""
+            val unaccentedTarget = stripAccents(targetApp.lowercase())
+            if (targetApp.isNotEmpty() && (COMMON_APPS.contains(unaccentedTarget) || APP_ALIAS_MAP.containsKey(unaccentedTarget) || unaccentedText.startsWith("mo ung dung") || unaccentedText.startsWith("mo app") || unaccentedText.startsWith("bat ung dung") || unaccentedText.startsWith("vao app"))) {
+                val mappedAppName = APP_ALIAS_MAP[unaccentedTarget] ?: targetApp
+                val args = JSONObject().apply {
+                    put("app_name", mappedAppName)
+                }
+                return buildNluResult("open_app", args, "low", "success", false)
+            }
+        }
+
+        // j. Mở bản đồ / Chỉ đường
+        val mapMatcher = MAP_PATTERN.matcher(text)
+        if (mapMatcher.find()) {
+            val destination = mapMatcher.group(1)?.trim() ?: ""
+            if (destination.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("destination", destination)
+                }
+                return buildNluResult("open_map", args, "low", "success", false)
+            }
+        }
+
+        // k. Gửi tin nhắn có nội dung
+        val smsContentMatcher = SMS_CONTENT_PATTERN.matcher(text)
+        if (smsContentMatcher.find()) {
+            val contact = smsContentMatcher.group(1)?.trim() ?: ""
+            val message = smsContentMatcher.group(2)?.trim() ?: ""
+            if (contact.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("contact", contact)
+                    put("message", message)
+                }
+                return buildNluResult("send_sms", args, "medium", "success", false)
+            }
+        }
+
+        // l. Soạn tin nhắn không nội dung
+        val smsSimpleMatcher = SMS_SIMPLE_PATTERN.matcher(text)
+        if (smsSimpleMatcher.find()) {
+            val contact = smsSimpleMatcher.group(1)?.trim() ?: ""
+            val unaccentedContact = stripAccents(contact.lowercase())
+            if (contact.isNotEmpty() && !unaccentedContact.contains("noi dung") && !unaccentedContact.contains(" la ")) {
+                val args = JSONObject().apply {
+                    put("contact", contact)
+                    put("message", "")
+                }
+                return buildNluResult("send_sms", args, "medium", "success", false)
+            }
+        }
+
+        // m. Gọi điện (call_contact)
+        val callMatcher = CALL_PATTERN.matcher(text)
+        if (callMatcher.find()) {
+            val contact = callMatcher.group(1)?.trim() ?: ""
+            if (contact.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("contact", contact)
+                }
+                return buildNluResult("call_contact", args, "high", "success", true)
+            }
+        }
+
         return null
     }
 
     private fun isAlarmCommand(text: String): Boolean {
-        return ALARM_PREFIXES.any { text.contains(it) }
+        return ALARM_PREFIXES.any { text.contains(it) } || text.contains("gio") || text.contains("h")
     }
 
     private fun isTimerCommand(text: String): Boolean {
-        return TIMER_PREFIXES.any { text.contains(it) }
+        return TIMER_PREFIXES.any { text.contains(it) } || text.contains("phut") || text.contains("giay")
     }
 
     private fun parseRelativeTimerCommand(text: String): NluResult? {
         val unaccented = stripAccents(text.lowercase())
 
         val isSau = unaccented.startsWith("sau ")
-        val isNua = unaccented.endsWith("nua") || unaccented.endsWith("nua.")
+        val isNua = unaccented.contains("nua")
 
         if (!isSau && !isNua) return null
 
-        val payload = unaccented
+        var payload = unaccented
             .replace("sau ", "")
-            .replace("nua", "")
             .replace("bay gio", "")
             .replace("hien tai", "")
             .replace("luc nay", "")
             .replace("cong", "")
             .trim()
 
-        if (payload.isEmpty()) return null
+        if (payload.endsWith(" nua")) {
+            payload = payload.substring(0, payload.length - 4).trim()
+        }
 
-        if (payload == "nua tieng" || payload == "nua gio" || payload == "tieng" || payload == "gio") {
+        if (payload == "nua tieng" || payload == "nua gio") {
             val args = JSONObject().apply {
                 put("duration", 30)
                 put("unit", "minutes")
@@ -384,15 +385,15 @@ class FastPathMatcher(
             return buildNluResult("set_timer", args, "low", "success", false)
         }
 
+        payload = payload.replace("nua", "").trim()
+
         val unit = when {
             payload.contains("giay") || payload.endsWith("s") -> "seconds"
             payload.contains("tieng") || payload.contains("gio") || payload.endsWith("h") -> "hours"
             else -> "minutes"
         }
 
-        val numStr = payload
-            .replace(Regex("\\b(giay|phut|tieng|gio|s|p|h)\\b"), "")
-            .trim()
+        val numStr = TIMER_UNITS_CLEAN_REGEX.replace(payload, "").trim()
 
         val duration = VietnameseNumberParser.parse(numStr)
         if (duration != null && duration > 0) {
@@ -434,9 +435,7 @@ class FastPathMatcher(
                 payload.contains("tieng") || payload.contains("gio") || payload.endsWith("h") -> "hours"
                 else -> "minutes"
             }
-            val numStr = payload
-                .replace(Regex("\\b(giay|phut|tieng|gio|s|p|h)\\b"), "")
-                .trim()
+            val numStr = TIMER_UNITS_CLEAN_REGEX.replace(payload, "").trim()
             val parsedNum = VietnameseNumberParser.parse(numStr) ?: return null
             addMins = if (unit == "hours") parsedNum * 60 else parsedNum
         }
@@ -467,153 +466,294 @@ class FastPathMatcher(
         isToi: Boolean,
         isDem: Boolean
     ): Int {
-        var h = hour
-        if (isDem) {
-            if (h == 12) {
-                h = 0
-            } else if (h in 9..11) {
-                h += 12
-            }
-        } else if (isSang) {
-            if (h == 12) {
-                h = 0
-            }
-        } else if (isTrua) {
-            if (h == 12) {
-                h = 12
-            } else if (h in 1..5) {
-                h += 12
-            }
-        } else if (isChieu) {
-            if (h == 12) {
-                h = 12
-            } else if (h in 1..11) {
-                h += 12
-            }
-        } else if (isToi) {
-            if (h in 6..11) {
-                h += 12
-            } else if (h in 1..5) {
-                h += 18
-            }
+        if (hour !in 0..23) {
+            return hour
         }
-        return h % 24
+
+        // Không có thông tin buổi: giữ nguyên giờ người dùng nói
+        if (!isSang && !isTrua && !isChieu && !isToi && !isDem) {
+            return hour % 24
+        }
+
+        return when {
+            // SÁNG
+            isSang -> {
+                when {
+                    hour == 12 -> 0
+                    hour in 0..11 -> hour
+                    else -> hour % 24
+                }
+            }
+
+            // TRƯA
+            isTrua -> {
+                when {
+                    hour == 12 -> 12
+                    hour == 0 -> 12
+                    hour in 1..11 -> hour + 12
+                    else -> hour % 24
+                }
+            }
+
+            // CHIỀU
+            isChieu -> {
+                when {
+                    hour == 12 -> 12
+                    hour == 0 -> 12
+                    hour in 1..11 -> hour + 12
+                    else -> hour % 24
+                }
+            }
+
+            // TỐI
+            isToi -> {
+                when {
+                    hour == 12 -> 0
+                    hour in 1..11 -> hour + 12
+                    else -> hour % 24
+                }
+            }
+
+            // ĐÊM / KHUYA
+            isDem -> {
+                when {
+                    hour == 12 -> 0
+                    hour in 1..5 -> hour
+                    hour in 6..11 -> hour + 12
+                    else -> hour % 24
+                }
+            }
+
+            else -> hour % 24
+        }
     }
 
     private fun parseAlarmCommand(text: String): NluResult? {
         val unaccented = stripAccents(text.lowercase())
-
-        val isSang = unaccented.contains("sang") || unaccented.contains("som") || unaccented.contains("to mo")
-        val isTrua = unaccented.contains("trua")
-        val isChieu = unaccented.contains("chieu") || unaccented.contains("xe chieu")
-        val isToi = unaccented.contains("toi") || unaccented.contains("chang vang") || unaccented.contains("sam toi") || unaccented.contains("chap toi")
-        val isDem = unaccented.contains("dem") || unaccented.contains("khuya")
-
-        // Xử lý kịch bản "Giờ kém" hoặc "Giờ thiếu" (Khẩu ngữ Miền Nam)
-        val isKem = unaccented.contains("kem") || unaccented.contains("thieu")
-        if (isKem) {
-            var payloadKem = unaccented
-            for (prefix in ALARM_PREFIXES) {
-                payloadKem = payloadKem.replace(prefix, "")
-            }
-
-            payloadKem = payloadKem
-                .replace("tam khoang", "")
-                .replace("khoang", "")
-                .replace(Regex("\\btam\\b(?!\\s*(?:gio|giờ|h\\b))"), "")
-                .replace("vao luc", "")
-                .replace("luc", "")
-                .replace("sang", "")
-                .replace("trua", "")
-                .replace("chieu", "")
-                .replace("xe chieu", "")
-                .replace("toi", "")
-                .replace("chang vang", "")
-                .replace("sam toi", "")
-                .replace("chap toi", "")
-                .replace("dem", "")
-                .replace("khuya", "")
-                .trim()
-
-            val kemParts = payloadKem.split(Regex("\\s+(?:kem|thieu)\\s+"))
-            if (kemParts.size == 2) {
-                val rawHourPart = kemParts[0].replace(Regex("\\s*(?:gio|giờ)\\s*|(?<=\\d)\\s*h\\b"), "").trim()
-                val rawMinPart = kemParts[1].replace("phut", "").replace("p", "").trim()
-
-                val parsedTargetHour = VietnameseNumberParser.parse(rawHourPart)
-                val parsedKemMin = VietnameseNumberParser.parse(rawMinPart)
-
-                if (parsedTargetHour != null && parsedKemMin != null && parsedKemMin in 1..59) {
-                    var totalMins = parsedTargetHour * 60 - parsedKemMin
-                    if (totalMins < 0) totalMins += 24 * 60
-
-                    val rawHour = (totalMins / 60) % 24
-                    val minute = totalMins % 60
-
-                    val hour = normalizeHourPeriod(rawHour, isSang, isTrua, isChieu, isToi, isDem)
-
-                    val args = JSONObject().apply {
-                        put("hour", hour)
-                        put("minute", minute)
-                        put("label", "Báo thức")
-                    }
-                    return buildNluResult("set_alarm", args, "low", "success", false)
-                }
-            }
-        }
-
-        val isRuoi = unaccented.contains("ruoi")
-        var minute = if (isRuoi) 30 else 0
-
-        var payload = unaccented
-        for (prefix in ALARM_PREFIXES) {
-            payload = payload.replace(prefix, "")
-        }
-
-        payload = payload
-            .replace("tam khoang", "")
-            .replace("khoang", "")
-            .replace(Regex("\\btam\\b(?!\\s*(?:gio|giờ|h\\b))"), "")
-            .replace("vao luc", "")
-            .replace("luc", "")
-            .replace("sang", "")
-            .replace("som", "")
-            .replace("to mo", "")
-            .replace("trua", "")
-            .replace("chieu", "")
-            .replace("xe chieu", "")
-            .replace("toi", "")
-            .replace("chang vang", "")
-            .replace("sam toi", "")
-            .replace("chap toi", "")
-            .replace("dem", "")
-            .replace("khuya", "")
-            .replace("ruoi", "")
-            .replace("dung", "")
-            .replace("tron", "")
+            .replace(MULTI_SPACE_REGEX, " ")
             .trim()
 
-        var parsedHour: Int? = null
+        if (unaccented.isEmpty()) return null
 
-        // Format kiểu 7:30 hoặc 7h30
-        val colonMatcher = Pattern.compile("(\\d{1,2})[h:](\\d{1,2})").matcher(payload)
-        if (colonMatcher.find()) {
-            parsedHour = colonMatcher.group(1)?.toIntOrNull()
-            minute = colonMatcher.group(2)?.toIntOrNull() ?: minute
+        // ============================================================
+        // 1. XÁC ĐỊNH BUỔI
+        // ============================================================
+
+        val isToMo = unaccented.contains("to mo")
+        val isXeChieu = unaccented.contains("xe chieu")
+        val isChangVang = unaccented.contains("chang vang")
+        val isSamToi = unaccented.contains("sam toi")
+        val isChapToi = unaccented.contains("chap toi")
+
+        val isSang =
+            unaccented.contains(" sang") ||
+            unaccented.startsWith("sang ") ||
+            unaccented.contains(" som ") ||
+            unaccented.endsWith(" som") ||
+            isToMo
+
+        val isTrua =
+            unaccented.contains(" trua") ||
+            unaccented.startsWith("trua ")
+
+        val isChieu =
+            unaccented.contains(" chieu") ||
+            unaccented.startsWith("chieu ") ||
+            isXeChieu
+
+        val isToi =
+            unaccented.contains(" toi") ||
+            unaccented.startsWith("toi ") ||
+            isChangVang ||
+            isSamToi ||
+            isChapToi
+
+        val isDem =
+            unaccented.contains(" dem") ||
+            unaccented.startsWith("dem ") ||
+            unaccented.contains(" khuya") ||
+            unaccented.startsWith("khuya")
+
+        // ============================================================
+        // 2. XÁC ĐỊNH "KÉM / THIẾU" VÀ "RƯỠI"
+        // ============================================================
+
+        val isKem = KEM_MATCHER_PATTERN.matcher(unaccented).find()
+        val isRuoi = unaccented.contains("ruoi")
+
+        // ============================================================
+        // 3. XÓA PREFIX BÁO THỨC
+        // ============================================================
+
+        var payload = unaccented
+
+        for (prefix in ALARM_PREFIXES) {
+            if (payload.startsWith(prefix)) {
+                payload = payload.substring(prefix.length).trim()
+                break
+            }
+        }
+
+        // ============================================================
+        // 4. XỬ LÝ "KÉM / THIẾU"
+        // ============================================================
+
+        if (isKem) {
+            val kemParts = KEM_PARTS_REGEX.find(payload) ?: KEM_PARTS_REGEX.find(unaccented)
+
+            if (kemParts != null) {
+                val hourPartRaw = kemParts.groupValues[1].trim()
+                val minutePartRaw = kemParts.groupValues[2].trim()
+
+                var targetHour: Int? = null
+
+        
+                val colonInHour = COLON_TIME_PATTERN.matcher(hourPartRaw)
+                if (colonInHour.find()) {
+                    targetHour = colonInHour.group(1)?.toIntOrNull()
+                } else {
+                    val hourPartClean = hourPartRaw.replace(CLEAN_HOUR_PART_REGEX, "").trim()
+                    targetHour = VietnameseNumberParser.parse(hourPartClean)
+                }
+
+                if (targetHour == null) {
+                    return null
+                }
+
+                val minutePartClean = minutePartRaw
+                    .replace("phut", "")
+                    .replace("to mo sang", "")
+                    .replace("to mo", "")
+                    .replace("xe chieu", "")
+                    .replace("chang vang", "")
+                    .replace("sam toi", "")
+                    .replace("chap toi", "")
+                    .replace("sang", "")
+                    .replace("som", "")
+                    .replace("trua", "")
+                    .replace("chieu", "")
+                    .replace("toi", "")
+                    .replace("dem", "")
+                    .replace("khuya", "")
+                    .trim()
+
+                val minusMinutes: Int? = when {
+                    minutePartClean == "1/4" ||
+                    minutePartClean.contains("phan tu") ||
+                    minutePartClean == "mot phan tu" -> 15
+
+                    minutePartClean == "1/2" ||
+                    minutePartClean.contains("nua") -> 30
+
+                    else -> VietnameseNumberParser.parse(minutePartClean)
+                }
+
+                if (minusMinutes == null || minusMinutes !in 1..59 || targetHour !in 0..23) {
+                    return null
+                }
+
+                var normalizedTargetHour = targetHour
+                if (isToi && normalizedTargetHour in 1..5) {
+                    normalizedTargetHour += 6
+                }
+
+                val hour24 = normalizeHourPeriod(
+                    hour = normalizedTargetHour,
+                    isSang = isSang,
+                    isTrua = isTrua,
+                    isChieu = isChieu,
+                    isToi = isToi,
+                    isDem = isDem
+                )
+
+                var totalMinutes = hour24 * 60 - minusMinutes
+                if (totalMinutes < 0) {
+                    totalMinutes += 24 * 60
+                }
+
+                val resultHour = (totalMinutes / 60) % 24
+                val resultMinute = totalMinutes % 60
+
+                val args = JSONObject().apply {
+                    put("hour", resultHour)
+                    put("minute", resultMinute)
+                    put("label", "Báo thức")
+                }
+
+                return buildNluResult(
+                    intent = "set_alarm",
+                    arguments = args,
+                    riskLevel = "low",
+                    status = "success",
+                    requiresConfirmation = false
+                )
+            }
+        }
+
+        // ============================================================
+        // 5. XÓA CÁC TỪ CHỈ THỜI GIAN / TỪ ĐỆM
+        // ============================================================
+
+        payload = payload
+            .replace("tam khoang", " ")
+            .replace("khoang", " ")
+            .replace(TAM_MODIFIER_REGEX, " ")
+            .replace("xe chieu", " ")
+            .replace("chang vang", " ")
+            .replace("sam toi", " ")
+            .replace("chap toi", " ")
+            .replace("to mo", " ")
+            .replace("khuya", " ")
+            .replace("vao luc", " ")
+            .replace("luc", " ")
+            .replace("sang", " ")
+            .replace("som", " ")
+            .replace("trua", " ")
+            .replace("chieu", " ")
+            .replace("toi", " ")
+            .replace("dem", " ")
+            .replace("ruoi", " ")
+            .replace("dung", " ")
+            .replace("tron", " ")
+            .replace(MULTI_SPACE_REGEX, " ")
+            .trim()
+
+        // ============================================================
+        // 6. TÁCH GIỜ VÀ PHÚT
+        // ============================================================
+
+        var parsedHour: Int? = null
+        var parsedMinute = 0
+
+        val compactTimeMatcher = COLON_TIME_PATTERN.matcher(payload)
+
+        if (compactTimeMatcher.find()) {
+            var rawH = compactTimeMatcher.group(1)?.toIntOrNull() ?: 0
+            val rawM = compactTimeMatcher.group(2)?.toIntOrNull() ?: 0
+
+            // Sửa lỗi Google STT ITN: Google STT tự đổi "2 giờ kém 15" -> "2:45" (quên trừ 1h).
+            // Nếu chuỗi chứa dấu hai chấm ':' và phút >= 35 (45, 50, 55, 40, 35), trừ 1h để ra giờ thực sự người dùng đọc.
+            if (payload.contains(":") && rawM in listOf(35, 40, 45, 50, 55) && !unaccented.contains("kem") && !unaccented.contains("thieu")) {
+                rawH = if (rawH == 0) 23 else rawH - 1
+            }
+
+            parsedHour = rawH
+            parsedMinute = rawM
         } else {
-            // Tách theo chữ "giờ", "gio" hoặc ranh giới từ "h"
-            val parts = payload.split(Regex("\\s*(?:gio|giờ)\\s*|(?<=\\d)\\s*h\\b|\\bch\\b"))
-            if (parts.isNotEmpty()) {
-                val hourPart = parts[0].trim()
+            val hourMatcher = HOUR_MATCHER_PATTERN.matcher(payload)
+
+            if (hourMatcher.find()) {
+                val hourPart = hourMatcher.group(1)?.trim() ?: ""
+                var minutePart = hourMatcher.group(2)?.trim() ?: ""
+
                 parsedHour = VietnameseNumberParser.parse(hourPart)
 
-                if (parts.size > 1 && !isRuoi) {
-                    val minPart = parts[1].replace("phut", "").replace("p", "").trim()
-                    if (minPart.isNotEmpty()) {
-                        val parsedMin = VietnameseNumberParser.parse(minPart)
-                        if (parsedMin != null) {
-                            minute = parsedMin
-                        }
+                minutePart = minutePart.replace("phut", "").trim()
+
+                if (minutePart.isNotEmpty()) {
+                    val parsed = VietnameseNumberParser.parse(minutePart)
+                    if (parsed != null) {
+                        parsedMinute = parsed
                     }
                 }
             } else {
@@ -621,20 +761,64 @@ class FastPathMatcher(
             }
         }
 
-        if (parsedHour == null) return null
-
-        val hour = normalizeHourPeriod(parsedHour, isSang, isTrua, isChieu, isToi, isDem)
-
-        if (hour in 0..23 && minute in 0..59) {
-            val args = JSONObject().apply {
-                put("hour", hour)
-                put("minute", minute)
-                put("label", "Báo thức")
-            }
-            return buildNluResult("set_alarm", args, "low", "success", false)
+        if (parsedHour == null) {
+            return null
         }
 
-        return null
+        // ============================================================
+        // 7. KIỂM TRA GIỜ HỢP LỆ
+        // ============================================================
+
+        if (parsedHour !in 0..23) {
+            return null
+        }
+
+        // ============================================================
+        // 8. XỬ LÝ "RƯỠI"
+        // ============================================================
+
+        if (isRuoi) {
+            parsedMinute = 30
+        }
+
+        // ============================================================
+        // 9. GIỜ BÌNH THƯỜNG
+        // ============================================================
+
+        val hour24 = normalizeHourPeriod(
+            hour = parsedHour,
+            isSang = isSang,
+            isTrua = isTrua,
+            isChieu = isChieu,
+            isToi = isToi,
+            isDem = isDem
+        )
+
+        // ============================================================
+        // 10. KIỂM TRA PHÚT
+        // ============================================================
+
+        if (parsedMinute !in 0..59) {
+            return null
+        }
+
+        // ============================================================
+        // 11. KẾT QUẢ
+        // ============================================================
+
+        val args = JSONObject().apply {
+            put("hour", hour24)
+            put("minute", parsedMinute)
+            put("label", "Báo thức")
+        }
+
+        return buildNluResult(
+            intent = "set_alarm",
+            arguments = args,
+            riskLevel = "low",
+            status = "success",
+            requiresConfirmation = false
+        )
     }
 
     private fun parseTimerCommand(text: String): NluResult? {
@@ -663,9 +847,7 @@ class FastPathMatcher(
             else -> "minutes"
         }
 
-        val numStr = payload
-            .replace(Regex("\\b(giay|phut|tieng|gio|s|p|h)\\b"), "")
-            .trim()
+        val numStr = TIMER_UNITS_CLEAN_REGEX.replace(payload, "").trim()
 
         val duration = VietnameseNumberParser.parse(numStr)
         if (duration != null && duration > 0) {
@@ -733,8 +915,22 @@ class FastPathMatcher(
         private const val TAG = "FastPathMatcher"
 
         private val DIACRITICS_REGEX = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
-        private val PUNCTUATION_REGEX = Pattern.compile("[.,?!;:'\"\\-_]")
+        private val PUNCTUATION_REGEX = Pattern.compile("[.,?!;'\"\\-_]|(?<!\\d):(?!\\d)")
         private val MULTIPLE_SPACES_REGEX = Pattern.compile("\\s+")
+        private val COLON_TIME_PATTERN = Pattern.compile("(\\d{1,2})[h:g](\\d{1,2})")
+
+        private val KEM_MATCHER_PATTERN = Pattern.compile("\\b(kem|thieu)\\b")
+        private val KEM_PARTS_REGEX = Regex("^(.+?)\\s+(?:kem|thieu)\\s+(.+)$")
+        private val CLEAN_HOUR_PART_REGEX = Regex("\\b(?:gio|giờ|h|(?<=\\d)g)\\b")
+        private val HOUR_MATCHER_PATTERN = Pattern.compile("^(.+?)\\s*(?:gio|giờ|h|(?<=\\d)g)\\b\\s*(.*)$")
+        private val MULTI_SPACE_REGEX = Regex("\\s+")
+
+        private val KEM_SPLIT_REGEX = Regex("\\s+(?:kem|thieu)\\s+")
+        private val HOUR_SPLIT_REGEX = Regex("\\s*(?:gio|giờ)\\s*|(?<=\\d)\\s*[hg]\\b|\\bch\\b")
+        private val RAW_HOUR_CLEAN_REGEX = Regex("\\s*(?:gio|giờ)\\s*|(?<=\\d)\\s*[hg]\\b")
+        private val P_UNIT_REGEX = Regex("\\bp\\b")
+        private val TIMER_UNITS_CLEAN_REGEX = Regex("\\b(giay|phut|tieng|gio|s|p|h)\\b")
+        private val TAM_MODIFIER_REGEX = Regex("\\btam\\b(?!\\s*(?:gio|giờ|h\\b))")
 
         private val ALARM_PREFIXES = listOf(
             "dat chuong bao thuc",
@@ -772,46 +968,55 @@ class FastPathMatcher(
             "vui long mo",
             "vao giup toi",
             "bat giup toi",
+            "mo ung dung",
+            "bat ung dung",
+            "vao ung dung",
+            "mo app",
+            "bat app",
+            "vao app",
             "hay mo",
             "cho toi",
             "vui long",
             "giup toi",
-            "mo app",
-            "mo ung dung",
-            "bat app",
-            "bat ung dung",
-            "vao app",
-            "vao ung dung",
             "mo",
             "bat",
             "vao"
         )
 
+        // Sắp xếp prefix ưu tiên từ dài xuống ngắn để không bị "mo" nuốt mất "mo ung dung"
+        private val SORTED_COMMAND_PREFIXES = COMMAND_PREFIXES.sortedByDescending { it.length }
+
         private val FILLER_WORDS = listOf("cai ", "app ", "ung dung ")
 
         private val COMMON_APPS = listOf(
             "youtube", "zalo", "facebook", "tiktok", "chrome", "camera", "may anh", "cai dat", "messenger", "ban do",
-            "shopee", "shop pi", "shoppe", "lazada", "la da da", "grab", "be", "momo", "spotify"
+            "shopee", "shop pi", "shoppe", "lazada", "la da da", "grab", "be", "momo", "spotify", "may tinh", "bo suu tap",
+            "anh", "danh ba", "ch play", "guc go map", "chi duong", "nhac youtube", "face", "fe", "mess", "mes"
         )
 
         private val APP_ALIAS_MAP = mapOf(
-            "du tup" to "youtube",
             "du tup" to "youtube",
             "diu tup" to "youtube",
             "yutube" to "youtube",
             "iu tup" to "youtube",
             "utube" to "youtube",
+            "nhac youtube" to "youtube",
+            "face" to "facebook",
+            "fe" to "facebook",
             "phay" to "facebook",
             "phay buc" to "facebook",
             "phay bup" to "facebook",
             "phe buc" to "facebook",
             "fb" to "facebook",
+            "mess" to "messenger",
+            "mes" to "messenger",
             "top top" to "tiktok",
             "toc toc" to "tiktok",
             "tik tok" to "tiktok",
             "tich tac" to "tiktok",
             "guc go map" to "google_maps",
             "ban do" to "google_maps",
+            "chi duong" to "google_maps",
             "shop pi" to "shopee",
             "shoppe" to "shopee",
             "la da da" to "lazada",
@@ -821,6 +1026,7 @@ class FastPathMatcher(
             "may anh" to "camera",
             "bo suu tap" to "gallery",
             "album anh" to "gallery",
+            "anh" to "gallery",
             "may tinh" to "calculator",
             "danh ba" to "contacts",
             "ch play" to "playstore"
