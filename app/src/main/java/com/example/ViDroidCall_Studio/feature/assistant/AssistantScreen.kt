@@ -235,34 +235,33 @@ private fun VoiceAssistantSection(
         label = "ringAlpha1"
     )
 
-    // Animation thở nhịp nhàng của Logo App khi AI đang suy nghĩ
+    // Animation nhịp thở (breathing/pulse) của Logo App và vầng hào quang khi AI đang phân tích dữ liệu
     val aiBrainScale by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
+        initialValue = 0.88f,
+        targetValue = 1.12f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
+            animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "aiBrainScale"
     )
-    val aiGlowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.20f,
-        targetValue = 0.60f,
+    val aiGlowScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.30f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "aiGlowScale"
+    )
+    val aiGlowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.75f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "aiGlowAlpha"
-    )
-    // Animation xoay tròn 360 độ kiểu Loading cho Logo App
-    val aiLogoRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "aiLogoRotation"
     )
 
     // Xử lý khi nhấn nút: Chặn thao tác nếu AI đang phân tích câu lệnh (thực thi tuần tự)
@@ -349,7 +348,7 @@ private fun VoiceAssistantSection(
                         AnimatedWaveformVisualizer()
                     }
                     isNluProcessing -> {
-                        // Logo App xoay tròn kiểu Loading kết hợp vầng hào quang phát sáng
+                        // Logo App có nhịp thở (breathe) kết hợp vầng hào quang phát sáng lan toả thể hiện AI đang phân tích
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -357,8 +356,8 @@ private fun VoiceAssistantSection(
                             // Vòng hào quang phát sáng thở màu xanh dịu mắt
                             Box(
                                 modifier = Modifier
-                                    .size(78.dp)
-                                    .scale(aiBrainScale)
+                                    .size(88.dp)
+                                    .scale(aiGlowScale)
                                     .background(
                                         brush = Brush.radialGradient(
                                             colors = listOf(
@@ -370,14 +369,13 @@ private fun VoiceAssistantSection(
                                         shape = CircleShape
                                     )
                             )
-                            // Logo App xoay tròn 360 độ mượt mà kiểu Loading
+                            // Logo App nhịp thở êm ái, co giãn tự nhiên khi đang phân tích dữ liệu
                             Image(
                                 painter = painterResource(id = R.drawable.logo_app),
                                 contentDescription = "AI đang phân tích",
                                 modifier = Modifier
-                                    .size(66.dp)
+                                    .size(68.dp)
                                     .scale(aiBrainScale)
-                                    .rotate(aiLogoRotation)
                                     .clip(CircleShape)
                             )
                         }
