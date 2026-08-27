@@ -139,6 +139,39 @@ class NativeActionDispatcherUnitTest {
     }
 
     @Test
+    fun testSetAlarmActionParsing6HourAnd6Hour30() {
+        val json6 = """
+            {
+                "status": "success",
+                "intent": "set_alarm",
+                "arguments": {
+                    "hour": 6,
+                    "minute": 0
+                },
+                "requires_confirmation": false
+            }
+        """.trimIndent()
+        val action6 = NativeAction.fromNluResult(NluJsonParser.parse(json6)) as NativeAction.SetAlarm
+        assertEquals(6, action6.hour)
+        assertEquals(0, action6.minute)
+
+        val json630 = """
+            {
+                "status": "success",
+                "intent": "set_alarm",
+                "arguments": {
+                    "hour": 6,
+                    "minute": 30
+                },
+                "requires_confirmation": false
+            }
+        """.trimIndent()
+        val action630 = NativeAction.fromNluResult(NluJsonParser.parse(json630)) as NativeAction.SetAlarm
+        assertEquals(6, action630.hour)
+        assertEquals(30, action630.minute)
+    }
+
+    @Test
     fun testSetTimerActionParsing() {
         val json = """
             {
@@ -161,6 +194,26 @@ class NativeActionDispatcherUnitTest {
         assertEquals(10, timer.displayDuration)
         assertEquals("phút", timer.unitText)
         assertFalse(timer.requiresConfirmation)
+    }
+
+    @Test
+    fun testSetTimerActionParsing15Minutes() {
+        val json15 = """
+            {
+                "status": "success",
+                "intent": "set_timer",
+                "arguments": {
+                    "duration": 15,
+                    "unit": "minutes"
+                },
+                "requires_confirmation": false
+            }
+        """.trimIndent()
+
+        val action15 = NativeAction.fromNluResult(NluJsonParser.parse(json15)) as NativeAction.SetTimer
+        assertEquals(900, action15.durationSeconds)
+        assertEquals(15, action15.displayDuration)
+        assertEquals("phút", action15.unitText)
     }
 
     @Test
