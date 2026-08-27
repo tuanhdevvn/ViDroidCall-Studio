@@ -45,6 +45,11 @@
     {
       "patterns": [
         "gọi 113",
+        "gọi số 113",
+        "gọi điện 113",
+        "gọi điện số 113",
+        "gọi điện đến 113",
+        "gọi điện đến số 113",
         "gọi cảnh sát",
         "gọi công an",
         "báo công an"
@@ -60,6 +65,11 @@
     {
       "patterns": [
         "gọi 114",
+        "gọi số 114",
+        "gọi điện 114",
+        "gọi điện số 114",
+        "gọi điện đến 114",
+        "gọi điện đến số 114",
         "gọi cứu hỏa",
         "báo cháy"
       ],
@@ -74,7 +84,14 @@
     {
       "patterns": [
         "gọi 115",
-        "gọi cấp cứu"
+        "gọi số 115",
+        "gọi điện 115",
+        "gọi điện số 115",
+        "gọi điện đến 115",
+        "gọi điện đến số 115",
+        "gọi cấp cứu",
+        "cứu thương",
+        "gọi xe cấp cứu"
       ],
       "intent": "call_contact",
       "arguments": {

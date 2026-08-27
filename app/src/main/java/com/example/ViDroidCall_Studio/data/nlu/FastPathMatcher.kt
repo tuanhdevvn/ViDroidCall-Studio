@@ -539,8 +539,9 @@ class FastPathMatcher(
 
     fun match(query: String): NluResult? {
         return try {
-            val rawClean = normalizePreservingAccents(query)
-            val unaccented = normalizeText(query)
+            val normalizedQuery = com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize(query)
+            val rawClean = normalizePreservingAccents(normalizedQuery)
+            val unaccented = normalizeText(normalizedQuery)
             if (unaccented.isEmpty()) return null
 
             // 1. Khớp O(1) Exact Match từ bảng index
@@ -738,7 +739,13 @@ class FastPathMatcher(
         // m. Gọi điện (call_contact)
         val callMatcher = CALL_PATTERN.matcher(text)
         if (callMatcher.find()) {
-            val contact = callMatcher.group(1)?.trim() ?: ""
+            var contact = callMatcher.group(1)?.trim() ?: ""
+            if (contact.startsWith("số ", ignoreCase = true) || contact.startsWith("so ", ignoreCase = true)) {
+                val clean = contact.substring(3).trim()
+                if (clean.isNotEmpty()) {
+                    contact = clean
+                }
+            }
             if (contact.isNotEmpty()) {
                 val args = JSONObject().apply {
                     put("contact", contact)
@@ -751,6 +758,8 @@ class FastPathMatcher(
     }
 
     private fun isAlarmCommand(text: String): Boolean {
+        if (TIMER_PREFIXES.any { text.contains(it) }) return false
+        if (text.contains("giay") && !text.contains("bao thuc")) return false
         return ALARM_PREFIXES.any { text.contains(it) } || text.contains("gio") || text.contains("h")
     }
 

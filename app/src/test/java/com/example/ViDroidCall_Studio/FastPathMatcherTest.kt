@@ -49,6 +49,21 @@ class FastPathMatcherTest {
         assertEquals("call_contact", r113?.intent)
         assertEquals("113", JSONObject(r113!!.argumentsJson).optString("contact"))
 
+        val r113Spoken = matcher.match("Gọi điện đến số một một ba")
+        assertNotNull(r113Spoken)
+        assertEquals("call_contact", r113Spoken?.intent)
+        assertEquals("113", JSONObject(r113Spoken!!.argumentsJson).optString("contact"))
+
+        val r114Spoken = matcher.match("gọi số một một bốn")
+        assertNotNull(r114Spoken)
+        assertEquals("call_contact", r114Spoken?.intent)
+        assertEquals("114", JSONObject(r114Spoken!!.argumentsJson).optString("contact"))
+
+        val r115Spoken = matcher.match("gọi điện đến một một năm")
+        assertNotNull(r115Spoken)
+        assertEquals("call_contact", r115Spoken?.intent)
+        assertEquals("115", JSONObject(r115Spoken!!.argumentsJson).optString("contact"))
+
         val r114 = matcher.match("gọi cứu hỏa")
         assertNotNull(r114)
         assertEquals("call_contact", r114?.intent)
@@ -58,6 +73,18 @@ class FastPathMatcherTest {
         assertNotNull(r115)
         assertEquals("call_contact", r115?.intent)
         assertEquals("115", JSONObject(r115!!.argumentsJson).optString("contact"))
+    }
+
+    @Test
+    fun testVietnameseNumberNormalizer() {
+        assertEquals("113", com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize("một một ba"))
+        assertEquals("gọi điện đến 113", com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize("gọi điện đến số một một ba"))
+        assertEquals("báo thức 6 giờ 30", com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize("báo thức sáu giờ ba mươi"))
+        assertEquals("hẹn giờ 15 phút", com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize("hẹn giờ mười lăm phút"))
+        assertEquals("gọi 0912345678", com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize("gọi không chín một hai ba bốn năm sáu bảy tám"))
+        assertEquals("gọi 0363333490", com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize("gọi không ba sáu bốn con ba bốn chín không"))
+        assertEquals("gọi 0363333490", com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize("gọi không ba sáu bốn số ba bốn chín không"))
+        assertEquals("gọi 0363333490", com.example.ViDroidCall_Studio.feature.speech.VietnameseNumberNormalizer.normalize("gọi không ba sáu ba ba ba ba bốn chín không"))
     }
 
     @Test
