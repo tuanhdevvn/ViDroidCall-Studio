@@ -17,7 +17,8 @@ data class SpeechToTextState(
     val isListening: Boolean,
     val speechText: String,
     val toggleListening: () -> Unit,
-    val stopListening: () -> Unit
+    val stopListening: () -> Unit,
+    val cancelListening: () -> Unit
 )
 
 /**
@@ -99,10 +100,17 @@ fun rememberSpeechToText(
         isListeningState = false
     }
 
+    val cancelListening: () -> Unit = {
+        manager.cancelListening()
+        speechTextState = ""
+        isListeningState = false
+    }
+
     return SpeechToTextState(
         isListening = isListeningState,
         speechText = speechTextState,
         toggleListening = toggleListening,
-        stopListening = stopListening
+        stopListening = stopListening,
+        cancelListening = cancelListening
     )
 }

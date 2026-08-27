@@ -135,6 +135,10 @@ fun HomeScreen(
         }
     }
 
+    val handleCancelListening: () -> Unit = {
+        speechToText.cancelListening()
+    }
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -160,6 +164,7 @@ fun HomeScreen(
                     isListening = speechToText.isListening,
                     speechText = speechToText.speechText,
                     onToggleListening = handleToggleListeningSafe,
+                    onCancelListening = handleCancelListening,
                     nluResult = nluResult,
                     isNluProcessing = isNluProcessing,
                     modelState = modelState,
