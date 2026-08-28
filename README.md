@@ -1,10 +1,11 @@
 # 🎙️ ViDroidCall Studio - Trợ Lý Giọng Nói Tiếng Việt & Hybrid On-Device NLU
+
 <p align="center">
   <img src="app/src/main/res/drawable/logo_app.png" width="320" height="320" alt="ViDroidCall Logo"/>
 </p>
 
 <p align="center">
-  <b>Trợ lý ảo điều khiển giọng nói tiếng Việt thông minh với kiến trúc Hybrid NLU: Bộ quy tắc Fast-Path phản hồi tức thì (< 5ms) kết hợp mô hình AI On-Device (GGUF Llama.cpp) chạy 100% ngoại tuyến, giao diện Jetpack Compose trực quan, tối ưu cho mọi lứa tuổi và người cao tuổi.</b>
+  <b>Trợ lý ảo điều khiển giọng nói tiếng Việt thông minh với kiến trúc Hybrid NLU: Bộ quy tắc Fast-Path phản hồi tức thì (< 5ms) kết hợp mô hình AI On-Device (GGUF Llama.cpp) & nhận diện giọng nói Sherpa-ONNX chạy 100% ngoại tuyến, giao diện Jetpack Compose trực quan, tối ưu cho mọi lứa tuổi và người cao tuổi.</b>
 </p>
 
 <p align="center">
@@ -12,60 +13,65 @@
   <img src="https://img.shields.io/badge/Package-com.example.ViDroidCall__Studio-blueviolet?style=for-the-badge" alt="Package"/>
   <img src="https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"/>
   <img src="https://img.shields.io/badge/UI-Jetpack%20Compose%20(M3)-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Compose"/>
+  <img src="https://img.shields.io/badge/STT-Sherpa--ONNX%20(100%25%20Offline)-00C853?style=for-the-badge" alt="STT Engine"/>
   <img src="https://img.shields.io/badge/Fast--Path-Zero--LLM%20Latency-8A2BE2?style=for-the-badge" alt="Fast-Path"/>
   <img src="https://img.shields.io/badge/AI%20Engine-Llama.cpp%20(GGUF%20Offline)-FF6F00?style=for-the-badge" alt="AI Engine"/>
-  <img src="https://img.shields.io/badge/STT-100%25%20In--App%20Speech-00C853?style=for-the-badge" alt="STT Engine"/>
-  <img src="https://img.shields.io/badge/Database-SQLite%20Offline%20(Max%2010)-F4B400?style=for-the-badge" alt="SQLite Database"/>
+  <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD"/>
 </p>
 
 ---
 
 ## 📖 Giới Thiệu (Overview)
 
-**ViDroidCall Studio** là ứng dụng trợ lý giọng nói tiếng Việt thế hệ mới, hoạt động hoàn toàn ngoại tuyến (**100% Offline**). Ứng dụng tiên phong áp dụng kiến trúc **Hybrid NLU**:
-1. **Fast-Path Engine (< 5ms)**: Xử lý tức thì các câu lệnh ngắn, cố định và chào hỏi/tạm biệt từ bộ dữ liệu chuẩn mà **không cần đánh thức mô hình AI**, tiết kiệm tối đa PIN và tài nguyên RAM/CPU.
-2. **On-Device LLM (Llama.cpp GGUF)**: Tự động tiếp nhận và suy luận thông minh khi gặp các câu lệnh tự nhiên, phức tạp hoặc đa dạng ngữ cảnh.
+**ViDroidCall Studio** là ứng dụng trợ lý giọng nói tiếng Việt thế hệ mới, hoạt động hoàn toàn ngoại tuyến (**100% Offline - Không cần Internet**). Ứng dụng tiên phong áp dụng kiến trúc **Hybrid NLU & On-Device ASR**:
+
+1. **Sherpa-ONNX ASR & Silero-VAD**: Tự động nhận diện giọng nói tiếng Việt cục bộ (Zipformer 30M Int8) kèm bộ phát hiện tiếng nói VAD thông minh và chuẩn hóa số/chữ (ITN).
+2. **Fast-Path Engine (< 5ms)**: Xử lý tức thì các câu lệnh ngắn, cố định và chào hỏi/tạm biệt từ bộ dữ liệu chuẩn mà **không cần đánh thức mô hình AI**, tiết kiệm tối đa PIN và tài nguyên RAM/CPU.
+3. **On-Device LLM (Llama.cpp GGUF)**: Tự động tiếp nhận và suy luận thông minh khi gặp các câu lệnh tự nhiên, phức tạp hoặc đa dạng ngữ cảnh.
 
 ---
 
 ## ✨ Tính Năng Nổi Bật (Key Features)
 
-### 1. ⚡ Bộ Định Tuyến Nhanh Fast-Path (Zero-LLM Latency)
+### 1. 🎙️ Nhận Dạng Giọng Nói 100% Ngoại Tuyến (Sherpa-ONNX Speech-to-Text)
+* **Zipformer 30M Int8 Tiếng Việt**: Nhận diện âm thanh tức thì trên thiết bị di động, bảo mật tuyệt đối dữ liệu riêng tư.
+* **Silero-VAD (Voice Activity Detector)**: Tự động lọc tiếng ồn, chỉ ghi nhận khi người dùng cất tiếng và ngắt câu chuẩn xác sau khoảng lặng.
+* **Chuẩn hóa số tiếng Việt (Vietnamese Number Normalizer)**: Tự động chuyển đổi số đọc thành chữ số (*"không chín một hai..."* $\rightarrow$ *"0912..."*, *"sáu giờ rưỡi"* $\rightarrow$ *"6:30"*).
+
+### 2. 🌟 Hộp Thoại Tương Tác 4 Giai Đoạn Chuẩn UX (4-Stage Interactive Speech Card)
+* **Giai đoạn 1 (Chờ nói)**: Vừa chạm Micro $\rightarrow$ Hộp thoại hiển thị `“Hãy nói gì đó...”` *(chữ xám mờ nhẹ nhàng)*.
+* **Giai đoạn 2 (Đang nói)**: VAD phát hiện tiếng người $\rightarrow$ Hộp thoại chuyển sang `“Đang lắng nghe câu lệnh...”` *(chữ xanh thương hiệu nổi bật)*.
+* **Giai đoạn 3 (Nói xong)**: Dứt lời $\rightarrow$ **In câu chữ vừa nói ngay lập tức** lên màn hình: `“Gọi cho mẹ”` *(in đậm ExtraBold rõ nét)*.
+* **Giai đoạn 4 (Phân tích & Thực thi)**: Hiển thị dòng phụ `🔄 AI đang phân tích câu lệnh...` $\rightarrow$ Kích hoạt cuộc gọi / SMS / Báo thức và phát giọng đọc phản hồi TTS.
+
+### 3. ⚡ Bộ Định Tuyến Nhanh Fast-Path (Zero-LLM Latency)
 * **Phản hồi tức thì**: Độ trễ xử lý dưới **5ms** đối với các câu lệnh phổ biến (chào hỏi, báo thức, hẹn giờ, mở app, gọi điện khẩn cấp,...).
 * **Bộ dữ liệu quy tắc `fast_path_rules.json`**: Lưu trữ trong `assets`, hỗ trợ chuẩn hóa tiếng Việt, khớp từ khóa chính xác và trích xuất tham số bằng Regex linh hoạt.
-* **Huy hiệu phân biệt nguồn**: Hiển thị rõ ràng trên giao diện nguồn xử lý: `⚡ Fast-Path (Bộ dữ liệu)` hoặc `🧠 On-Device AI (GGUF)`.
+* **Huy hiệu phân biệt nguồn**: Hiển thị rõ ràng trên giao diện: `⚡ Fast-Path (Bộ dữ liệu)` hoặc `🧠 On-Device AI (GGUF)`.
 
-### 2. 🤖 Động Cơ AI NLU Cục Bộ (On-Device GGUF Engine)
-* **Native Offline GGUF Engine**: Tự động quét và nạp file mô hình AI (`.gguf`) trực tiếp từ **thư mục Download (`/sdcard/Download/`)**, chạy suy luận cục bộ bảo mật qua `LlamaHelper` (llama.cpp C++ JNI).
-* **Kiểm soát an toàn & Làm mờ trạng thái (Safe Dimming & Guard)**: Khi AI đang nạp hoặc chưa có mô hình, các nút chức năng sẽ tự động làm mờ và bảo vệ hệ thống.
-* **Badge trạng thái tinh gọn**: Màn hình chính hiển thị trực quan (`🟢 Trợ lý AI đã sẵn sàng`, `🟡 Đang nạp...`, `🔴 Chưa có mô hình AI`).
+### 4. 🛡️ Chuẩn Hóa Hệ Thống Xin Quyền & Hướng Dẫn Từng Bước
+* **Hộp thoại xin quyền chuẩn mực**: Loại bỏ nút xin quyền trực tiếp dễ gây treo, thay bằng khung hướng dẫn 3 bước thao tác Cài đặt rõ ràng cho người cao tuổi.
+* **Viền 2dp & Typography đồng bộ**: Hỗ trợ co giãn cỡ chữ hệ thống mượt mà (Accessibility Font Scaling).
+* **Bảo vệ toàn diện**: Micro (`RECORD_AUDIO`), Danh bạ (`READ_CONTACTS`), Bộ nhớ (`MANAGE_EXTERNAL_STORAGE`).
 
-### 3. 🎙️ Nhận Dạng Giọng Nói Thuần Trong App (100% In-App Speech)
-* Chạy trực tiếp qua `SpeechRecognizer` nội bộ trên `MainLooper`, **không mở popup Google**, bảo đảm luồng trải nghiệm liền mạch và an toàn luồng (Thread-safe).
-* **Hiệu ứng sóng âm lan tỏa (Voice Rings)**: Chuyển động nhịp nhàng theo giọng nói và tự động chuyển sang vòng xoay phân tích khi xử lý câu lệnh.
+### 5. ⚡ Chống Xung Đột Thao Tác (Debounce & Race-Condition Safe)
+* Tích hợp bộ đệm thời gian chống spam click nút Micro, Dừng nghe, Hủy hội thoại và Gợi ý câu lệnh.
+* Hỗ trợ ra lệnh cùng một câu nhiều lần liên tiếp không bị nuốt lệnh.
 
-### 4. ⚡ 10 Nhóm Ý Định & Hành Động Chuẩn (Standard Intents)
+### 6. 📱 10 Nhóm Ý Định & Hành Động Chuẩn (Standard Intents)
 
 | Intent | Phân loại | Mô Tả | Tham Số Trích Xuất |
 | :--- | :--- | :--- | :--- |
 | `greeting` | **Fast-Path** | Chào hỏi thân thiện (*"Xin chào"*, *"Hello"*, *"Chào bạn"*) | — |
 | `goodbye` | **Fast-Path** | Tạm biệt, kết thúc (*"Tạm biệt"*, *"Bye"*, *"Hẹn gặp lại"*) | — |
-| `call_contact` | **Hybrid** | Gọi điện thoại / Cuộc gọi khẩn cấp (113, 114, 115) | `contact` |
-| `send_sms` | **Hybrid** | Soạn và gửi tin nhắn SMS | `contact`, `message` |
+| `call_contact` | **Hybrid** | Gọi điện thoại theo tên danh bạ / Quay số trực tiếp / Số khẩn cấp (113, 114, 115) | `contact`, `phone_number` |
+| `send_sms` | **Hybrid** | Soạn và gửi tin nhắn SMS | `contact`, `phone_number`, `message` |
 | `set_alarm` | **Hybrid** | Cài đặt chuông báo thức | `hour`, `minute`, `label` |
 | `set_timer` | **Hybrid** | Hẹn giờ đếm ngược | `duration`, `unit`, `label` |
 | `open_map` | **Hybrid** | Mở bản đồ / Chỉ đường điểm đến | `destination` |
-| `open_app` | **Hybrid** | Khởi chạy ứng dụng cài sẵn (Youtube, Zalo, FB,...) | `app_name` |
+| `open_app` | **Hybrid** | Khởi chạy ứng dụng cài sẵn (YouTube, Zalo, Facebook,...) | `app_name` |
 | `clarify` | **Hybrid** | Yêu cầu người dùng bổ sung thông tin khi thiếu dữ liệu | `missing` |
 | `unsupported`| **Hybrid** | Phản hồi khi câu lệnh nằm ngoài phạm vi hỗ trợ | — |
-
-### 5. 📜 Quản Lý Lịch Sử Câu Lệnh (Tối Đa 10 Câu Lệnh Mới Nhất)
-* Lưu trữ cơ sở dữ liệu SQLite ngoại tuyến: Tự động giữ **tối đa 10 câu lệnh gần nhất** (tự động dọn dẹp theo cơ chế FIFO).
-* Hỗ trợ chạy lại câu lệnh (Rerun), xóa từng câu lệnh và **Xóa tất cả (Clear All)** có hộp thoại xác nhận an toàn.
-
-### 6. 👓 Tùy Chỉnh Cỡ Chữ Chuẩn Xác (Pixel-Perfect Font Slider)
-* Thanh trượt điều chỉnh tỷ lệ chữ (`85%` đến `135%`) với 4 nấc chọn nhanh (`Nhỏ` • `Vừa` • `Lớn` • `Rất lớn`).
-* Áp dụng tức thời trên toàn bộ ứng dụng qua `CompositionLocalProvider(LocalDensity)`.
 
 ---
 
@@ -73,31 +79,32 @@
 
 ```mermaid
 flowchart TD
-    A["Giọng nói người dùng (Microphone)"] --> B["100% In-App SpeechRecognizer"]
-    B --> C["Văn bản câu lệnh (Clean Text)"]
-    C --> D{"1. Khớp Fast-Path Quy Tắc?<br/>(fast_path_rules.json / Regex)"}
+    A["Giọng nói người dùng (Microphone)"] --> B["Silero-VAD (Phát hiện giọng nói)"]
+    B -->|"Dứt câu"| C["Sherpa-ONNX ASR (Zipformer Offline)"]
+    C --> D["Chuẩn hóa số tiếng Việt (ITN)"]
+    D --> E{"1. Khớp Fast-Path Quy Tắc?<br/>(fast_path_rules.json / Regex)"}
     
     %% Nhánh 1: Fast-Path Match (< 5ms)
-    D -- "KHỚP (< 5ms)" --> E["⚡ Fast-Path Output<br/>(Bỏ qua LLM, Tiết kiệm Pin)"]
+    E -- "KHỚP (< 5ms)" --> F["⚡ Fast-Path Output<br/>(Bỏ qua LLM, Tiết kiệm Pin)"]
     
     %% Nhánh 2: On-Device AI LLM Inference
-    D -- "KHÔNG KHỚP" --> F["NluEngineManager (Quét /sdcard/Download/)"]
+    E -- "KHÔNG KHỚP" --> G["NluEngineManager (Quét /sdcard/Download/)"]
     
     subgraph AI_Engine ["Bộ Xử Lý AI On-Device (GGUF Engine)"]
-        F --> G{"File .GGUF sẵn sàng?"}
-        G -- "CÓ" --> H["Native Llama.cpp Engine<br/>Qwen2.5 GGUF On-Device"]
-        H --> I["NluJsonParser (Parse JSON Chuẩn)"]
-        G -- "CHƯA CÓ" --> J["Thông báo trạng thái chưa nạp AI"]
+        G --> H{"File .GGUF sẵn sàng?"}
+        H -- "CÓ" --> I["Native Llama.cpp Engine<br/>Qwen2.5 GGUF On-Device"]
+        I --> J["NluJsonParser (Parse JSON Chuẩn)"]
+        H -- "CHƯA CÓ" --> K["Thông báo trạng thái chưa nạp AI"]
     end
     
     %% Hợp nhất kết quả vào NluResult chung
-    E --> K["Kết Quả JSON NLU (NluResult)"]
-    I --> K
+    F --> L["Kết Quả JSON NLU (NluResult)"]
+    J --> L
     
     %% Phân phối kết quả đến các module
-    K --> L["AssistantScreen (Hiển thị Badge & JSON)"]
-    K --> M["CommandHistoryDatabaseHelper (SQLite FIFO 10 Items)"]
-    K --> N["NluActionDispatcher (Thực thi Native Actions / Voice Feedback)"]
+    L --> M["AssistantScreen (Hiển thị Badge & JSON)"]
+    L --> N["CommandHistoryRepository (SQLite FIFO 10 Items)"]
+    L --> O["NluActionDispatcher (Thực thi Native Actions / Voice Feedback)"]
 ```
 
 ---
@@ -119,24 +126,25 @@ com.example.ViDroidCall_Studio/
 │   │   └── ThemePreferences.kt          # Lưu cấu hình Theme (Light / Dark / System)
 │   │
 │   ├── model/
-│   │   ├── NluModels.kt                 # Model NluIntent (10 Intent), NluStatus, NluResult
+│   │   ├── NluModels.kt                 # Model NluIntent, NluStatus, NluResult (kèm executionId)
 │   │   └── NluJsonParser.kt             # Phân tích cú pháp JSON an toàn
 │   │
 │   └── nlu/
 │       ├── FastPathMatcher.kt           # Bộ lọc quy tắc & Regex Fast-Path (< 5ms)
 │       ├── NluEngineManager.kt          # Quản lý Hybrid NLU & Nạp file GGUF On-Device
 │       ├── NluActionDispatcher.kt       # Điều phối hành động Android (Gọi, SMS, App, Báo thức)
+│       ├── VietnameseNumberParser.kt    # Bộ phân giải số đếm và giờ giấc tiếng Việt
 │       └── NluConstants.kt              # ChatML Prompt Template & Cấu hình Model
 │
 ├── feature/
 │   ├── assistant/
-│   │   └── AssistantScreen.kt           # Màn hình chính Micro, Badge trạng thái & Thẻ JSON
+│   │   └── AssistantScreen.kt           # Màn hình chính Micro, Hộp thoại 4 giai đoạn & Thẻ JSON
 │   ├── history/
 │   │   ├── HistoryScreen.kt             # Màn hình Lịch sử câu lệnh
 │   │   └── model/
 │   │       └── CommandHistoryItem.kt    # Model dữ liệu lịch sử
 │   ├── home/
-│   │   └── HomeScreen.kt                # Màn hình điều hướng tab chính
+│   │   └── HomeScreen.kt                # Màn hình điều hướng tab chính & điều phối quyền
 │   ├── onboarding/
 │   │   └── OnbroadingScreen.kt          # Màn hình giới thiệu ban đầu
 │   ├── settings/
@@ -144,11 +152,29 @@ com.example.ViDroidCall_Studio/
 │   │   ├── FontSizeSettingsScreen.kt    # Màn hình chỉnh cỡ chữ chuyên sâu
 │   │   └── ThemeSelectionScreen.kt      # Màn hình chọn Theme
 │   └── speech/
-│       ├── RememberSpeechToText.kt      # Compose hook quản lý nhận diện giọng nói
-│       └── SpeechToTextManager.kt       # Quản lý SpeechRecognizer chạy ngầm 100% In-App
+│       ├── RememberSpeechToText.kt      # Compose hook quản lý nhận diện giọng nói (Debounce safe)
+│       ├── SpeechToTextManager.kt       # Quản lý Sherpa-ONNX Zipformer & Silero-VAD 100% Offline
+│       └── VietnameseNumberNormalizer.kt# Chuẩn hóa số điện thoại, thời gian từ âm thanh
+│
+├── ui/
+│   ├── component/
+│   │   ├── ActionConfirmationDialog.kt  # Hộp thoại xác nhận thực thi hành động nhạy cảm
+│   │   ├── ContactPermissionDialog.kt   # Hộp thoại hướng dẫn cấp quyền Danh bạ 3 bước
+│   │   ├── MicroPermissionDialog.kt     # Hộp thoại hướng dẫn cấp quyền Micro 3 bước
+│   │   ├── StoragePermissionDialog.kt   # Hộp thoại hướng dẫn cấp quyền Bộ nhớ 3 bước
+│   │   └── CustomBottomMenuBar.kt       # Thanh điều hướng phía dưới kèm nút Mic nổi
+│   └── theme/
+│       ├── Color.kt                     # Bảng màu chủ đạo M3
+│       ├── Theme.kt                     # ViDroidCallTheme hỗ trợ Dynamic Font Scale
+│       └── Type.kt                      # Typography chuẩn hóa
+│
+├── util/
+│   ├── ContactResolver.kt               # Truy vấn danh bạ ContactsContract & phân loại số
+│   └── StoragePermissionHelper.kt       # Kiểm tra và điều hướng quyền MANAGE_EXTERNAL_STORAGE
 │
 ├── assets/
-│   └── fast_path_rules.json             # Bộ dữ liệu mẫu câu lệnh ngắn gọn Fast-Path
+│   ├── fast_path_rules.json             # Bộ dữ liệu mẫu câu lệnh ngắn gọn Fast-Path
+│   └── sherpa-onnx-vi/                  # Mô hình nhận diện giọng nói Zipformer & Silero VAD
 │
 └── navigation/
     ├── AppNavHost.kt                    # Điều hướng Onboarding ↔ Home
@@ -163,8 +189,8 @@ com.example.ViDroidCall_Studio/
 ### 1. Biên dịch và cài đặt APK lên thiết bị
 ```bash
 # 1. Clone repository
-git clone https://github.com/tuanhdevvn/Emma-ViDroidCall.git
-cd Emma-ViDroidCall
+git clone https://github.com/tuanhdevvn/ViDroidCall-Studio.git
+cd ViDroidCall-Studio
 
 # 2. Cài đặt trực tiếp lên điện thoại đang kết nối qua ADB
 ./gradlew installDebug
@@ -172,7 +198,7 @@ cd Emma-ViDroidCall
 
 ### 2. Tải & Nạp file mô hình AI GGUF vào điện thoại
 * 📥 **Link tải toàn bộ mô hình GGUF (Google Drive):** [Google Drive Models Folder](https://drive.google.com/drive/folders/1nmWkENo5Oo_fYT5k5dA9e8-Mm3Napln2)
-* 📖 **Xem hướng dẫn chi tiết:** [02-Huong_dan_tai_va_nap_model_GGUF.md](file:///Users/nguyentuananh/AndroidStudioProjects/EmmaViDroidCall/docs/02-Huong_dan_tai_va_nap_model_GGUF.md)
+* 📖 **Xem hướng dẫn chi tiết:** [02-Huong_dan_tai_va_nap_model_GGUF.md](file:///Users/nguyentuananh/AndroidStudioProjects/ViDroidCall-Studio/docs/02-Huong_dan_tai_va_nap_model_GGUF.md)
 
 Ứng dụng tự động quét file `.gguf` tại **thư mục Download**:
 
@@ -187,6 +213,22 @@ Sau khi nạp file vào `/sdcard/Download/`:
 
 ---
 
-## 📄 Bản Quyền & Tác Giả (License)
+## 🛡️ Đảm Bảo Chất Lượng & CI/CD Pipeline
 
-Dự án được xây dựng và phát triển bởi **Tuấn Anh** ([@tuanhdevvn](https://github.com/tuanhdevvn)). Mọi quyền được bảo lưu.
+Dự án được bảo vệ tự động bằng **GitHub Actions CI/CD Pipeline** với 4 jobs kiểm tra độc lập:
+* ☕ **Setup & Dependencies**: Tải và xác thực bộ đệm phụ thuộc Gradle.
+* 🔍 **Quality CI**: Kiểm tra biên dịch mã nguồn Kotlin và Bytecode toàn bộ dự án.
+* 🧪 **Testing CI**: Tự động chạy toàn bộ **160+ Unit Test Cases** (Fast-Path, NLU Parser, ContactResolver, ITN).
+* 🛡️ **Security Scan**: Quét lỗ hổng bảo mật các thư viện phụ thuộc thời gian chạy.
+
+```bash
+# Chạy toàn bộ Unit Tests cục bộ
+./gradlew testDebugUnitTest
+```
+
+---
+
+## 📄 Bản Quyền & Giấy Phép Mã Nguồn Mở (Licenses)
+
+* Xem thông tin chi tiết về các giấy phép mã nguồn mở của các thư viện (Sherpa-ONNX, Zipformer, Llama.cpp, Material Design,...) tại [OPEN_SOURCE_LICENSES.md](file:///Users/nguyentuananh/AndroidStudioProjects/ViDroidCall-Studio/OPEN_SOURCE_LICENSES.md).
+* Dự án được xây dựng và phát triển bởi **Tuấn Anh** ([@tuanhdevvn](https://github.com/tuanhdevvn)). Mọi quyền được bảo lưu.
