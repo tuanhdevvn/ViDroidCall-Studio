@@ -37,7 +37,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import com.example.ViDroidCall_Studio.R
-import com.example.ViDroidCall_Studio.feature.speech.SpeechToTextManager
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -485,48 +484,48 @@ private fun VoiceAssistantSection(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Khung hiển thị Trạng thái & Giọng nói hợp nhất (Merged Listening & Speech Card)
-        val isSpeechPlaceholder = speechText.isBlank() || 
-                speechText == "Đang lắng nghe..." || 
-                speechText == "Đang lắng nghe câu lệnh..." || 
-                speechText == "Đang nghe bạn nói..." ||
-                speechText == SpeechToTextManager.LISTENING_PLACEHOLDER
-
-        val isCardVisible = isAiReady && (isListening || isNluProcessing || (speechText.isNotBlank() && !isSpeechPlaceholder))
-
-        if (isCardVisible) {
-            val cardText = when {
+        // Dòng trạng thái lớn, dễ đọc
+        Text(
+            text = when {
+                isListening -> "Đang nghe bạn nói..."
                 isNluProcessing -> "AI đang phân tích câu lệnh..."
-                isListening && isSpeechPlaceholder -> "“Đang nghe bạn nói...”"
-                speechText.isNotBlank() -> "“$speechText”"
-                else -> "“Đang nghe bạn nói...”"
-            }
+                else -> "Chạm vào Micro để ra lệnh"
+            },
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            color = if (!isAiReady) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                    else if (isListening || isNluProcessing) MaterialTheme.colorScheme.primary 
+                    else MaterialTheme.colorScheme.onSurface
+        )
 
-            Surface(
-                shape = RoundedCornerShape(22.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)),
+        // Bong bóng hiển thị nội dung nhận dạng giọng nói tức thời
+        AnimatedVisibility(
+            visible = isAiReady && speechText.isNotBlank() && speechText != "Đang lắng nghe...",
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = cardText,
-                    fontSize = 21.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)
-                )
+                Spacer(modifier = Modifier.height(18.dp))
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "“$speechText”",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                    )
+                }
             }
-        } else {
-            // Trạng thái chờ: Dòng chữ hướng dẫn chạm micro đơn giản
-            Text(
-                text = "Chạm vào Micro để ra lệnh",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                color = if (!isAiReady) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-                        else MaterialTheme.colorScheme.onSurface
-            )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
