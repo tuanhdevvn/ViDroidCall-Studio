@@ -1,5 +1,6 @@
 package com.example.ViDroidCall_Studio.feature.home
 
+import android.app.Activity
 import android.Manifest
 import android.content.pm.PackageManager
 import android.widget.Toast
@@ -24,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -40,6 +42,7 @@ import com.example.ViDroidCall_Studio.feature.speech.rememberSpeechToText
 import com.example.ViDroidCall_Studio.feature.speech.rememberTextToSpeech
 import com.example.ViDroidCall_Studio.ui.component.ContactPermissionDialog
 import com.example.ViDroidCall_Studio.ui.component.CustomBottomMenuBar
+import com.example.ViDroidCall_Studio.ui.component.MicroPermissionDialog
 import com.example.ViDroidCall_Studio.ui.component.NavTab
 import com.example.ViDroidCall_Studio.ui.component.StoragePermissionDialog
 import com.example.ViDroidCall_Studio.ui.component.openAppSettings
@@ -78,7 +81,9 @@ fun HomeScreen(
     }
     var showStoragePermissionDialog by remember { mutableStateOf(false) }
     var showContactPermissionDialog by remember { mutableStateOf(false) }
+    var showMicroPermissionDialog by remember { mutableStateOf(false) }
     var hasAutoPromptedPermission by remember { mutableStateOf(false) }
+    var hasPromptedContactPermissionOnce by remember { mutableStateOf(false) }
 
     // Danh sách quyền hệ thống thiết yếu cần yêu cầu khi người dùng khởi động vào App
     val initialPermissions = remember {
@@ -250,6 +255,9 @@ fun HomeScreen(
     val speechToText = rememberSpeechToText(
         onSpeechResult = { recognizedText ->
             nluEngineManager.processQuery(recognizedText)
+        },
+        onPermissionDenied = {
+            showMicroPermissionDialog = true
         }
     )
 
@@ -352,15 +360,25 @@ fun HomeScreen(
             // Hộp thoại nhắc & hỗ trợ cấp quyền Danh bạ
             if (showContactPermissionDialog) {
                 ContactPermissionDialog(
-                    onRequestPermission = {
-                        runtimePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                    },
                     onOpenSettings = {
                         showContactPermissionDialog = false
                         openAppSettings(context)
                     },
                     onDismiss = {
                         showContactPermissionDialog = false
+                    }
+                )
+            }
+
+            // Hộp thoại nhắc & hỗ trợ cấp quyền Micro (Ghi âm)
+            if (showMicroPermissionDialog) {
+                MicroPermissionDialog(
+                    onOpenSettings = {
+                        showMicroPermissionDialog = false
+                        openAppSettings(context)
+                    },
+                    onDismiss = {
+                        showMicroPermissionDialog = false
                     }
                 )
             }

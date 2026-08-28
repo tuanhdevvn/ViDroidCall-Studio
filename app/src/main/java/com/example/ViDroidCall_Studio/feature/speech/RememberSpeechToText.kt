@@ -26,7 +26,8 @@ data class SpeechToTextState(
  */
 @Composable
 fun rememberSpeechToText(
-    onSpeechResult: (String) -> Unit = {}
+    onSpeechResult: (String) -> Unit = {},
+    onPermissionDenied: () -> Unit = {}
 ): SpeechToTextState {
     var isListeningState by remember { mutableStateOf(false) }
     var speechTextState by remember { mutableStateOf("") }
@@ -73,6 +74,7 @@ fun rememberSpeechToText(
             startListening()
         } else {
             speechTextState = SpeechToTextManager.PERMISSION_DENIED_MESSAGE
+            onPermissionDenied()
         }
     }
 

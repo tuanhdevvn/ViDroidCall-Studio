@@ -33,6 +33,8 @@ import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Message
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -71,52 +73,55 @@ fun HistoryScreen(
     modifier: Modifier = Modifier
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
+    val parentDensity = LocalDensity.current
 
     // Hộp thoại xác nhận xóa toàn bộ lịch sử
     if (showClearDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearDialog = false },
-            title = {
-                Text(
-                    text = "Xóa toàn bộ lịch sử?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-            },
-            text = {
-                Text(
-                    text = "Tất cả các câu lệnh đã lưu sẽ bị xóa vĩnh viễn.",
-                    fontSize = 16.sp
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showClearDialog = false
-                        onClearAll()
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
+        CompositionLocalProvider(LocalDensity provides parentDensity) {
+            AlertDialog(
+                onDismissRequest = { showClearDialog = false },
+                title = {
                     Text(
-                        text = "Xóa tất cả",
+                        text = "Xóa toàn bộ lịch sử?",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 20.sp
                     )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) {
+                },
+                text = {
                     Text(
-                        text = "Hủy",
+                        text = "Tất cả các câu lệnh đã lưu sẽ bị xóa vĩnh viễn.",
                         fontSize = 16.sp
                     )
-                }
-            },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showClearDialog = false
+                            onClearAll()
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text(
+                            text = "Xóa tất cả",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearDialog = false }) {
+                        Text(
+                            text = "Hủy",
+                            fontSize = 16.sp
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        }
     }
 
     LazyColumn(
