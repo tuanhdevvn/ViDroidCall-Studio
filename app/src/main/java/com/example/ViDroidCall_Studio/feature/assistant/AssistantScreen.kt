@@ -506,76 +506,99 @@ private fun VoiceAssistantSection(
         val isCardVisible = isAiReady && (isListening || isNluProcessing || hasRecognizedText || isErrorMessage)
 
         if (isCardVisible) {
-            val displayText: String
-            val textColor: Color
-            val textWeight: FontWeight
-            val borderColor: Color
-            val cardBgColor: Color
-
-            when {
-                // Giai đoạn 4: AI đang phân tích câu lệnh
-                isNluProcessing -> {
-                    displayText = "AI đang phân tích câu lệnh..."
-                    textColor = MaterialTheme.colorScheme.primary
-                    textWeight = FontWeight.Bold
-                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                }
-                // Lỗi / Không nghe rõ
-                isErrorMessage -> {
-                    displayText = speechText
-                    textColor = Color(0xFFEF4444)
-                    textWeight = FontWeight.Medium
-                    borderColor = Color(0xFFEF4444).copy(alpha = 0.35f)
-                    cardBgColor = Color(0xFFEF4444).copy(alpha = 0.08f)
-                }
-                // Giai đoạn 3: Đã nhận diện xong câu nói (in câu vừa nói ra hộp thoại)
-                hasRecognizedText -> {
-                    displayText = "“$speechText”"
-                    textColor = MaterialTheme.colorScheme.primary
-                    textWeight = FontWeight.ExtraBold
-                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.50f)
-                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                }
-                // Giai đoạn 2: Người dùng đang cất tiếng nói (VAD phát hiện giọng)
-                isListening && isSpeakingDetected -> {
-                    displayText = "“Đang lắng nghe câu lệnh...”"
-                    textColor = MaterialTheme.colorScheme.primary
-                    textWeight = FontWeight.SemiBold
-                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                }
-                // Giai đoạn 1: Vừa bấm Mic, đang chờ người dùng nói
-                isListening -> {
-                    displayText = "“Hãy nói gì đó...”"
-                    textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
-                    textWeight = FontWeight.Normal
-                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
-                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
-                }
-                else -> {
-                    displayText = "“Hãy nói gì đó...”"
-                    textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
-                    textWeight = FontWeight.Normal
-                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
-                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
-                }
-            }
-
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = cardBgColor,
-                border = BorderStroke(2.dp, borderColor),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = if (hasRecognizedText) 0.12f else 0.08f),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (hasRecognizedText) 0.50f else 0.35f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = displayText,
-                    fontSize = 21.sp,
-                    fontWeight = textWeight,
-                    color = textColor,
-                    textAlign = TextAlign.Center,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)
-                )
+                ) {
+                    when {
+                        // 1. Lỗi / Không nghe rõ
+                        isErrorMessage -> {
+                            Text(
+                                text = speechText,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFEF4444),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        // 2. ĐÃ NHẬN DIỆN ĐƯỢC CÂU CHỮ: Luôn in câu vừa nói ra màn hình NGAY LẬP TỨC!
+                        hasRecognizedText -> {
+                            Text(
+                                text = "“$speechText”",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                            // Nếu AI đang phân tích, hiển thị thêm dòng trạng thái phụ bên dưới câu nói
+                            if (isNluProcessing) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "AI đang phân tích câu lệnh...",
+                                        fontSize = 14.5.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                                    )
+                                }
+                            }
+                        }
+                        // 3. Người dùng đang cất tiếng nói (VAD phát hiện âm thanh)
+                        isListening && isSpeakingDetected -> {
+                            Text(
+                                text = "“Đang lắng nghe câu lệnh...”",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        // 4. Vừa bấm Mic, đang chờ người dùng nói
+                        isListening -> {
+                            Text(
+                                text = "“Hãy nói gì đó...”",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        // 5. AI phân tích từ nguồn khác (ví dụ: gợi ý bấm tay)
+                        isNluProcessing -> {
+                            Text(
+                                text = "AI đang phân tích câu lệnh...",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        else -> {
+                            Text(
+                                text = "“Hãy nói gì đó...”",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
             }
         } else {
             // Trạng thái chờ ban đầu khi chưa chạm vào Mic
