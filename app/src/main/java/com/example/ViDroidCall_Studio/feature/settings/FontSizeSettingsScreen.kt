@@ -30,6 +30,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -41,8 +42,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ViDroidCall_Studio.R
@@ -342,55 +345,57 @@ fun FontSizeSettingsScreen(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 // Thanh chọn nhanh 4 mức kiểu Segmented Bar bo tròn mềm mại
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                CompositionLocalProvider(LocalDensity provides Density(density = LocalDensity.current.density, fontScale = 1.0f)) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        val presets = listOf(
-                            0.85f to "Nhỏ",
-                            1.0f to "Vừa",
-                            1.15f to "Lớn",
-                            1.30f to "Rất lớn"
-                        )
-                        presets.forEach { (scale, label) ->
-                            val isSelected = (sliderValue - scale).let { it in -0.05f..0.05f }
-                            val bgColor by animateColorAsState(
-                                targetValue = if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
-                                label = "presetBg"
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            val presets = listOf(
+                                0.85f to "Nhỏ",
+                                1.0f to "Vừa",
+                                1.15f to "Lớn",
+                                1.30f to "Rất lớn"
                             )
-                            val textColor by animateColorAsState(
-                                targetValue = if (isSelected) AppPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                label = "presetText"
-                            )
-
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .bounceClick(scaleDown = 0.92f, onClick = {
-                                        sliderValue = scale
-                                        onScaleChange(scale)
-                                    }),
-                                shape = RoundedCornerShape(12.dp),
-                                color = bgColor,
-                                shadowElevation = if (isSelected) 3.dp else 0.dp
-                            ) {
-                                Text(
-                                    text = label,
-                                    fontSize = 14.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = textColor,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 9.dp),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            presets.forEach { (scale, label) ->
+                                val isSelected = (sliderValue - scale).let { it in -0.05f..0.05f }
+                                val bgColor by animateColorAsState(
+                                    targetValue = if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
+                                    label = "presetBg"
                                 )
+                                val textColor by animateColorAsState(
+                                    targetValue = if (isSelected) AppPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    label = "presetText"
+                                )
+
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .bounceClick(scaleDown = 0.92f, onClick = {
+                                            sliderValue = scale
+                                            onScaleChange(scale)
+                                        }),
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = bgColor,
+                                    shadowElevation = if (isSelected) 3.dp else 0.dp
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = textColor,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 10.dp),
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
                             }
                         }
                     }

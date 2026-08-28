@@ -41,14 +41,17 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ViDroidCall_Studio.data.local.AppTheme
@@ -173,98 +176,98 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    // Thanh chọn 3 Chủ đề thiết kế cao cấp (Icon trên - Chữ dưới) không bao giờ bị tràn/xuống dòng
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        val themeOptions = listOf(
-                            Triple(AppTheme.LIGHT, "Sáng", Icons.Rounded.LightMode),
-                            Triple(AppTheme.DARK, "Tối", Icons.Rounded.DarkMode),
-                            Triple(AppTheme.SYSTEM, "Hệ thống", Icons.Rounded.PhoneAndroid)
-                        )
-
-                        val primaryColor = MaterialTheme.colorScheme.primary
-
-                        themeOptions.forEach { (theme, label, icon) ->
-                            val isSelected = currentTheme == theme
-                            val accentColor = when (theme) {
-                                AppTheme.LIGHT -> Color(0xFFF59E0B)
-                                AppTheme.DARK -> Color(0xFF818CF8)
-                                AppTheme.SYSTEM -> primaryColor
-                            }
-
-                            val cardBg by animateColorAsState(
-                                targetValue = if (isSelected) {
-                                    primaryColor.copy(alpha = 0.12f)
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                                },
-                                label = "themeCardBg"
-                            )
-                            val borderColor by animateColorAsState(
-                                targetValue = if (isSelected) {
-                                    primaryColor
-                                } else {
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
-                                },
-                                label = "themeBorder"
-                            )
-                            val textColor by animateColorAsState(
-                                targetValue = if (isSelected) {
-                                    primaryColor
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                label = "themeText"
+                    // Thanh chọn 3 Chủ đề thiết kế cao cấp (Icon trên - Chữ dưới) bảo vệ nguyên vẹn toàn bộ chữ
+                    CompositionLocalProvider(LocalDensity provides Density(density = LocalDensity.current.density, fontScale = 1.0f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val themeOptions = listOf(
+                                Triple(AppTheme.LIGHT, "Sáng", Icons.Rounded.LightMode),
+                                Triple(AppTheme.DARK, "Tối", Icons.Rounded.DarkMode),
+                                Triple(AppTheme.SYSTEM, "Hệ thống", Icons.Rounded.PhoneAndroid)
                             )
 
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .background(cardBg, RoundedCornerShape(18.dp))
-                                    .border(if (isSelected) 2.dp else 1.dp, borderColor, RoundedCornerShape(18.dp))
-                                    .bounceClick(scaleDown = 0.90f, onClick = {
-                                        scope.launch {
-                                            themePreferences.setTheme(theme)
-                                        }
-                                    })
-                                    .padding(vertical = 14.dp, horizontal = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
+                            val primaryColor = MaterialTheme.colorScheme.primary
+
+                            themeOptions.forEach { (theme, label, icon) ->
+                                val isSelected = currentTheme == theme
+                                val accentColor = when (theme) {
+                                    AppTheme.LIGHT -> Color(0xFFF59E0B)
+                                    AppTheme.DARK -> Color(0xFF818CF8)
+                                    AppTheme.SYSTEM -> primaryColor
+                                }
+
+                                val cardBg by animateColorAsState(
+                                    targetValue = if (isSelected) {
+                                        primaryColor.copy(alpha = 0.12f)
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                    },
+                                    label = "themeCardBg"
+                                )
+                                val borderColor by animateColorAsState(
+                                    targetValue = if (isSelected) {
+                                        primaryColor
+                                    } else {
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+                                    },
+                                    label = "themeBorder"
+                                )
+                                val textColor by animateColorAsState(
+                                    targetValue = if (isSelected) {
+                                        primaryColor
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    label = "themeText"
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(cardBg, RoundedCornerShape(18.dp))
+                                        .border(if (isSelected) 2.dp else 1.dp, borderColor, RoundedCornerShape(18.dp))
+                                        .bounceClick(scaleDown = 0.90f, onClick = {
+                                            scope.launch {
+                                                themePreferences.setTheme(theme)
+                                            }
+                                        })
+                                        .padding(vertical = 14.dp, horizontal = 2.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .background(
-                                                color = if (isSelected) accentColor.copy(alpha = 0.18f) else Color.Transparent,
-                                                shape = CircleShape
-                                            ),
-                                        contentAlignment = Alignment.Center
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
                                     ) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = null,
-                                            tint = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(22.dp)
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .background(
+                                                    color = if (isSelected) accentColor.copy(alpha = 0.18f) else Color.Transparent,
+                                                    shape = CircleShape
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = null,
+                                                tint = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(
+                                            text = label,
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = textColor,
+                                            textAlign = TextAlign.Center
                                         )
                                     }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    Text(
-                                        text = label,
-                                        fontSize = 14.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = textColor,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        textAlign = TextAlign.Center
-                                    )
                                 }
                             }
                         }
@@ -470,62 +473,64 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(18.dp))
 
                     // Thanh chọn nhanh 4 mức Segmented Nút Tròn Thân Thiện
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val primaryColor = MaterialTheme.colorScheme.primary
+                    CompositionLocalProvider(LocalDensity provides Density(density = LocalDensity.current.density, fontScale = 1.0f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            val primaryColor = MaterialTheme.colorScheme.primary
 
-                        presets.forEachIndexed { index, (scale, label) ->
-                            val isSelected = (sliderValue - scale).let { it in -0.05f..0.05f }
-                            val btnBg by animateColorAsState(
-                                targetValue = if (isSelected) {
-                                    primaryColor.copy(alpha = 0.12f)
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f)
-                                },
-                                label = "presetBg"
-                            )
-                            val borderCol by animateColorAsState(
-                                targetValue = if (isSelected) {
-                                    primaryColor
-                                } else {
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
-                                },
-                                label = "presetBorder"
-                            )
-                            val textCol by animateColorAsState(
-                                targetValue = if (isSelected) {
-                                    primaryColor
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                label = "presetText"
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(btnBg, RoundedCornerShape(14.dp))
-                                    .border(if (isSelected) 1.5.dp else 1.dp, borderCol, RoundedCornerShape(14.dp))
-                                    .bounceClick(scaleDown = 0.92f, onClick = {
-                                        sliderValue = scale
-                                        stepFloatValue = index.toFloat()
-                                        scope.launch {
-                                            fontSizePreferences.setFontScale(scale)
-                                        }
-                                    })
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = label,
-                                    fontSize = 13.5.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = textCol,
-                                    textAlign = TextAlign.Center
+                            presets.forEachIndexed { index, (scale, label) ->
+                                val isSelected = (sliderValue - scale).let { it in -0.05f..0.05f }
+                                val btnBg by animateColorAsState(
+                                    targetValue = if (isSelected) {
+                                        primaryColor.copy(alpha = 0.12f)
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f)
+                                    },
+                                    label = "presetBg"
                                 )
+                                val borderCol by animateColorAsState(
+                                    targetValue = if (isSelected) {
+                                        primaryColor
+                                    } else {
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+                                    },
+                                    label = "presetBorder"
+                                )
+                                val textCol by animateColorAsState(
+                                    targetValue = if (isSelected) {
+                                        primaryColor
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    label = "presetText"
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(btnBg, RoundedCornerShape(14.dp))
+                                        .border(if (isSelected) 1.5.dp else 1.dp, borderCol, RoundedCornerShape(14.dp))
+                                        .bounceClick(scaleDown = 0.92f, onClick = {
+                                            sliderValue = scale
+                                            stepFloatValue = index.toFloat()
+                                            scope.launch {
+                                                fontSizePreferences.setFontScale(scale)
+                                            }
+                                        })
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = textCol,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
                         }
                     }
@@ -565,7 +570,10 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
@@ -584,12 +592,13 @@ fun SettingsScreen(
                                 text = "Mô hình AI",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1
                             )
                         }
 
                         Surface(
-                            shape = CircleShape,
+                            shape = RoundedCornerShape(12.dp),
                             color = statusColor.copy(alpha = 0.12f)
                         ) {
                             Text(
@@ -598,10 +607,12 @@ fun SettingsScreen(
                                     is NluModelState.Loading -> "Đang nạp"
                                     else -> "Chưa nạp"
                                 },
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = statusColor,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                             )
                         }
                     }
@@ -643,7 +654,10 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f, fill = false)
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -662,15 +676,18 @@ fun SettingsScreen(
                             text = "ViDroidCall Studio",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
                         )
                     }
 
                     Text(
                         text = "v1.0.0",
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }

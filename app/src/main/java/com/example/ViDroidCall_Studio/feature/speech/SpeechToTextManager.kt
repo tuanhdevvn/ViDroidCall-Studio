@@ -134,7 +134,7 @@ class SpeechToTextManager(
         isCancelled.set(false)
         isListeningActive.set(true)
         callbacks.onListeningChanged(true)
-        callbacks.onTextChanged(LISTENING_PLACEHOLDER)
+        callbacks.onTextChanged(INITIAL_PLACEHOLDER)
 
         initModelAsync {
             if (!isModelInitialized || recognizer == null || vad == null) {
@@ -201,7 +201,7 @@ class SpeechToTextManager(
                         speechDetected = true
                         mainHandler.post {
                             if (isListeningActive.get() && !isCancelled.get()) {
-                                callbacks.onTextChanged("Đang lắng nghe câu lệnh...")
+                                callbacks.onTextChanged(LISTENING_PLACEHOLDER)
                             }
                         }
                     }
@@ -327,8 +327,8 @@ class SpeechToTextManager(
     companion object {
         private const val TAG = "SpeechToTextManager"
         private const val SAMPLE_RATE = 16000
-        const val LANGUAGE_VI_VN = "vi-VN"
-        const val LISTENING_PLACEHOLDER = "Đang lắng nghe..."
+        const val INITIAL_PLACEHOLDER = "Hãy nói gì đó..."
+        const val LISTENING_PLACEHOLDER = "Đang lắng nghe câu lệnh..."
         const val ERROR_MESSAGE = "Không nghe rõ. Vui lòng thử lại."
         const val PERMISSION_DENIED_MESSAGE = "Vui lòng cấp quyền ghi âm để sử dụng micro."
     }
