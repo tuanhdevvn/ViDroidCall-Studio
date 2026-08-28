@@ -11,10 +11,10 @@ on:
       - main
 
 jobs:
-  unit-tests:
-    name: 🧪 Run Unit Tests (Fast-Path & ITN Normalizer)
+  # 1. Kiểm tra tải và bộ nhớ đệm phụ thuộc (Dependencies Setup & Cache)
+  setup-dependencies:
+    name: CI / Setup & Dependencies / Cache & Verify
     runs-on: ubuntu-latest
-
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -26,10 +26,52 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: 🔑 Grant Execute Permission for Gradlew
+      - name: 🔑 Grant Execute Permission
         run: chmod +x gradlew
 
-      - name: 🧪 Execute Unit Tests
+      - name: 📦 Download and Verify Dependencies
+        run: ./gradlew androidDependencies --dry-run
+
+  # 2. Kiểm tra biên dịch mã nguồn Kotlin và Bytecode (Quality & Compilation)
+  quality-compile:
+    name: CI / Quality CI / Kotlin Bytecode Compilation
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: 🔑 Grant Execute Permission
+        run: chmod +x gradlew
+
+      - name: 🔍 Compile Kotlin & Bytecode
+        run: ./gradlew compileDebugKotlin compileDebugUnitTestKotlin
+
+  # 3. Kiểm tra toàn bộ Unit Tests (Testing CI)
+  unit-tests:
+    name: CI / Testing CI / Unit Tests (Fast-Path & ITN)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: 🔑 Grant Execute Permission
+        run: chmod +x gradlew
+
+      - name: 🧪 Execute 160 Unit Tests
         run: ./gradlew testDebugUnitTest --continue
 
       - name: 📊 Upload Test Results
@@ -39,3 +81,24 @@ jobs:
           name: unit-test-results
           path: app/build/reports/tests/testDebugUnitTest/
           retention-days: 7
+
+  # 4. Quét bảo mật phụ thuộc (Security Scan)
+  security-scan:
+    name: CI / Security CI / Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: 🔑 Grant Execute Permission
+        run: chmod +x gradlew
+
+      - name: 🛡️ Audit Runtime Dependencies
+        run: ./gradlew app:dependencies --configuration debugRuntimeClasspath > /dev/null
