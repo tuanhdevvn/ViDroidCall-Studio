@@ -46,7 +46,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
 
 /**
- * Hộp thoại giải thích & yêu cầu cấp quyền Danh bạ (READ_CONTACTS) đồng bộ thiết kế chuẩn với MicroPermissionDialog.
+ * Hộp thoại giải thích & yêu cầu cấp quyền Danh bạ (READ_CONTACTS) chuẩn hóa UI/UX 100%.
  */
 @Composable
 fun ContactPermissionDialog(
@@ -76,7 +76,7 @@ fun ContactPermissionDialog(
                     ),
                 shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.20f))
+                border = BorderStroke(2.dp, AppPrimary)
             ) {
                 Column(
                     modifier = Modifier
@@ -85,7 +85,7 @@ fun ContactPermissionDialog(
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Icon Danh bạ tròn nổi bật ở đầu hộp thoại
+                    // Icon Quyền Danh bạ
                     Box(
                         modifier = Modifier
                             .size(64.dp)
@@ -110,12 +110,12 @@ fun ContactPermissionDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Tiêu đề Hộp thoại
+                    // Tiêu đề Dialog: titleLarge (20.sp, Bold)
                     Text(
                         text = "Cần quyền truy cập Danh bạ",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 19.sp
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
                         ),
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
@@ -123,12 +123,12 @@ fun ContactPermissionDialog(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Nội dung giải thích lý do cần quyền
+                    // Đoạn văn mô tả: bodyMedium (14.5.sp, LineHeight 22.sp)
                     Text(
-                        text = "Để trợ lý tìm số và gọi điện hoặc nhắn tin cho người thân (ví dụ: 'Gọi Mẹ', 'Nhắn tin Bố'), ứng dụng cần quyền đọc Danh bạ.",
+                        text = "Để trợ lý có thể tìm số và gọi điện hoặc nhắn tin cho người thân (ví dụ: 'Gọi Mẹ', 'Nhắn tin cho Bố'), ứng dụng cần được cấp quyền truy cập Danh bạ.",
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp
+                            fontSize = 14.5.sp,
+                            lineHeight = 22.sp
                         ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -136,7 +136,7 @@ fun ContactPermissionDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Khung hướng dẫn mở Cài đặt thủ công
+                    // Khung hướng dẫn 3 bước (Step-by-step Guide Box)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -148,18 +148,19 @@ fun ContactPermissionDialog(
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = "💡 Hướng dẫn cấp quyền Danh bạ:",
-                                style = MaterialTheme.typography.labelLarge.copy(
+                                text = "📋 Hướng dẫn cấp quyền:",
+                                style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp
+                                    fontSize = 14.sp
                                 ),
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "1. Nhấn nút 'Mở Cài đặt ứng dụng' bên dưới.\n2. Chọn mục 'Quyền' ➔ 'Danh bạ'.\n3. Đổi thành 'Cho phép'.",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = 12.5.sp,
-                                    lineHeight = 18.sp
+                                text = "1. Nhấn nút \"Mở Cài đặt ứng dụng\" bên dưới.\n2. Tìm và chọn mục \"Quyền\" (Permissions).\n3. Chọn \"Danh bạ\" và gạt sang \"Cho phép\" (Allow).",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    lineHeight = 20.sp
                                 ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -168,17 +169,17 @@ fun ContactPermissionDialog(
 
                     Spacer(modifier = Modifier.height(22.dp))
 
-                    // Nhóm Nút Hành động
+                    // 2 Nút Hành động chuẩn Accessibility (Chiều cao 48.dp - 50.dp)
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Nút chính: Mở Cài đặt ứng dụng
+                        // Nút chính (Primary CTA): ⚙️ Mở Cài đặt ứng dụng
                         Button(
                             onClick = onOpenSettings,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(46.dp),
+                                .height(48.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AppPrimary,
@@ -194,26 +195,26 @@ fun ContactPermissionDialog(
                             Text(
                                 text = "Mở Cài đặt ứng dụng",
                                 style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             )
                         }
 
-                        // Nút phụ: Để sau
+                        // Nút phụ (Secondary CTA): Để sau
                         OutlinedButton(
                             onClick = onDismiss,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(42.dp),
+                                .height(48.dp),
                             shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                         ) {
                             Text(
                                 text = "Để sau",
                                 style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Normal,
-                                    fontSize = 14.sp
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Normal
                                 ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
