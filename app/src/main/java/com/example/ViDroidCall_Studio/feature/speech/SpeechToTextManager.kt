@@ -46,6 +46,7 @@ class SpeechToTextManager(
     private val isCancelled = AtomicBoolean(false)
     private var isModelInitialized = false
     private var isInitializingModel = false
+    private var lastActionTimestamp = 0L
 
     init {
         // Khởi tạo trước mô hình trên background thread để giảm thiểu độ trễ lần đầu bấm mic
@@ -115,6 +116,13 @@ class SpeechToTextManager(
     }
 
     fun startListening() {
+        val now = System.currentTimeMillis()
+        if (now - lastActionTimestamp < 300L) {
+            Log.d(TAG, "Bỏ qua yêu cầu startListening do thao tác quá nhanh (< 300ms)")
+            return
+        }
+        lastActionTimestamp = now
+
         if (isListeningActive.get()) {
             stopListening()
             return

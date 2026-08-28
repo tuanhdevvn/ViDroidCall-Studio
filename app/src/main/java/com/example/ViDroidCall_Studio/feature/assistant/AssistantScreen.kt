@@ -65,7 +65,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -355,19 +357,35 @@ private fun VoiceAssistantSection(
         label = "aiGlowAlpha"
     )
 
+    var lastActionClickTime by remember { mutableStateOf(0L) }
+    val actionDebounceThreshold = 350L
+
     // Xử lý khi nhấn nút: Chặn thao tác nếu AI đang phân tích câu lệnh (thực thi tuần tự)
     val handleActionClick: () -> Unit = {
-        if (isNluProcessing) {
-            Toast.makeText(context, "AI đang phân tích câu lệnh, vui lòng đợi...", Toast.LENGTH_SHORT).show()
-        } else if (isAiReady) {
-            onToggleListening()
-        } else {
-            val msg = when (modelState) {
-                is NluModelState.Loading -> "Trợ lý AI đang nạp, vui lòng đợi..."
-                is NluModelState.ModelNotFound -> "Chưa có file mô hình AI trong thư mục Download"
-                else -> "Trợ lý AI chưa sẵn sàng"
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastActionClickTime >= actionDebounceThreshold) {
+            lastActionClickTime = now
+
+            if (isNluProcessing) {
+                Toast.makeText(context, "AI đang phân tích câu lệnh, vui lòng đợi...", Toast.LENGTH_SHORT).show()
+            } else if (isAiReady) {
+                onToggleListening()
+            } else {
+                val msg = when (modelState) {
+                    is NluModelState.Loading -> "Trợ lý AI đang nạp, vui lòng đợi..."
+                    is NluModelState.ModelNotFound -> "Chưa có file mô hình AI trong thư mục Download"
+                    else -> "Trợ lý AI chưa sẵn sàng"
+                }
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             }
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val handleCancelClick: () -> Unit = {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastActionClickTime >= actionDebounceThreshold) {
+            lastActionClickTime = now
+            onCancelListening()
         }
     }
 
@@ -653,7 +671,7 @@ private fun VoiceAssistantSection(
                                 color = Color(0xFFEF4444).copy(alpha = 0.14f),
                                 shape = RoundedCornerShape(22.dp)
                             )
-                            .bounceClick(scaleDown = 0.95f, onClick = onCancelListening)
+                            .bounceClick(scaleDown = 0.95f, onClick = handleCancelClick)
                             .padding(vertical = 18.dp),
                         contentAlignment = Alignment.Center
                     ) {

@@ -261,21 +261,34 @@ fun HomeScreen(
         }
     )
 
+    var lastMicToggleTime by remember { mutableStateOf(0L) }
+    var lastSuggestionTime by remember { mutableStateOf(0L) }
+    val clickDebounceThreshold = 350L
+
     // Xử lý bật tắt thu âm an toàn: Chặn kích hoạt khi AI đang bận suy luận
     val handleToggleListeningSafe: () -> Unit = {
-        if (isNluProcessing) {
-            Toast.makeText(context, "AI đang phân tích câu lệnh, vui lòng đợi...", Toast.LENGTH_SHORT).show()
-        } else {
-            // Nếu TTS đang phát thì ngắt phát giọng nói để lắng nghe câu lệnh mới
-            if (textToSpeech.isSpeaking) {
-                textToSpeech.stop()
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastMicToggleTime >= clickDebounceThreshold) {
+            lastMicToggleTime = now
+
+            if (isNluProcessing) {
+                Toast.makeText(context, "AI đang phân tích câu lệnh, vui lòng đợi...", Toast.LENGTH_SHORT).show()
+            } else {
+                // Nếu TTS đang phát thì ngắt phát giọng nói để lắng nghe câu lệnh mới
+                if (textToSpeech.isSpeaking) {
+                    textToSpeech.stop()
+                }
+                speechToText.toggleListening()
             }
-            speechToText.toggleListening()
         }
     }
 
     val handleCancelListening: () -> Unit = {
-        speechToText.cancelListening()
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastMicToggleTime >= clickDebounceThreshold) {
+            lastMicToggleTime = now
+            speechToText.cancelListening()
+        }
     }
 
     val handleOpenStorageSettings: () -> Unit = {
@@ -322,7 +335,9 @@ fun HomeScreen(
                     onRescanModel = handleRescanModel,
                     isTtsSpeaking = textToSpeech.isSpeaking,
                     onSuggestionClick = { prompt ->
-                        if (!isNluProcessing) {
+                        val now = android.os.SystemClock.uptimeMillis()
+                        if (now - lastSuggestionTime > 400L && !isNluProcessing) {
+                            lastSuggestionTime = now
                             nluEngineManager.processQuery(prompt)
                         }
                     },
