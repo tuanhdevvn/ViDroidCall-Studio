@@ -157,18 +157,20 @@ sealed class NativeAction {
             is CallContact -> {
                 val target = if (contact.isNotBlank()) contact else phoneNumber
                 val phoneInfo = if (phoneNumber.isNotBlank() && contact.isNotBlank() && phoneNumber != contact) {
-                    "\nSố điện thoại: $phoneNumber"
-                } else if (phoneNumber.isNotBlank() && contact.isBlank()) {
-                    "\nSố điện thoại: $phoneNumber"
+                    " ($phoneNumber)"
                 } else {
                     ""
                 }
-                "Bạn có muốn gọi tới $target?$phoneInfo"
+                "Bạn có muốn gọi tới $target$phoneInfo không?"
             }
             is SendSms -> {
                 val target = if (contact.isNotBlank()) contact else phoneNumber
                 val msgPreview = if (message.isNotBlank()) message else "(Trống)"
-                "Người nhận: $target\nNội dung: $msgPreview"
+                if (message.isNotBlank()) {
+                    "Bạn có muốn gửi tin nhắn cho $target với nội dung '$msgPreview' không?"
+                } else {
+                    "Bạn có muốn soạn tin nhắn gửi cho $target không?"
+                }
             }
             is SetAlarm -> {
                 val timeStr = if (minute > 0) "$hour giờ $minute phút" else "$hour giờ"

@@ -47,11 +47,16 @@ import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DataObject
+import androidx.compose.material.icons.rounded.FolderShared
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -97,6 +102,9 @@ fun AssistantScreen(
     nluResult: NluResult?,
     isNluProcessing: Boolean,
     modelState: NluModelState,
+    hasStoragePermission: Boolean = true,
+    onRequestStoragePermission: () -> Unit = {},
+    onRescanModel: () -> Unit = {},
     modifier: Modifier = Modifier,
     isTtsSpeaking: Boolean = false,
     onSuggestionClick: (String) -> Unit = {},
@@ -116,8 +124,13 @@ fun AssistantScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // 1. Trạng thái Mô hình NLU AI
-        ModelEngineStatusBadge(modelState = modelState)
+        // 1. Trạng thái Mô hình NLU AI & Quản lý Quyền
+        ModelEngineStatusBadge(
+            modelState = modelState,
+            hasStoragePermission = hasStoragePermission,
+            onRequestStoragePermission = onRequestStoragePermission,
+            onRescanModel = onRescanModel
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -156,14 +169,25 @@ fun AssistantScreen(
 }
 
 /**
- * Badge thông báo trạng thái trợ lý AI bằng Tiếng Việt thân thiện và Icon chuyên nghiệp
+ * Badge thông báo trạng thái trợ lý AI bằng Tiếng Việt thân thiện, hiển thị nút Cấp quyền / Quét lại khi cần
  */
 @Composable
-private fun ModelEngineStatusBadge(modelState: NluModelState) {
+private fun ModelEngineStatusBadge(
+    modelState: NluModelState,
+    hasStoragePermission: Boolean = true,
+    onRequestStoragePermission: () -> Unit = {},
+    onRescanModel: () -> Unit = {}
+) {
     val (statusText, badgeColor, iconVector) = when (modelState) {
         is NluModelState.Ready -> Triple("Trợ lý AI đã sẵn sàng", Color(0xFF10B981), Icons.Rounded.CheckCircle)
         is NluModelState.Loading -> Triple("Trợ lý AI đang nạp...", Color(0xFFF59E0B), Icons.Rounded.Sync)
-        is NluModelState.ModelNotFound -> Triple("Chưa có mô hình AI", Color(0xFFEF4444), Icons.Rounded.WarningAmber)
+        is NluModelState.ModelNotFound -> {
+            if (!hasStoragePermission) {
+                Triple("Chưa cấp quyền truy cập tệp", Color(0xFFEF4444), Icons.Rounded.FolderShared)
+            } else {
+                Triple("Chưa có mô hình AI trong Download", Color(0xFFEF4444), Icons.Rounded.WarningAmber)
+            }
+        }
         is NluModelState.Error -> Triple("Lỗi trợ lý AI", Color(0xFFEF4444), Icons.Rounded.WarningAmber)
         is NluModelState.Uninitialized -> Triple("Đang khởi động trợ lý AI...", Color(0xFF6B7280), Icons.Rounded.Memory)
     }
@@ -175,29 +199,92 @@ private fun ModelEngineStatusBadge(modelState: NluModelState) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .background(badgeColor.copy(alpha = 0.16f), CircleShape),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
             ) {
-                Icon(
-                    imageVector = iconVector,
-                    contentDescription = null,
-                    tint = badgeColor,
-                    modifier = Modifier.size(18.dp)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(badgeColor.copy(alpha = 0.16f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = iconVector,
+                        contentDescription = null,
+                        tint = badgeColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = statusText,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = badgeColor
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = statusText,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = badgeColor
-            )
+
+            // Nút hành động nhanh trên Badge khi chưa có quyền hoặc chưa tìm thấy model
+            if (modelState is NluModelState.ModelNotFound) {
+                if (!hasStoragePermission) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = badgeColor,
+                        modifier = Modifier.bounceClick(scaleDown = 0.92f, onClick = onRequestStoragePermission)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Cấp quyền",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                } else {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = badgeColor.copy(alpha = 0.18f),
+                        modifier = Modifier.bounceClick(scaleDown = 0.92f, onClick = onRescanModel)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Refresh,
+                                contentDescription = null,
+                                tint = badgeColor,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Quét lại",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = badgeColor
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
