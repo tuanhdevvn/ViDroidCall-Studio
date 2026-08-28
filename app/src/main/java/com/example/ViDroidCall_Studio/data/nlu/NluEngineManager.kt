@@ -10,7 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,6 +43,9 @@ class NluEngineManager(
     private val _lastResult = MutableStateFlow<NluResult?>(null)
     val lastResult: StateFlow<NluResult?> = _lastResult.asStateFlow()
 
+    private val _nluEvents = MutableSharedFlow<NluResult>(extraBufferCapacity = 64)
+    val nluEvents: SharedFlow<NluResult> = _nluEvents.asSharedFlow()
+
     private val _currentQuery = MutableStateFlow("")
     val currentQuery: StateFlow<String> = _currentQuery.asStateFlow()
 
@@ -66,11 +71,14 @@ class NluEngineManager(
                         val fullResponse = streamingResponseBuilder.toString()
                         val parsed = NluJsonParser.parse(fullResponse)
                         _lastResult.value = parsed
+                        _nluEvents.tryEmit(parsed)
                         _isGenerating.value = false
                         Log.i(TAG, "✅ [100% GGUF Model Output]:\n${parsed.rawJson}")
                     }
                     is LlamaHelper.LLMEvent.Error -> {
-                        _lastResult.value = NluResult.fromError(event.message)
+                        val errResult = NluResult.fromError(event.message)
+                        _lastResult.value = errResult
+                        _nluEvents.tryEmit(errResult)
                         _isGenerating.value = false
                         Log.e(TAG, "❌ [GGUF Model Error]: ${event.message}")
                     }
@@ -210,6 +218,7 @@ class NluEngineManager(
                 Log.i(TAG, "⚡ [Fast-Path Match (Zero-LLM)]: Intent=${fastResult.intent}, RawJson=${fastResult.rawJson}")
                 _isGenerating.value = false
                 _lastResult.value = fastResult
+                _nluEvents.tryEmit(fastResult)
                 return
             }
 
@@ -217,8 +226,10 @@ class NluEngineManager(
             _isGenerating.value = true
             val state = _modelState.value
             if (state !is NluModelState.Ready || !isNativeReady || llamaHelper == null) {
+                val errResult = NluResult.fromError("Chưa có file mô hình AI (.gguf). Vui lòng đặt file vào thiết bị.")
                 _isGenerating.value = false
-                _lastResult.value = NluResult.fromError("Chưa có file mô hình AI (.gguf). Vui lòng đặt file vào thiết bị.")
+                _lastResult.value = errResult
+                _nluEvents.tryEmit(errResult)
                 Log.w(TAG, "Không thể xử lý vì chưa nạp mô hình GGUF (State: $state)")
                 return
             }
@@ -231,14 +242,18 @@ class NluEngineManager(
                     llamaHelper?.predict(formattedChatMl)
                 } catch (e: Exception) {
                     Log.e(TAG, "Lỗi khi thực thi Native Predict: ${e.message}", e)
+                    val errResult = NluResult.fromError("Lỗi khi suy luận: ${e.localizedMessage}")
                     _isGenerating.value = false
-                    _lastResult.value = NluResult.fromError("Lỗi khi suy luận: ${e.localizedMessage}")
+                    _lastResult.value = errResult
+                    _nluEvents.tryEmit(errResult)
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi trong processQuery: ${e.message}", e)
+            val errResult = NluResult.fromError("Lỗi xử lý câu lệnh: ${e.localizedMessage}")
             _isGenerating.value = false
-            _lastResult.value = NluResult.fromError("Lỗi xử lý câu lệnh: ${e.localizedMessage}")
+            _lastResult.value = errResult
+            _nluEvents.tryEmit(errResult)
         }
     }
 

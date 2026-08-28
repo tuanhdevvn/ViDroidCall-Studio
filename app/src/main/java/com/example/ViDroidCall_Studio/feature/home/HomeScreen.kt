@@ -143,7 +143,7 @@ fun HomeScreen(
     var pendingAction by remember { mutableStateOf<NativeAction?>(null) }
     var pendingPermissionAction by remember { mutableStateOf<NativeAction?>(null) }
     var showConfirmationDialog by remember { mutableStateOf(false) }
-    var lastProcessedResultId by remember { mutableStateOf<String?>(null) }
+    val processedExecutionIds = remember { mutableSetOf<String>() }
     var actionDispatcherRef by remember { mutableStateOf<NluActionDispatcher?>(null) }
 
     // Launcher yêu cầu quyền runtime hệ thống Android (READ_CONTACTS, v.v.)
@@ -184,13 +184,13 @@ fun HomeScreen(
     }
 
     // Tự động lưu câu lệnh vào Lịch sử, điều phối hành động Native và phát phản hồi giọng nói
-    LaunchedEffect(nluResult) {
-        val result = nluResult
-        val query = nluEngineManager.currentQuery.value
-        if (result != null && query.isNotBlank()) {
-            val resultId = "${result.intent}_${result.rawJson.hashCode()}"
-            if (resultId != lastProcessedResultId) {
-                lastProcessedResultId = resultId
+    LaunchedEffect(nluEngineManager) {
+        nluEngineManager.nluEvents.collect { result ->
+            val query = nluEngineManager.currentQuery.value
+            if (!processedExecutionIds.add(result.executionId)) {
+                return@collect
+            }
+            if (query.isNotBlank()) {
                 historyRepository.addFromNluResult(query = query, nluResult = result)
 
                 val action = NativeAction.fromNluResult(result)
