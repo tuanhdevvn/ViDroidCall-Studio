@@ -485,40 +485,100 @@ private fun VoiceAssistantSection(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Khung hiển thị Trạng thái & Giọng nói hợp nhất (Merged Listening & Speech Card)
-        val isSpeechPlaceholder = speechText.isBlank() || 
-                speechText == "Đang lắng nghe..." || 
-                speechText == "Đang lắng nghe câu lệnh..." || 
-                speechText == "Đang nghe bạn nói..." ||
-                speechText == SpeechToTextManager.LISTENING_PLACEHOLDER
+        // Khung hiển thị Trạng thái & Giọng nói tương tác 4 giai đoạn (4-Stage Interactive Speech Card)
+        val isWaitingToSpeak = speechText.isBlank() || 
+                speechText == SpeechToTextManager.WAITING_PLACEHOLDER ||
+                speechText == "Hãy nói gì đó..."
 
-        val isCardVisible = isAiReady && (isListening || isNluProcessing || (speechText.isNotBlank() && !isSpeechPlaceholder))
+        val isSpeakingDetected = speechText == SpeechToTextManager.LISTENING_PLACEHOLDER || 
+                speechText == "Đang lắng nghe câu lệnh..." || 
+                speechText == "Đang lắng nghe..." ||
+                speechText == "Đang nghe bạn nói..."
+
+        val isErrorMessage = speechText == SpeechToTextManager.ERROR_MESSAGE || 
+                speechText == SpeechToTextManager.PERMISSION_DENIED_MESSAGE
+
+        val hasRecognizedText = speechText.isNotBlank() && 
+                !isWaitingToSpeak && 
+                !isSpeakingDetected && 
+                !isErrorMessage
+
+        val isCardVisible = isAiReady && (isListening || isNluProcessing || hasRecognizedText || isErrorMessage)
 
         if (isCardVisible) {
-            val cardText = when {
-                isNluProcessing -> "AI đang phân tích câu lệnh..."
-                isListening && isSpeechPlaceholder -> "“Đang nghe bạn nói...”"
-                speechText.isNotBlank() -> "“$speechText”"
-                else -> "“Đang nghe bạn nói...”"
+            val displayText: String
+            val textColor: Color
+            val textWeight: FontWeight
+            val borderColor: Color
+            val cardBgColor: Color
+
+            when {
+                // Giai đoạn 4: AI đang phân tích câu lệnh
+                isNluProcessing -> {
+                    displayText = "AI đang phân tích câu lệnh..."
+                    textColor = MaterialTheme.colorScheme.primary
+                    textWeight = FontWeight.Bold
+                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                }
+                // Lỗi / Không nghe rõ
+                isErrorMessage -> {
+                    displayText = speechText
+                    textColor = Color(0xFFEF4444)
+                    textWeight = FontWeight.Medium
+                    borderColor = Color(0xFFEF4444).copy(alpha = 0.35f)
+                    cardBgColor = Color(0xFFEF4444).copy(alpha = 0.08f)
+                }
+                // Giai đoạn 3: Đã nhận diện xong câu nói (in câu vừa nói ra hộp thoại)
+                hasRecognizedText -> {
+                    displayText = "“$speechText”"
+                    textColor = MaterialTheme.colorScheme.primary
+                    textWeight = FontWeight.ExtraBold
+                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.50f)
+                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                }
+                // Giai đoạn 2: Người dùng đang cất tiếng nói (VAD phát hiện giọng)
+                isListening && isSpeakingDetected -> {
+                    displayText = "“Đang lắng nghe câu lệnh...”"
+                    textColor = MaterialTheme.colorScheme.primary
+                    textWeight = FontWeight.SemiBold
+                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                }
+                // Giai đoạn 1: Vừa bấm Mic, đang chờ người dùng nói
+                isListening -> {
+                    displayText = "“Hãy nói gì đó...”"
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+                    textWeight = FontWeight.Normal
+                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+                }
+                else -> {
+                    displayText = "“Hãy nói gì đó...”"
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+                    textWeight = FontWeight.Normal
+                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                    cardBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+                }
             }
 
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)),
+                color = cardBgColor,
+                border = BorderStroke(2.dp, borderColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = cardText,
+                    text = displayText,
                     fontSize = 21.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = textWeight,
+                    color = textColor,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)
                 )
             }
         } else {
-            // Trạng thái chờ: Dòng chữ hướng dẫn chạm micro đơn giản
+            // Trạng thái chờ ban đầu khi chưa chạm vào Mic
             Text(
                 text = "Chạm vào Micro để ra lệnh",
                 fontSize = 22.sp,

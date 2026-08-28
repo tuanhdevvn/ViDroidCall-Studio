@@ -49,6 +49,7 @@ fun rememberSpeechToText(
                     // CHỈ GỌI MODEL AI KHI ĐÃ NHẬN DIỆN THÀNH CÔNG VĂN BẢN
                     if (text.isNotBlank() && 
                         text != SpeechToTextManager.LISTENING_PLACEHOLDER && 
+                        text != SpeechToTextManager.WAITING_PLACEHOLDER &&
                         text != SpeechToTextManager.ERROR_MESSAGE &&
                         text != SpeechToTextManager.PERMISSION_DENIED_MESSAGE) {
                         onSpeechResult(text)
