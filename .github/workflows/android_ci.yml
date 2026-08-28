@@ -30,7 +30,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: 📦 Download and Verify Dependencies
-        run: ./gradlew androidDependencies --dry-run
+        run: ./gradlew :app:dependencies --dry-run
 
   # 2. Kiểm tra biên dịch mã nguồn Kotlin và Bytecode (Quality & Compilation)
   quality-compile:
@@ -101,4 +101,4 @@ jobs:
         run: chmod +x gradlew
 
       - name: 🛡️ Audit Runtime Dependencies
-        run: ./gradlew app:dependencies --configuration debugRuntimeClasspath > /dev/null
+        run: ./gradlew :app:dependencies --configuration debugRuntimeClasspath > /dev/null
