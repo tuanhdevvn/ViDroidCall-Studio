@@ -16,7 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.FolderShared
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,14 +39,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-
-private val StorageThemeColor = Color(0xFF8B5CF6)
+import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
 
 /**
- * Hộp thoại nhắc nhở & giải thích cấp quyền truy cập bộ nhớ chuẩn hóa UI/UX 100%.
+ * Hộp thoại nhắc nhở & hỗ trợ cấp quyền Micro (Ghi âm) chuẩn hóa UI/UX 100%.
  */
 @Composable
-fun StoragePermissionDialog(
+fun MicroPermissionDialog(
     onOpenSettings: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -68,11 +67,11 @@ fun StoragePermissionDialog(
                     .shadow(
                         elevation = 16.dp,
                         shape = RoundedCornerShape(28.dp),
-                        spotColor = StorageThemeColor.copy(alpha = 0.25f)
+                        spotColor = AppPrimary.copy(alpha = 0.25f)
                     ),
                 shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(2.dp, StorageThemeColor)
+                border = BorderStroke(2.dp, AppPrimary)
             ) {
                 Column(
                     modifier = Modifier
@@ -81,15 +80,15 @@ fun StoragePermissionDialog(
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Icon Bộ nhớ tròn nổi bật ở đầu hộp thoại (Theme Purple)
+                    // Icon Micro tròn nổi bật ở đầu hộp thoại
                     Box(
                         modifier = Modifier
                             .size(64.dp)
                             .background(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        StorageThemeColor.copy(alpha = 0.25f),
-                                        StorageThemeColor.copy(alpha = 0.08f)
+                                        AppPrimary.copy(alpha = 0.25f),
+                                        AppPrimary.copy(alpha = 0.08f)
                                     )
                                 ),
                                 shape = CircleShape
@@ -97,9 +96,9 @@ fun StoragePermissionDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.FolderShared,
+                            imageVector = Icons.Rounded.Mic,
                             contentDescription = null,
-                            tint = StorageThemeColor,
+                            tint = AppPrimary,
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -108,7 +107,7 @@ fun StoragePermissionDialog(
 
                     // Tiêu đề Dialog: titleLarge (20.sp, Bold)
                     Text(
-                        text = "Cần quyền truy cập Bộ nhớ",
+                        text = "Cần quyền truy cập Micro",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
@@ -121,7 +120,7 @@ fun StoragePermissionDialog(
 
                     // Đoạn văn mô tả: bodyMedium (14.5.sp, LineHeight 22.sp)
                     Text(
-                        text = "Để trợ lý AI tự động quét và nạp file mô hình (.gguf) từ thư mục Download, ứng dụng cần quyền quản lý tệp trên thiết bị.",
+                        text = "Ứng dụng cần quyền Ghi âm để lắng nghe và chuyển giọng nói của bạn thành câu lệnh điều khiển thoại.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 14.5.sp,
                             lineHeight = 22.sp
@@ -136,8 +135,8 @@ fun StoragePermissionDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        color = StorageThemeColor.copy(alpha = 0.12f),
-                        border = BorderStroke(1.dp, StorageThemeColor.copy(alpha = 0.20f))
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                     ) {
                         Column(
                             modifier = Modifier.padding(14.dp),
@@ -149,10 +148,10 @@ fun StoragePermissionDialog(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp
                                 ),
-                                color = StorageThemeColor
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "1. Nhấn nút \"Mở Cài đặt ứng dụng\" bên dưới.\n2. Tìm và chọn mục \"Quyền\" (Permissions).\n3. Chọn \"Quản lý tất cả các tệp\" và gạt sang \"Cho phép\" (Allow).",
+                                text = "1. Nhấn nút \"Mở Cài đặt ứng dụng\" bên dưới.\n2. Tìm và chọn mục \"Quyền\" (Permissions).\n3. Chọn \"Microphone\" và gạt sang \"Cho phép\" (Allow).",
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
@@ -178,7 +177,7 @@ fun StoragePermissionDialog(
                                 .height(48.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = StorageThemeColor,
+                                containerColor = AppPrimary,
                                 contentColor = Color.White
                             )
                         ) {
@@ -220,4 +219,20 @@ fun StoragePermissionDialog(
             }
         }
     }
+}
+
+/**
+ * Alias Composable cho MicrophonePermissionDialog
+ */
+@Composable
+fun MicrophonePermissionDialog(
+    onOpenSettings: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    MicroPermissionDialog(
+        onOpenSettings = onOpenSettings,
+        onDismiss = onDismiss,
+        modifier = modifier
+    )
 }
