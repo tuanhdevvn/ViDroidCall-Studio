@@ -63,6 +63,9 @@ fun rememberSpeechToText(
         onDispose { manager.destroy() }
     }
 
+    var lastActionTime by remember { mutableStateOf(0L) }
+    val debounceThreshold = 350L
+
     val startListening = {
         speechTextState = ""
         manager.startListening()
@@ -80,33 +83,46 @@ fun rememberSpeechToText(
     }
 
     val toggleListening: () -> Unit = {
-        if (isListeningState) {
-            manager.stopListening()
-            isListeningState = false
-        } else {
-            speechTextState = ""
-            val hasPermission = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastActionTime >= debounceThreshold) {
+            lastActionTime = now
 
-            if (hasPermission) {
-                startListening()
+            if (isListeningState) {
+                manager.stopListening()
+                isListeningState = false
             } else {
-                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                speechTextState = ""
+                val hasPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.RECORD_AUDIO
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (hasPermission) {
+                    startListening()
+                } else {
+                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
             }
         }
     }
 
     val stopListening: () -> Unit = {
-        manager.stopListening()
-        isListeningState = false
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastActionTime >= debounceThreshold) {
+            lastActionTime = now
+            manager.stopListening()
+            isListeningState = false
+        }
     }
 
     val cancelListening: () -> Unit = {
-        manager.cancelListening()
-        speechTextState = ""
-        isListeningState = false
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastActionTime >= debounceThreshold) {
+            lastActionTime = now
+            manager.cancelListening()
+            speechTextState = ""
+            isListeningState = false
+        }
     }
 
     return SpeechToTextState(
