@@ -1,6 +1,7 @@
 package com.example.ViDroidCall_Studio.data.model
 
 import org.json.JSONObject
+import java.util.UUID
 
 /**
  * Các Intent được hỗ trợ bởi mô hình Qwen2.5-1.5B-NLU
@@ -70,7 +71,8 @@ data class NluResult(
     val isParsedSuccessfully: Boolean = true,
     val errorMessage: String? = null,
     val isFastPath: Boolean = false,
-    val slots: Map<String, Any?> = emptyMap()
+    val slots: Map<String, Any?> = emptyMap(),
+    val executionId: String = UUID.randomUUID().toString()
 ) {
     val intentEnum: NluIntent get() = NluIntent.fromValue(intent)
     val statusEnum: NluStatus get() = NluStatus.fromValue(status)
