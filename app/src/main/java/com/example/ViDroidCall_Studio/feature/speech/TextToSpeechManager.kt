@@ -25,6 +25,8 @@ class TextToSpeechManager(
     var isLanguageSupported: Boolean = false
         private set
 
+    private val pendingUtterances = mutableListOf<Pair<String, Int>>()
+
     private val utteranceListener = object : UtteranceProgressListener() {
         override fun onStart(utteranceId: String?) {
             mainHandler.post { onSpeakingStateChanged(true) }
@@ -66,6 +68,7 @@ class TextToSpeechManager(
 
             tts?.setOnUtteranceProgressListener(utteranceListener)
             isInitialized = true
+            flushPendingUtterances()
         } else {
             Log.e(TAG, "Khởi tạo TextToSpeech thất bại với mã lỗi: $status")
             isInitialized = false
@@ -76,23 +79,46 @@ class TextToSpeechManager(
         if (text.isBlank()) return
 
         mainHandler.post {
-            try {
-                if (tts == null) {
-                    tts = TextToSpeech(context.applicationContext, this)
+            if (!isInitialized) {
+                if (queueMode == TextToSpeech.QUEUE_FLUSH) {
+                    pendingUtterances.clear()
                 }
-
-                val utteranceId = "TTS_${System.currentTimeMillis()}"
-                val result = tts?.speak(text, queueMode, null, utteranceId)
-                if (result == TextToSpeech.ERROR) {
-                    Log.e(TAG, "Lỗi phát thoại TTS cho văn bản: $text")
-                    onSpeakingStateChanged(false)
-                } else {
-                    Log.d(TAG, "🔊 [TTS Speaking]: \"$text\"")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Ngoại lệ khi gọi TTS speak: ${e.message}", e)
-                onSpeakingStateChanged(false)
+                pendingUtterances.add(text to queueMode)
+                Log.d(TAG, "TTS chưa sẵn sàng, xếp hàng: \"$text\"")
+                return@post
             }
+            speakInternal(text, queueMode)
+        }
+    }
+
+    private fun flushPendingUtterances() {
+        if (pendingUtterances.isEmpty()) return
+        val queued = pendingUtterances.toList()
+        pendingUtterances.clear()
+        queued.forEach { (text, mode) -> speakInternal(text, mode) }
+    }
+
+    private fun speakInternal(text: String, queueMode: Int) {
+        try {
+            if (tts == null) {
+                tts = TextToSpeech(context.applicationContext, this)
+            }
+
+            if (!isLanguageSupported) {
+                Log.w(TAG, "Tiếng Việt chưa cài trên thiết bị, thử phát với giọng mặc định: \"$text\"")
+            }
+
+            val utteranceId = "TTS_${System.currentTimeMillis()}"
+            val result = tts?.speak(text, queueMode, null, utteranceId)
+            if (result == TextToSpeech.ERROR) {
+                Log.e(TAG, "Lỗi phát thoại TTS cho văn bản: $text")
+                onSpeakingStateChanged(false)
+            } else {
+                Log.d(TAG, "🔊 [TTS Speaking]: \"$text\"")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Ngoại lệ khi gọi TTS speak: ${e.message}", e)
+            onSpeakingStateChanged(false)
         }
     }
 
@@ -116,6 +142,7 @@ class TextToSpeechManager(
                 tts?.shutdown()
                 tts = null
                 isInitialized = false
+                pendingUtterances.clear()
                 onSpeakingStateChanged(false)
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi khi giải phóng TTS: ${e.message}")

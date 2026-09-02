@@ -235,7 +235,9 @@ class SpeechToTextManager(
                     stream.release()
 
                     if (recognizedText.isNotBlank()) {
-                        val normalizedText = VietnameseNumberNormalizer.normalize(recognizedText)
+                        val normalizedText = SpeechTextFormatter.formatDisplay(
+                            VietnameseNumberNormalizer.normalize(recognizedText)
+                        )
                         Log.i(TAG, "🎤 [Sherpa-ONNX 100% Offline Raw]: \"$recognizedText\" -> Normalized: \"$normalizedText\"")
                         mainHandler.post {
                             callbacks.onTextChanged(normalizedText)
@@ -274,7 +276,9 @@ class SpeechToTextManager(
                         val recognizedText = result.text.trim()
                         stream.release()
                         if (recognizedText.isNotBlank()) {
-                            val normalizedText = VietnameseNumberNormalizer.normalize(recognizedText)
+                            val normalizedText = SpeechTextFormatter.formatDisplay(
+                                VietnameseNumberNormalizer.normalize(recognizedText)
+                            )
                             mainHandler.post {
                                 callbacks.onTextChanged(normalizedText)
                                 callbacks.onFinalResult(normalizedText)

@@ -217,15 +217,23 @@ fun HomeScreen(
                                 runtimePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                             }
                         }
-                    } else if (action !is NativeAction.Informational && action !is NativeAction.Unsupported) {
-                        val speech = action.getSpeechFeedbackText()
-                        if (speech.isNotBlank()) {
-                            textToSpeech.speak(speech)
+                    } else when (action) {
+                        is NativeAction.Informational, is NativeAction.Unsupported -> {
+                            val speech = action.getSpeechFeedbackText()
+                            if (speech.isNotBlank()) {
+                                textToSpeech.speak(speech)
+                            }
                         }
-                        // Delay 800ms cho hành động an toàn không cần xác nhận
-                        delay(800)
-                        pendingPermissionAction = action
-                        actionDispatcher.executeNativeAction(action)
+                        else -> {
+                            val speech = action.getSpeechFeedbackText()
+                            if (speech.isNotBlank()) {
+                                textToSpeech.speak(speech)
+                            }
+                            // Delay 800ms cho hành động an toàn không cần xác nhận
+                            delay(800)
+                            pendingPermissionAction = action
+                            actionDispatcher.executeNativeAction(action)
+                        }
                     }
                 } else {
                     val speech = action.getSpeechFeedbackText()
