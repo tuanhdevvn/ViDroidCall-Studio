@@ -16,6 +16,7 @@ import com.k2fsa.sherpa.onnx.OfflineRecognizer
 import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
 import com.k2fsa.sherpa.onnx.OfflineTransducerModelConfig
 import com.k2fsa.sherpa.onnx.SileroVadModelConfig
+import com.example.ViDroidCall_Studio.util.SystemSoundHelper
 import com.k2fsa.sherpa.onnx.Vad
 import com.k2fsa.sherpa.onnx.VadModelConfig
 import java.util.concurrent.Executors
@@ -139,6 +140,8 @@ class SpeechToTextManager(
             return
         }
 
+        SystemSoundHelper.playMicStartSound(context)
+
         isCancelled.set(false)
         isListeningActive.set(true)
         callbacks.onListeningChanged(true)
@@ -238,7 +241,7 @@ class SpeechToTextManager(
                             callbacks.onTextChanged(normalizedText)
                             callbacks.onFinalResult(normalizedText)
                         }
-                        // Tự động dừng thu âm sau khi đã nhận diện xong câu lệnh
+                        SystemSoundHelper.playMicStopSound(context)
                         handleStopListeningInternal()
                         return
                     }
@@ -253,6 +256,7 @@ class SpeechToTextManager(
 
     fun stopListening() {
         if (!isListeningActive.get()) return
+        SystemSoundHelper.playMicStopSound(context)
         isListeningActive.set(false)
         executor.execute {
             try {
@@ -287,6 +291,9 @@ class SpeechToTextManager(
     }
 
     fun cancelListening() {
+        if (isListeningActive.get()) {
+            SystemSoundHelper.playMicStopSound(context)
+        }
         isCancelled.set(true)
         isListeningActive.set(false)
         executor.execute {

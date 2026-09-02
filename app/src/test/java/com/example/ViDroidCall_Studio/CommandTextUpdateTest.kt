@@ -13,7 +13,6 @@ import org.junit.Test
  * Unit Test kiểm tra cập nhật command text cho AssistantScreen từ các nguồn:
  * 1. Voice (Speech-to-Text)
  * 2. History Run
- * 3. Suggestion Chips
  * Và đảm bảo trạng thái không bị mất khi NLU hoàn thành, recomposition, hay chạy cùng command nhiều lần.
  */
 class CommandTextUpdateTest {
@@ -98,23 +97,7 @@ class CommandTextUpdateTest {
     }
 
     /**
-     * Test 3 – Suggestion Chip
-     * Click: "Hẹn giờ 15 phút"
-     * Expected: currentCommand == "Hẹn giờ 15 phút"
-     */
-    @Test
-    fun testSuggestionChipClickUpdatesCurrentCommand() {
-        val manager = MockCommandManager()
-        val suggestion = "Hẹn giờ 15 phút"
-
-        manager.executeCommand(suggestion)
-
-        assertEquals("Hẹn giờ 15 phút", manager.currentCommand)
-        assertEquals("set_timer", manager.lastNluResult?.intent)
-    }
-
-    /**
-     * Test 4 – History Run immediately after app launch
+     * Test 3 – History Run immediately after app launch
      * App state: currentCommand = ""
      * Run: "Gọi cho mẹ"
      * Expected: currentCommand == "Gọi cho mẹ" và text không bị biến mất
@@ -136,7 +119,7 @@ class CommandTextUpdateTest {
     }
 
     /**
-     * Test 5 – Same History command twice
+     * Test 4 – Same History command twice
      * Run: "Gọi cho mẹ" 2 lần
      * Expected: currentCommand == "Gọi cho mẹ" cả 2 lần và executionId1 != executionId2
      */
@@ -161,7 +144,7 @@ class CommandTextUpdateTest {
     }
 
     /**
-     * Test 6 – History → Home navigation timing
+     * Test 5 – History → Home navigation timing
      * Verify: History -> Run -> Home
      * Command text đã được update trước/đồng thời với navigation và không phụ thuộc recomposition
      */
@@ -188,7 +171,7 @@ class CommandTextUpdateTest {
     }
 
     /**
-     * Test 7 – NLU completion does not reset currentCommand
+     * Test 6 – NLU completion does not reset currentCommand
      * Sau khi NLU trả result, currentCommand không được reset về "" hoặc command cũ.
      */
     @Test

@@ -257,7 +257,7 @@ fun HomeScreen(
 
     var speechToTextRef by remember { mutableStateOf<com.example.ViDroidCall_Studio.feature.speech.SpeechToTextState?>(null) }
 
-    // Entry point thực thi câu lệnh thống nhất (Voice, History Run, Suggestion Chips)
+    // Entry point thực thi câu lệnh thống nhất (Voice, History Run)
     val executeCommand: (String) -> Unit = { command ->
         val trimmed = command.trim()
         if (trimmed.isNotBlank()) {
@@ -284,7 +284,6 @@ fun HomeScreen(
     ).also { speechToTextRef = it }
 
     var lastMicToggleTime by remember { mutableStateOf(0L) }
-    var lastSuggestionTime by remember { mutableStateOf(0L) }
     val clickDebounceThreshold = 350L
 
     // Xử lý bật tắt thu âm an toàn: Chặn kích hoạt khi AI đang bận suy luận
@@ -303,6 +302,11 @@ fun HomeScreen(
                 speechToText.toggleListening()
             }
         }
+    }
+
+    // Logo giữa menu bar: chỉ chuyển về tab Hỏi đáp (nghe bằng nút Micro trên màn)
+    val handleCenterFabClick: () -> Unit = {
+        selectedTab = NavTab.ASSISTANT
     }
 
     val handleCancelListening: () -> Unit = {
@@ -332,7 +336,7 @@ fun HomeScreen(
             CustomBottomMenuBar(
                 selectedTab = selectedTab,
                 onTabSelected = { tab -> selectedTab = tab },
-                onMicClick = handleToggleListeningSafe,
+                onMicClick = handleCenterFabClick,
                 isListening = speechToText.isListening,
                 modifier = Modifier.navigationBarsPadding()
             )
@@ -357,13 +361,6 @@ fun HomeScreen(
                     onRequestStoragePermission = handleOpenStorageSettings,
                     onRescanModel = handleRescanModel,
                     isTtsSpeaking = textToSpeech.isSpeaking,
-                    onSuggestionClick = { prompt ->
-                        val now = android.os.SystemClock.uptimeMillis()
-                        if (now - lastSuggestionTime > 400L && !isNluProcessing) {
-                            lastSuggestionTime = now
-                            executeCommand(prompt)
-                        }
-                    },
                     pendingAction = pendingAction,
                     showConfirmationDialog = showConfirmationDialog,
                     onConfirmAction = handleConfirmAction,

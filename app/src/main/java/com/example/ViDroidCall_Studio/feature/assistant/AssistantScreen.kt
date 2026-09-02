@@ -43,7 +43,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -111,7 +110,6 @@ fun AssistantScreen(
     onRescanModel: () -> Unit = {},
     modifier: Modifier = Modifier,
     isTtsSpeaking: Boolean = false,
-    onSuggestionClick: (String) -> Unit = {},
     pendingAction: NativeAction? = null,
     showConfirmationDialog: Boolean = false,
     onConfirmAction: () -> Unit = {},
@@ -152,15 +150,7 @@ fun AssistantScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Gợi ý câu lệnh mẫu nhanh (Khi không ghi âm và không đang phân tích)
-        if (!isListening && !isNluProcessing) {
-            SuggestionChipsSection(
-                onSuggestionClick = onSuggestionClick
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // 4. Thẻ Kết Quả Phân Tích Ý Định JSON NLU AI (Khi có kết quả hoặc đang phân tích)
+        // 3. Thẻ Kết Quả Phân Tích Ý Định JSON NLU AI (Khi có kết quả hoặc đang phân tích)
         if (isNluProcessing || nluResult != null) {
             NluJsonResultCard(
                 nluResult = nluResult,
@@ -169,7 +159,7 @@ fun AssistantScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // 5. Hộp thoại Xác nhận thực thi hành động nhạy cảm (Không che mất hay xóa NluJsonResultCard)
+        // 4. Hộp thoại Xác nhận thực thi hành động nhạy cảm (Không che mất hay xóa NluJsonResultCard)
         if (showConfirmationDialog && pendingAction != null) {
             ActionConfirmationDialog(
                 title = pendingAction.getConfirmationTitle(),
@@ -589,7 +579,7 @@ private fun VoiceAssistantSection(
                                 textAlign = TextAlign.Center
                             )
                         }
-                        // 5. ĐÃ CÓ CÂU LỆNH (Từ Voice, History Run, hoặc Suggestion Chip): Luôn hiển thị câu lệnh
+                        // 5. ĐÃ CÓ CÂU LỆNH (Từ Voice hoặc History Run): Luôn hiển thị câu lệnh
                         hasActiveCommand -> {
                             Text(
                                 text = "“$displayCommand”",
@@ -1021,73 +1011,4 @@ private fun NluBadgeChip(
         )
     }
 }
-
-/**
- * Danh sách gợi ý các câu lệnh mẫu nhanh (Suggestion Chips)
- */
-@Composable
-private fun SuggestionChipsSection(
-    onSuggestionClick: (String) -> Unit
-) {
-    val suggestions = listOf(
-        "Gọi cho mẹ",
-        "Bật đèn pin",
-        "Hẹn giờ 15 phút",
-        "Mở YouTube",
-        "Báo thức 6 giờ",
-        "Mở bản đồ Hà Nội",
-        "Nhắn tin cho Bố"
-    )
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.AutoAwesome,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "Gợi ý câu lệnh nhanh",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            suggestions.forEach { prompt ->
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
-                    modifier = Modifier.bounceClick(scaleDown = 0.92f, onClick = { onSuggestionClick(prompt) })
-                ) {
-                    Text(
-                        text = prompt,
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-
 

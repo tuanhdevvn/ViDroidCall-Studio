@@ -1,5 +1,7 @@
 package com.example.ViDroidCall_Studio.ui.component
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -234,15 +237,21 @@ fun CustomBottomMenuBar(
 
         // NÚT PHẦN TRÒN Ở GIỮA (MICROPHONE FAB)
         CenterMicButton(
+            isTabSelected = selectedTab == NavTab.ASSISTANT,
             isListening = isListening && selectedTab == NavTab.ASSISTANT,
-            onMicClick = { onTabSelected(NavTab.ASSISTANT) },
+            onMicClick = onMicClick,
             modifier = Modifier.offset(y = (-32).dp)
         )
     }
 }
 
+private val NavTabSpring = spring<Float>(
+    dampingRatio = Spring.DampingRatioLowBouncy,
+    stiffness = Spring.StiffnessMediumLow
+)
+
 /**
- * Từng item icon trên Menu bar
+ * Từng item icon trên Menu bar — animation chuyển tab mượt (scale, màu, pill, gạch indicator).
  */
 @Composable
 private fun NavItem(
@@ -254,15 +263,33 @@ private fun NavItem(
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
 
+    val selectionProgress by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = NavTabSpring,
+        label = "navSelectionProgress"
+    )
+
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.12f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        targetValue = if (isSelected) 1.1f else 1f,
+        animationSpec = NavTabSpring,
         label = "itemSelectedScale"
+    )
+
+    val iconTint by animateColorAsState(
+        targetValue = lerp(inactiveColor, activeColor, selectionProgress),
+        animationSpec = tween(durationMillis = 220),
+        label = "navIconTint"
+    )
+
+    val labelColor by animateColorAsState(
+        targetValue = lerp(inactiveColor, activeColor, selectionProgress),
+        animationSpec = tween(durationMillis = 220),
+        label = "navLabelColor"
     )
 
     Column(
         modifier = modifier
-            .bounceClick(scaleDown = 0.85f, onClick = onSelect)
+            .bounceClick(scaleDown = 0.88f, onClick = onSelect)
             .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -274,21 +301,24 @@ private fun NavItem(
                 scaleY = iconScale
             }
         ) {
-            if (isSelected) {
-                // Nền mềm dịu cho icon được chọn
-                Box(
-                    modifier = Modifier
-                        .size(50.dp, 30.dp)
-                        .background(
-                            color = activeColor.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(15.dp)
-                        )
-                )
-            }
+            // Pill nền — fade + scale theo tiến trình chọn tab
+            Box(
+                modifier = Modifier
+                    .size(50.dp, 30.dp)
+                    .graphicsLayer {
+                        alpha = selectionProgress
+                        scaleX = 0.75f + 0.25f * selectionProgress
+                        scaleY = 0.75f + 0.25f * selectionProgress
+                    }
+                    .background(
+                        color = activeColor.copy(alpha = 0.14f),
+                        shape = RoundedCornerShape(15.dp)
+                    )
+            )
             Icon(
                 imageVector = tab.icon,
                 contentDescription = tab.title,
-                tint = if (isSelected) activeColor else inactiveColor,
+                tint = iconTint,
                 modifier = Modifier.size(26.dp)
             )
         }
@@ -298,20 +328,23 @@ private fun NavItem(
         Text(
             text = tab.title,
             fontSize = 14.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) activeColor else inactiveColor
+            fontWeight = if (selectionProgress > 0.5f) FontWeight.Bold else FontWeight.Medium,
+            color = labelColor
         )
 
-        // Thanh gạch nhỏ dưới icon đang chọn
-        if (isSelected) {
-            Spacer(modifier = Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .width(20.dp)
-                    .height(3.dp)
-                    .background(activeColor, RoundedCornerShape(2.dp))
-            )
-        }
+        Spacer(modifier = Modifier.height(2.dp))
+
+        // Gạch indicator — co giãn ngang khi chọn tab
+        Box(
+            modifier = Modifier
+                .width(20.dp)
+                .height(3.dp)
+                .graphicsLayer {
+                    scaleX = selectionProgress
+                    alpha = selectionProgress
+                }
+                .background(activeColor, RoundedCornerShape(2.dp))
+        )
     }
 }
 
@@ -321,11 +354,34 @@ private fun NavItem(
  */
 @Composable
 private fun CenterMicButton(
+    isTabSelected: Boolean,
     isListening: Boolean,
     onMicClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val surfaceColor = MaterialTheme.colorScheme.surface
+
+    val tabSelectionScale by animateFloatAsState(
+        targetValue = if (isTabSelected) 1.06f else 0.96f,
+        animationSpec = NavTabSpring,
+        label = "micTabSelectionScale"
+    )
+
+    val ringAlpha by animateFloatAsState(
+        targetValue = if (isTabSelected) 0.35f else 0f,
+        animationSpec = tween(durationMillis = 280),
+        label = "micRingAlpha"
+    )
+
+    val micElevation by animateDpAsState(
+        targetValue = if (isTabSelected) 16.dp else 10.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "micElevation"
+    )
+
     val infiniteTransition = rememberInfiniteTransition(label = "MicPulse")
     val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = 0.2f,
@@ -369,6 +425,13 @@ private fun CenterMicButton(
                     color = surfaceColor,
                     radius = size.minDimension / 2 + 3.dp.toPx()
                 )
+                if (ringAlpha > 0f) {
+                    drawCircle(
+                        color = AppPrimary.copy(alpha = ringAlpha),
+                        radius = size.minDimension / 2 * 0.92f,
+                        style = Stroke(width = 2.5f)
+                    )
+                }
             }
         }
 
@@ -376,8 +439,12 @@ private fun CenterMicButton(
         Box(
             modifier = Modifier
                 .size(76.dp)
+                .graphicsLayer {
+                    scaleX = tabSelectionScale
+                    scaleY = tabSelectionScale
+                }
                 .shadow(
-                    elevation = 12.dp,
+                    elevation = micElevation,
                     shape = CircleShape,
                     spotColor = AppPrimary,
                     ambientColor = AppPrimary.copy(alpha = 0.5f)
