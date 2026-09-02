@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -71,6 +73,7 @@ import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogReposito
 import com.example.ViDroidCall_Studio.data.nlu.NluModelState
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import kotlinx.coroutines.launch
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
@@ -758,64 +761,50 @@ fun SettingsScreen(
                         )
 
                         if (feedbackEntries.isNotEmpty()) {
+                            val maxVisibleItems = 5
+                            val itemHeight = 48.dp
+                            val itemSpacing = 8.dp
+                            val visibleSlots = min(feedbackEntries.size, maxVisibleItems)
+                            val listHeight = itemHeight * visibleSlots + itemSpacing * (visibleSlots - 1).coerceAtLeast(0)
+
                             Spacer(modifier = Modifier.height(12.dp))
-                            feedbackEntries.take(5).forEach { entry ->
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 8.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = entry.sttText,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.weight(1f),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Icon(
-                                            imageVector = Icons.Rounded.DeleteSweep,
-                                            contentDescription = "Xóa mẫu",
-                                            tint = Color(0xFFDC2626),
-                                            modifier = Modifier
-                                                .size(20.dp)
-                                                .bounceClick(scaleDown = 0.9f, onClick = {
-                                                    scope.launch {
-                                                        feedbackRepository.deleteByIndex(entry.index)
-                                                            .onSuccess {
-                                                                feedbackRefreshKey++
-                                                                Toast.makeText(context, "Đã xóa mẫu", Toast.LENGTH_SHORT).show()
-                                                            }
-                                                            .onFailure { error ->
-                                                                Toast.makeText(
-                                                                    context,
-                                                                    "Xóa thất bại: ${error.message}",
-                                                                    Toast.LENGTH_SHORT
-                                                                ).show()
-                                                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(listHeight)
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(itemSpacing)
+                            ) {
+                                feedbackEntries.forEach { entry ->
+                                    FeedbackEntryRow(
+                                        entry = entry,
+                                        onDelete = {
+                                            scope.launch {
+                                                feedbackRepository.deleteByIndex(entry.index)
+                                                    .onSuccess {
+                                                        feedbackRefreshKey++
+                                                        Toast.makeText(context, "Đã xóa mẫu", Toast.LENGTH_SHORT).show()
                                                     }
-                                                })
-                                        )
-                                    }
+                                                    .onFailure { error ->
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Xóa thất bại: ${error.message}",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                            if (feedbackEntries.size > 5) {
+
+                            if (feedbackEntries.size > maxVisibleItems) {
                                 Text(
-                                    text = "... và ${feedbackEntries.size - 5} mẫu khác",
+                                    text = "Vuốt để xem thêm ${feedbackEntries.size - maxVisibleItems} mẫu",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 2.dp)
+                                    modifier = Modifier.padding(top = 6.dp)
                                 )
                             }
                         }
@@ -959,6 +948,47 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FeedbackEntryRow(
+    entry: NluFeedbackEntry,
+    onDelete: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = entry.sttText,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Rounded.DeleteSweep,
+                contentDescription = "Xóa mẫu",
+                tint = Color(0xFFDC2626),
+                modifier = Modifier
+                    .size(20.dp)
+                    .bounceClick(scaleDown = 0.9f, onClick = onDelete)
+            )
         }
     }
 }

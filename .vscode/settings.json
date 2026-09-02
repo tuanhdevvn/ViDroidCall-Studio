@@ -1,0 +1,37 @@
+{
+  "files.associations": {
+    "*.kt": "kotlin",
+    "*.kts": "kotlin"
+  },
+
+  "editor.semanticHighlighting.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+
+  "[kotlin]": {
+    "editor.semanticHighlighting.enabled": true,
+    "editor.defaultFormatter": "JetBrains.kotlin-server"
+  },
+
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.gradle.enabled": true,
+  "java.import.gradle.wrapper.enabled": true,
+  "java.import.gradle.java.home": "/Applications/Android Studio.app/Contents/jbr/Contents/Home",
+  "java.jdt.ls.java.home": "/Applications/Android Studio.app/Contents/jbr/Contents/Home",
+  "java.project.importOnFirstTimeStartup": "automatic",
+
+  "intellij.buildTool": "gradle",
+  "intellij.workspace.reloadOnBuildFileSave": "always",
+
+  "kotlin.languageServer.enabled": false,
+
+  "terminal.integrated.env.osx": {
+    "JAVA_HOME": "/Applications/Android Studio.app/Contents/jbr/Contents/Home",
+    "ANDROID_HOME": "/Users/nguyentuananh/Library/Android/sdk"
+  },
+
+  "files.watcherExclude": {
+    "**/.gradle/**": true,
+    "**/build/**": true,
+    "**/.kotlin/**": true
+  }
+}

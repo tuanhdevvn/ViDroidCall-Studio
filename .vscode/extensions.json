@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "JetBrains.kotlin-server",
+    "mathiasfrohlich.kotlin",
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-gradle"
+  ],
+  "unwantedRecommendations": [
+    "fwcd.kotlin",
+    "jetbrains.kotlin"
+  ]
+}
