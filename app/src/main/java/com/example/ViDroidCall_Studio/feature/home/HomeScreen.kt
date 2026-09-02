@@ -247,19 +247,41 @@ fun HomeScreen(
         }
     }
 
+    // Quản lý câu lệnh hiện tại (Single Source of Truth cho AssistantScreen UI & NLU)
+    var currentCommand by remember { mutableStateOf("") }
+
     val handleCancelAction = {
         showConfirmationDialog = false
         pendingAction = null
     }
 
+    var speechToTextRef by remember { mutableStateOf<com.example.ViDroidCall_Studio.feature.speech.SpeechToTextState?>(null) }
+
+    // Entry point thực thi câu lệnh thống nhất (Voice, History Run, Suggestion Chips)
+    val executeCommand: (String) -> Unit = { command ->
+        val trimmed = command.trim()
+        if (trimmed.isNotBlank()) {
+            speechToTextRef?.let { stt ->
+                if (stt.isListening) {
+                    stt.cancelListening()
+                }
+            }
+            if (textToSpeech.isSpeaking) {
+                textToSpeech.stop()
+            }
+            currentCommand = trimmed
+            nluEngineManager.processQuery(trimmed)
+        }
+    }
+
     val speechToText = rememberSpeechToText(
         onSpeechResult = { recognizedText ->
-            nluEngineManager.processQuery(recognizedText)
+            executeCommand(recognizedText)
         },
         onPermissionDenied = {
             showMicroPermissionDialog = true
         }
-    )
+    ).also { speechToTextRef = it }
 
     var lastMicToggleTime by remember { mutableStateOf(0L) }
     var lastSuggestionTime by remember { mutableStateOf(0L) }
@@ -325,6 +347,7 @@ fun HomeScreen(
                 NavTab.ASSISTANT -> AssistantScreen(
                     isListening = speechToText.isListening,
                     speechText = speechToText.speechText,
+                    currentCommand = currentCommand,
                     onToggleListening = handleToggleListeningSafe,
                     onCancelListening = handleCancelListening,
                     nluResult = nluResult,
@@ -338,7 +361,7 @@ fun HomeScreen(
                         val now = android.os.SystemClock.uptimeMillis()
                         if (now - lastSuggestionTime > 400L && !isNluProcessing) {
                             lastSuggestionTime = now
-                            nluEngineManager.processQuery(prompt)
+                            executeCommand(prompt)
                         }
                     },
                     pendingAction = pendingAction,
@@ -350,7 +373,7 @@ fun HomeScreen(
                 NavTab.HISTORY -> HistoryScreen(
                     historyItems = historyItems,
                     onRerunCommand = { query ->
-                        nluEngineManager.processQuery(query)
+                        executeCommand(query)
                         selectedTab = NavTab.ASSISTANT
                     },
                     onDeleteItem = { id ->
