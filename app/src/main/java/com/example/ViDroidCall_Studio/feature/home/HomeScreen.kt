@@ -114,13 +114,13 @@ fun HomeScreen(
         }
     }
 
-    // Tự động kiểm tra lại quyền và quét nạp model khi user quay lại App (ON_RESUME)
-    DisposableEffect(lifecycleOwner) {
+    // Chỉ quét/nạp lại model khi thực sự chưa sẵn sàng (đọc StateFlow trực tiếp, tránh stale closure).
+    DisposableEffect(lifecycleOwner, nluEngineManager) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 val granted = StoragePermissionHelper.hasStoragePermission(context)
                 hasStoragePermission = granted
-                if (granted && modelState !is NluModelState.Ready && modelState !is NluModelState.Loading) {
+                if (granted && !nluEngineManager.isModelReady()) {
                     nluEngineManager.autoDetectAndLoadModel()
                 }
             }
@@ -297,7 +297,7 @@ fun HomeScreen(
     }
 
     val handleRescanModel: () -> Unit = {
-        nluEngineManager.autoDetectAndLoadModel()
+        nluEngineManager.autoDetectAndLoadModel(force = true)
         Toast.makeText(context, "Đang quét lại file mô hình GGUF...", Toast.LENGTH_SHORT).show()
     }
 

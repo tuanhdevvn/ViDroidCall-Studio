@@ -93,11 +93,27 @@ class NluEngineManager(
         }
     }
 
+    fun isModelReady(): Boolean {
+        return isNativeReady &&
+            llamaHelper != null &&
+            _modelState.value is NluModelState.Ready
+    }
+
     /**
-     * Tự động quét file mô hình .gguf trong bộ nhớ thiết bị
+     * Tự động quét file mô hình .gguf trong bộ nhớ thiết bị.
+     * @param force true khi user chủ động quét lại; bỏ qua guard model đã sẵn sàng.
      */
-    fun autoDetectAndLoadModel() {
+    fun autoDetectAndLoadModel(force: Boolean = false) {
         scope.launch(Dispatchers.IO) {
+            if (!force && isModelReady()) {
+                Log.d(TAG, "Model GGUF đã sẵn sàng, bỏ qua nạp lại.")
+                return@launch
+            }
+            if (_modelState.value is NluModelState.Loading) {
+                Log.d(TAG, "Model đang nạp, bỏ qua yêu cầu trùng lặp.")
+                return@launch
+            }
+
             _modelState.value = NluModelState.Loading
 
             // Thư mục quét: Thư mục cá nhân của App (không cần quyền Storage) + Thư mục Download chung của máy
@@ -157,7 +173,10 @@ class NluEngineManager(
 
     fun loadModelFromPath(filePath: String) {
         scope.launch(Dispatchers.IO) {
+            if (_modelState.value is NluModelState.Loading) return@launch
             _modelState.value = NluModelState.Loading
+            isNativeReady = false
+            llamaHelper = null
             try {
                 loadNativeModel(File(filePath))
             } catch (e: Exception) {
@@ -168,6 +187,9 @@ class NluEngineManager(
     }
 
     private suspend fun loadNativeModel(targetFile: File) = withContext(Dispatchers.IO) {
+        isNativeReady = false
+        llamaHelper = null
+
         val fileUri = try {
             androidx.core.content.FileProvider.getUriForFile(
                 context,
