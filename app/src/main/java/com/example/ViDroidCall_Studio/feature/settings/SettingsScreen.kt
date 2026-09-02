@@ -1,5 +1,7 @@
 package com.example.ViDroidCall_Studio.feature.settings
 
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -21,23 +23,31 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -49,11 +59,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import com.example.ViDroidCall_Studio.data.local.AppTheme
 import com.example.ViDroidCall_Studio.data.local.FontSizePreferences
 import com.example.ViDroidCall_Studio.data.local.ThemePreferences
+import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackEntry
+import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogRepository
 import com.example.ViDroidCall_Studio.data.nlu.NluModelState
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import kotlinx.coroutines.launch
@@ -66,6 +80,7 @@ import kotlin.math.roundToInt
 @Composable
 fun SettingsScreen(
     modelState: NluModelState = NluModelState.Uninitialized,
+    feedbackRepository: NluFeedbackLogRepository? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -77,6 +92,54 @@ fun SettingsScreen(
     val currentFontScale by fontSizePreferences.fontScaleFlow.collectAsState(initial = FontSizePreferences.DEFAULT_FONT_SCALE)
 
     var sliderValue by remember(currentFontScale) { mutableFloatStateOf(currentFontScale) }
+
+    var feedbackCount by remember { mutableIntStateOf(0) }
+    var feedbackEntries by remember { mutableStateOf<List<NluFeedbackEntry>>(emptyList()) }
+    var showClearFeedbackDialog by remember { mutableStateOf(false) }
+    var feedbackRefreshKey by remember { mutableIntStateOf(0) }
+
+    fun refreshFeedbackLog() {
+        scope.launch {
+            feedbackCount = feedbackRepository?.count() ?: 0
+            feedbackEntries = feedbackRepository?.readAll().orEmpty().reversed()
+        }
+    }
+
+    LaunchedEffect(feedbackRepository, feedbackRefreshKey) {
+        refreshFeedbackLog()
+    }
+
+    if (showClearFeedbackDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearFeedbackDialog = false },
+            title = { Text("Xóa toàn bộ mẫu sai?") },
+            text = { Text("Thao tác này sẽ xóa $feedbackCount mẫu đã lưu và không thể hoàn tác.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearFeedbackDialog = false
+                        scope.launch {
+                            feedbackRepository?.clearAll()
+                                ?.onSuccess {
+                                    feedbackRefreshKey++
+                                    Toast.makeText(context, "Đã xóa toàn bộ mẫu sai", Toast.LENGTH_SHORT).show()
+                                }
+                                ?.onFailure { error ->
+                                    Toast.makeText(context, "Xóa thất bại: ${error.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                    }
+                ) {
+                    Text("Xóa", color = Color(0xFFDC2626))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearFeedbackDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
 
     LazyColumn(
         modifier = modifier
@@ -628,7 +691,229 @@ fun SettingsScreen(
             }
         }
 
-        // 5. Thông tin phiên bản (App Info Footer)
+        // 5. Quản lý mẫu NLU sai (JSONL log cho train lại model)
+        if (feedbackRepository != null) {
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(Color(0xFFEF4444).copy(alpha = 0.12f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.BookmarkAdd,
+                                        contentDescription = null,
+                                        tint = Color(0xFFDC2626),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Mẫu NLU sai",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFFEF4444).copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = "$feedbackCount mẫu",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFDC2626),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = feedbackRepository.getLogFilePath(),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        if (feedbackEntries.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            feedbackEntries.take(5).forEach { entry ->
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 8.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = entry.sttText,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.weight(1f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            imageVector = Icons.Rounded.DeleteSweep,
+                                            contentDescription = "Xóa mẫu",
+                                            tint = Color(0xFFDC2626),
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .bounceClick(scaleDown = 0.9f, onClick = {
+                                                    scope.launch {
+                                                        feedbackRepository.deleteByIndex(entry.index)
+                                                            .onSuccess {
+                                                                feedbackRefreshKey++
+                                                                Toast.makeText(context, "Đã xóa mẫu", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                            .onFailure { error ->
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Xóa thất bại: ${error.message}",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            }
+                                                    }
+                                                })
+                                        )
+                                    }
+                                }
+                            }
+                            if (feedbackEntries.size > 5) {
+                                Text(
+                                    text = "... và ${feedbackEntries.size - 5} mẫu khác",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFF0284C7).copy(alpha = 0.12f))
+                                    .bounceClick(
+                                        scaleDown = 0.95f,
+                                        onClick = {
+                                            if (feedbackCount <= 0) return@bounceClick
+                                            val file = feedbackRepository.getLogFile()
+                                            if (!file.exists()) {
+                                                Toast.makeText(context, "Chưa có file log", Toast.LENGTH_SHORT).show()
+                                                return@bounceClick
+                                            }
+                                            val uri = FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.provider",
+                                                file
+                                            )
+                                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                type = "text/plain"
+                                                putExtra(Intent.EXTRA_STREAM, uri)
+                                                putExtra(Intent.EXTRA_SUBJECT, "NLU feedback log")
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+                                            context.startActivity(
+                                                Intent.createChooser(shareIntent, "Chia sẻ log NLU")
+                                            )
+                                        }
+                                    )
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Share,
+                                        contentDescription = null,
+                                        tint = Color(0xFF0369A1),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Chia sẻ",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0369A1)
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFFEF4444).copy(alpha = 0.12f))
+                                    .bounceClick(
+                                        scaleDown = 0.95f,
+                                        onClick = {
+                                            if (feedbackCount <= 0) return@bounceClick
+                                            showClearFeedbackDialog = true
+                                        }
+                                    )
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.DeleteSweep,
+                                        contentDescription = null,
+                                        tint = Color(0xFFDC2626),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Xóa tất cả",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFDC2626)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 6. Thông tin phiên bản (App Info Footer)
         item {
             Surface(
                 modifier = Modifier.fillMaxWidth(),

@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogRepository
 import com.example.ViDroidCall_Studio.data.local.history.CommandHistoryRepository
 import com.example.ViDroidCall_Studio.data.nlu.NluActionDispatcher
 import com.example.ViDroidCall_Studio.data.nlu.NluEngineManager
@@ -67,6 +68,9 @@ fun HomeScreen(
     // Quản lý Lịch sử câu lệnh ngoại tuyến (SQLite Repository)
     val historyRepository = remember { CommandHistoryRepository(context.applicationContext) }
     val historyItems by historyRepository.historyFlow.collectAsState(initial = emptyList())
+
+    // Quản lý log mẫu NLU sai (JSONL) để train lại model
+    val feedbackRepository = remember { NluFeedbackLogRepository(context.applicationContext) }
 
     // Quản lý NLU Engine
     val nluEngineManager = remember { NluEngineManager(context.applicationContext) }
@@ -335,6 +339,38 @@ fun HomeScreen(
         Toast.makeText(context, "Đang quét lại file mô hình GGUF...", Toast.LENGTH_SHORT).show()
     }
 
+    val handleSaveFeedback: () -> Unit = {
+        val stt = currentCommand.trim()
+        val result = nluResult
+        when {
+            stt.isBlank() || result == null -> {
+                Toast.makeText(context, "Chưa có dữ liệu để lưu", Toast.LENGTH_SHORT).show()
+            }
+            result.isFastPath -> {
+                Toast.makeText(context, "Fast-Path không phải output model GGUF", Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                scope.launch {
+                    feedbackRepository.append(stt, result)
+                        .onSuccess {
+                            Toast.makeText(
+                                context,
+                                "Đã lưu mẫu sai (${feedbackRepository.count()} mẫu)",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        .onFailure { error ->
+                            Toast.makeText(
+                                context,
+                                "Lưu thất bại: ${error.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                }
+            }
+        }
+    }
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -372,7 +408,8 @@ fun HomeScreen(
                     pendingAction = pendingAction,
                     showConfirmationDialog = showConfirmationDialog,
                     onConfirmAction = handleConfirmAction,
-                    onCancelAction = handleCancelAction
+                    onCancelAction = handleCancelAction,
+                    onSaveFeedback = handleSaveFeedback
                 )
 
                 NavTab.HISTORY -> HistoryScreen(
@@ -389,7 +426,10 @@ fun HomeScreen(
                     }
                 )
 
-                NavTab.SETTINGS -> SettingsScreen(modelState = modelState)
+                NavTab.SETTINGS -> SettingsScreen(
+                    modelState = modelState,
+                    feedbackRepository = feedbackRepository
+                )
             }
 
             // Hộp thoại tự động nhắc cấp quyền truy cập bộ nhớ
