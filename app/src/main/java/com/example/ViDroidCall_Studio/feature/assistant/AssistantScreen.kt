@@ -100,6 +100,7 @@ import com.example.ViDroidCall_Studio.ui.component.ActionConfirmationDialog
 fun AssistantScreen(
     isListening: Boolean,
     speechText: String,
+    currentCommand: String = "",
     onToggleListening: () -> Unit,
     onCancelListening: () -> Unit = {},
     nluResult: NluResult?,
@@ -141,6 +142,7 @@ fun AssistantScreen(
         VoiceAssistantSection(
             isListening = isListening,
             speechText = speechText,
+            currentCommand = currentCommand,
             isNluProcessing = isNluProcessing,
             modelState = modelState,
             isTtsSpeaking = isTtsSpeaking,
@@ -148,9 +150,17 @@ fun AssistantScreen(
             onCancelListening = onCancelListening
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Thẻ Kết Quả Phân Tích Ý Định JSON NLU AI (Khi có kết quả hoặc đang phân tích)
+        // 3. Gợi ý câu lệnh mẫu nhanh (Khi không ghi âm và không đang phân tích)
+        if (!isListening && !isNluProcessing) {
+            SuggestionChipsSection(
+                onSuggestionClick = onSuggestionClick
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // 4. Thẻ Kết Quả Phân Tích Ý Định JSON NLU AI (Khi có kết quả hoặc đang phân tích)
         if (isNluProcessing || nluResult != null) {
             NluJsonResultCard(
                 nluResult = nluResult,
@@ -159,7 +169,7 @@ fun AssistantScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // 4. Hộp thoại Xác nhận thực thi hành động nhạy cảm (Không che mất hay xóa NluJsonResultCard)
+        // 5. Hộp thoại Xác nhận thực thi hành động nhạy cảm (Không che mất hay xóa NluJsonResultCard)
         if (showConfirmationDialog && pendingAction != null) {
             ActionConfirmationDialog(
                 title = pendingAction.getConfirmationTitle(),
@@ -299,6 +309,7 @@ private fun ModelEngineStatusBadge(
 private fun VoiceAssistantSection(
     isListening: Boolean,
     speechText: String,
+    currentCommand: String = "",
     isNluProcessing: Boolean,
     modelState: NluModelState,
     isTtsSpeaking: Boolean = false,
@@ -516,18 +527,21 @@ private fun VoiceAssistantSection(
         val isErrorMessage = speechText == SpeechToTextManager.ERROR_MESSAGE || 
                 speechText == SpeechToTextManager.PERMISSION_DENIED_MESSAGE
 
-        val hasRecognizedText = speechText.isNotBlank() && 
+        val hasRecognizedSpeech = speechText.isNotBlank() && 
                 !isWaitingToSpeak && 
                 !isSpeakingDetected && 
                 !isErrorMessage
 
-        val isCardVisible = isAiReady && (isListening || isNluProcessing || hasRecognizedText || isErrorMessage)
+        val displayCommand = if (currentCommand.isNotBlank()) currentCommand else if (hasRecognizedSpeech) speechText else ""
+        val hasActiveCommand = displayCommand.isNotBlank()
+
+        val isCardVisible = isAiReady && (isListening || isNluProcessing || hasActiveCommand || isErrorMessage)
 
         if (isCardVisible) {
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = if (hasRecognizedText) 0.12f else 0.08f),
-                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (hasRecognizedText) 0.50f else 0.35f)),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = if (hasActiveCommand) 0.12f else 0.08f),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (hasActiveCommand) 0.50f else 0.35f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -545,10 +559,40 @@ private fun VoiceAssistantSection(
                                 textAlign = TextAlign.Center
                             )
                         }
-                        // 2. ĐÃ NHẬN DIỆN ĐƯỢC CÂU CHỮ: Luôn in câu vừa nói ra màn hình NGAY LẬP TỨC!
-                        hasRecognizedText -> {
+                        // 2. Đang ghi âm: Người dùng đang cất tiếng nói (VAD phát hiện âm thanh)
+                        isListening && isSpeakingDetected -> {
+                            Text(
+                                text = "“Đang lắng nghe câu lệnh...”",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        // 3. Đang ghi âm: Vừa bấm Mic, đang chờ người dùng nói
+                        isListening && isWaitingToSpeak -> {
+                            Text(
+                                text = "“Hãy nói gì đó...”",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        // 4. Đang ghi âm và đã nhận diện được một phần câu chữ
+                        isListening && hasRecognizedSpeech -> {
                             Text(
                                 text = "“$speechText”",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        // 5. ĐÃ CÓ CÂU LỆNH (Từ Voice, History Run, hoặc Suggestion Chip): Luôn hiển thị câu lệnh
+                        hasActiveCommand -> {
+                            Text(
+                                text = "“$displayCommand”",
                                 fontSize = 21.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -576,27 +620,7 @@ private fun VoiceAssistantSection(
                                 }
                             }
                         }
-                        // 3. Người dùng đang cất tiếng nói (VAD phát hiện âm thanh)
-                        isListening && isSpeakingDetected -> {
-                            Text(
-                                text = "“Đang lắng nghe câu lệnh...”",
-                                fontSize = 21.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        // 4. Vừa bấm Mic, đang chờ người dùng nói
-                        isListening -> {
-                            Text(
-                                text = "“Hãy nói gì đó...”",
-                                fontSize = 21.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        // 5. AI phân tích từ nguồn khác (ví dụ: gợi ý bấm tay)
+                        // 6. AI phân tích từ nguồn khác (fallback khi chưa kịp có command text)
                         isNluProcessing -> {
                             Text(
                                 text = "AI đang phân tích câu lệnh...",
@@ -995,6 +1019,72 @@ private fun NluBadgeChip(
             color = contentColor,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )
+    }
+}
+
+/**
+ * Danh sách gợi ý các câu lệnh mẫu nhanh (Suggestion Chips)
+ */
+@Composable
+private fun SuggestionChipsSection(
+    onSuggestionClick: (String) -> Unit
+) {
+    val suggestions = listOf(
+        "Gọi cho mẹ",
+        "Bật đèn pin",
+        "Hẹn giờ 15 phút",
+        "Mở YouTube",
+        "Báo thức 6 giờ",
+        "Mở bản đồ Hà Nội",
+        "Nhắn tin cho Bố"
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.AutoAwesome,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Gợi ý câu lệnh nhanh",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            suggestions.forEach { prompt ->
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                    modifier = Modifier.bounceClick(scaleDown = 0.92f, onClick = { onSuggestionClick(prompt) })
+                ) {
+                    Text(
+                        text = prompt,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
