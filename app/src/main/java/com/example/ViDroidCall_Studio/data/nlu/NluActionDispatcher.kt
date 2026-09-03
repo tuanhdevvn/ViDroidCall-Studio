@@ -300,50 +300,35 @@ class NluActionDispatcher(
         }
     }
 
+    /**
+     * send_sms: tìm contact/số trước, rồi luôn mở trang soạn tin.
+     * Có message thì dán sẵn; không có message vẫn mở khung soạn trống.
+     */
     private fun executeSendSms(context: Context, action: NativeAction.SendSms) {
         val target = if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
-
-        // 1. Kiểm tra nội dung tin nhắn
-        if (action.message.isBlank()) {
-            val contactName = if (target.isNotBlank()) target else "người này"
-            val errorMsg = "Bạn muốn nhắn nội dung gì cho $contactName?"
-            showToast("Vui lòng cung cấp nội dung tin nhắn.")
-            speakText(errorMsg)
-            onActionError(errorMsg)
-            logLifecycle("ACTION_FAILED", "intent=send_sms, target=$target, error=EmptyMessage")
-            return
-        }
 
         if (target.isBlank()) {
             val error = "Vui lòng chỉ định người nhận tin nhắn."
             showToast(error)
             speakText(error)
             onActionError(error)
+            logLifecycle("ACTION_FAILED", "intent=send_sms, error=EmptyRecipient")
             return
         }
 
-        // 2. Nếu target là số điện thoại trực tiếp
+        // 1. Số điện thoại trực tiếp → mở soạn tin ngay
         if (ContactResolver.isPhoneNumber(target)) {
-            showToast("💬 Đang mở tin nhắn gửi tới: $target...")
-            val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("smsto:${Uri.encode(target)}")
-                putExtra("sms_body", action.message)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            try {
-                context.startActivity(smsIntent)
-                logLifecycle("ACTION_SUCCESS", "intent=send_sms, target=$target, type=direct_number")
-            } catch (e: ActivityNotFoundException) {
-                val errorMsg = "Thiết bị không có ứng dụng nhắn tin phù hợp."
-                showToast(errorMsg)
-                speakText(errorMsg)
-                onActionError(errorMsg)
-                logLifecycle("ACTION_FAILED", "intent=send_sms, error=ActivityNotFoundException: ${e.message}")
-            }
+            openSmsCompose(
+                context = context,
+                phoneNumber = target,
+                message = action.message,
+                displayName = target,
+                successLogDetail = "target=$target, type=direct_number, hasMessage=${action.message.isNotBlank()}"
+            )
             return
         }
 
-        // 3. Nếu target là tên liên hệ trong Danh bạ (ContactsContract)
+        // 2. Tên liên hệ → tìm trong danh bạ rồi mở soạn tin
         when (val searchResult = ContactResolver.searchContact(context, target)) {
             is ContactResolver.ContactSearchResult.PermissionDenied -> {
                 val errorMsg = "Ứng dụng cần quyền truy cập danh bạ để tìm số điện thoại."
@@ -371,40 +356,65 @@ class NluActionDispatcher(
             }
             is ContactResolver.ContactSearchResult.Success -> {
                 val contactInfo = searchResult.contact
-                showToast("💬 Đang mở tin nhắn gửi tới ${contactInfo.name} (${contactInfo.phoneNumber})...")
-                val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("smsto:${Uri.encode(contactInfo.phoneNumber)}")
-                    putExtra("sms_body", action.message)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                try {
-                    context.startActivity(smsIntent)
-                    logLifecycle("ACTION_SUCCESS", "intent=send_sms, contact=${contactInfo.name}, number=${contactInfo.phoneNumber}")
-                } catch (e: ActivityNotFoundException) {
-                    val errorMsg = "Thiết bị không có ứng dụng nhắn tin phù hợp."
-                    showToast(errorMsg)
-                    speakText(errorMsg)
-                    onActionError(errorMsg)
-                }
+                openSmsCompose(
+                    context = context,
+                    phoneNumber = contactInfo.phoneNumber,
+                    message = action.message,
+                    displayName = contactInfo.name,
+                    successLogDetail = "contact=${contactInfo.name}, number=${contactInfo.phoneNumber}, hasMessage=${action.message.isNotBlank()}"
+                )
             }
             is ContactResolver.ContactSearchResult.MultipleNumbers -> {
-                val primaryNumber = searchResult.phoneNumbers.firstOrNull() ?: ""
-                showToast("💬 Đang mở tin nhắn gửi tới ${searchResult.name} ($primaryNumber)...")
-                val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("smsto:${Uri.encode(primaryNumber)}")
-                    putExtra("sms_body", action.message)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                try {
-                    context.startActivity(smsIntent)
-                    logLifecycle("ACTION_SUCCESS", "intent=send_sms, contact=${searchResult.name}, number=$primaryNumber")
-                } catch (e: ActivityNotFoundException) {
-                    val errorMsg = "Thiết bị không có ứng dụng nhắn tin phù hợp."
+                val primaryNumber = searchResult.phoneNumbers.firstOrNull().orEmpty()
+                if (primaryNumber.isBlank()) {
+                    val errorMsg = "Liên hệ này không có số điện thoại."
                     showToast(errorMsg)
                     speakText(errorMsg)
                     onActionError(errorMsg)
+                    logLifecycle("ACTION_FAILED", "intent=send_sms, target=$target, error=NoPhoneNumber")
+                    return
                 }
+                openSmsCompose(
+                    context = context,
+                    phoneNumber = primaryNumber,
+                    message = action.message,
+                    displayName = searchResult.name,
+                    successLogDetail = "contact=${searchResult.name}, number=$primaryNumber, hasMessage=${action.message.isNotBlank()}"
+                )
             }
+        }
+    }
+
+    private fun openSmsCompose(
+        context: Context,
+        phoneNumber: String,
+        message: String,
+        displayName: String,
+        successLogDetail: String
+    ) {
+        val toastMsg = if (message.isNotBlank()) {
+            "💬 Đang mở tin nhắn gửi tới $displayName..."
+        } else {
+            "💬 Đang mở soạn tin nhắn tới $displayName..."
+        }
+        showToast(toastMsg)
+
+        val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("smsto:${Uri.encode(phoneNumber)}")
+            if (message.isNotBlank()) {
+                putExtra("sms_body", message)
+            }
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        try {
+            context.startActivity(smsIntent)
+            logLifecycle("ACTION_SUCCESS", "intent=send_sms, $successLogDetail")
+        } catch (e: ActivityNotFoundException) {
+            val errorMsg = "Thiết bị không có ứng dụng nhắn tin phù hợp."
+            showToast(errorMsg)
+            speakText(errorMsg)
+            onActionError(errorMsg)
+            logLifecycle("ACTION_FAILED", "intent=send_sms, error=ActivityNotFoundException: ${e.message}")
         }
     }
 
