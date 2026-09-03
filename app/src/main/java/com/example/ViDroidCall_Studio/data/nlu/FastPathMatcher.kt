@@ -478,7 +478,7 @@ class FastPathMatcher(
         addRule(
             patterns = listOf("nhắn tin", "gửi tin nhắn", "soạn tin nhắn", "gửi tin"),
             intent = "clarify",
-            args = JSONObject().put("missing", JSONArray().put("contact").put("message")),
+            args = JSONObject().put("missing", JSONArray().put("contact")),
             risk = "low",
             status = "needs_clarification",
             confirm = false

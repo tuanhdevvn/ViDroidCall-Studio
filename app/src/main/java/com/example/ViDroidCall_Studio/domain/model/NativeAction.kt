@@ -36,7 +36,8 @@ sealed class NativeAction {
     }
 
     /**
-     * Gửi tin nhắn SMS (Mở ứng dụng soạn tin ACTION_SENDTO)
+     * Gửi tin nhắn SMS: tìm contact/số rồi mở trang soạn tin (ACTION_SENDTO).
+     * Có message thì dán sẵn; không có message vẫn mở khung soạn trống.
      */
     data class SendSms(
         override val actionId: String = UUID.randomUUID().toString(),
