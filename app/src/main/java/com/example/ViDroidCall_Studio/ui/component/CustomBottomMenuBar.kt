@@ -211,11 +211,33 @@ class BottomNavCutoutShape(
 }
 
 /**
- * Line trang trí viền trên uốn cong mềm mại ôm trọn Floating Action Button ở giữa.
- * Bao gồm 3 lớp vẽ tinh tế:
- * 1. Lớp Glow mềm khuếch tán diện rộng (Ambient Diffusion Glow, ~5.2dp)
- * 2. Lớp Glow trung tâm sáng dịu (Inner Soft Aura, ~3dp)
- * 3. Line chính siêu mảnh (Razor Core Line, ~1.65dp) với gradient sắc nét, sáng rực rỡ ở notch và dịu dần ra 2 mép.
+ * Cấu hình từng lớp đổ bóng Gaussian cho hiệu ứng ánh sáng dạng Shadow (Shadow Glow Tiers).
+ * Phân bổ suy giảm alpha theo hàm mũ (Exponential Falloff) mô phỏng chính xác hiện tượng
+ * Gaussian Blur / Drop Shadow quang học, giúp ánh sáng tan mềm mại vào không gian mà không có bất kỳ viền cứng nào.
+ */
+private data class GlowShadowTier(
+    val strokeWidthDp: Float,
+    val alphaMultiplier: Float,
+    val isCoreLine: Boolean = false
+)
+
+private val SHADOW_GLOW_TIERS = listOf(
+    GlowShadowTier(strokeWidthDp = 20.0f, alphaMultiplier = 0.035f), // Hào quang ngoại vi khuếch tán xa nhất
+    GlowShadowTier(strokeWidthDp = 15.0f, alphaMultiplier = 0.060f), // Lớp shadow tỏa rộng
+    GlowShadowTier(strokeWidthDp = 11.0f, alphaMultiplier = 0.095f), // Lớp shadow trung gian
+    GlowShadowTier(strokeWidthDp = 7.5f,  alphaMultiplier = 0.150f), // Lớp ánh sáng cận viền
+    GlowShadowTier(strokeWidthDp = 5.0f,  alphaMultiplier = 0.240f), // Lớp hào quang mềm
+    GlowShadowTier(strokeWidthDp = 3.2f,  alphaMultiplier = 0.380f), // Lớp sáng rõ
+    GlowShadowTier(strokeWidthDp = 2.0f,  alphaMultiplier = 0.650f), // Lớp cận nét
+    GlowShadowTier(strokeWidthDp = 1.5f,  alphaMultiplier = 1.000f, isCoreLine = true) // Line nét chính
+)
+
+/**
+ * Line trang trí viền trên uốn cong mềm mại ôm trọn Floating Action Button ở giữa
+ * với hiệu ứng ánh sáng dạng ĐỔ BÓNG PHÁT SÁNG (Shadow Glow):
+ * 1. Vùng sáng tỏa tròn dịu mát trong lòng rãnh notch (Notch Cradle Radial Shadow Aura)
+ * 2. Hệ thống 8 tầng Gaussian Shadow Falloff mềm mượt, mô phỏng ánh sáng đèn nền hắt ra (Backlight / Drop Shadow)
+ * 3. Line nét chính siêu mảnh 1.5dp với highlight xanh tuyết ở rãnh notch
  *
  * Hỗ trợ các animation mượt 60 FPS:
  * - Entrance Reveal: Lan tỏa từ tâm ra 2 biên khi xuất hiện.
@@ -290,13 +312,30 @@ fun NotchGlowBorderLine(
 
         clipRect(
             left = leftClip,
-            top = -20f * d,
+            top = -30f * d,
             right = rightClip,
-            bottom = size.height + 20f * d
+            bottom = size.height + 30f * d
         ) {
-            val glowIntensity = (pulseFactor * 0.8f + clickPulse * 0.65f).coerceIn(0.4f, 1.8f)
+            val glowIntensity = (pulseFactor * 0.75f + clickPulse * 0.65f).coerceIn(0.35f, 1.8f)
 
-            // Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
+            // 1. Ánh sáng dạng Shadow tỏa tròn mềm mại bên trong lòng rãnh notch (Notch Cradle Aura)
+            val cradleAuraRadius = cutR + shoulder * 0.35f
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF0866FF).copy(alpha = (0.22f * glowIntensity).coerceIn(0f, 0.45f)),
+                        Color(0xFF2B7FFF).copy(alpha = (0.12f * glowIntensity).coerceIn(0f, 0.30f)),
+                        Color(0xFF38BDF8).copy(alpha = (0.04f * glowIntensity).coerceIn(0f, 0.15f)),
+                        Color.Transparent
+                    ),
+                    center = androidx.compose.ui.geometry.Offset(center, centerY),
+                    radius = cradleAuraRadius
+                ),
+                center = androidx.compose.ui.geometry.Offset(center, centerY),
+                radius = cradleAuraRadius
+            )
+
+            // 2. Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
             val notchHalfWidth = cutR + shoulder
             val shoulderFrac = (notchHalfWidth / width).coerceIn(0.08f, 0.28f)
             val fadeFrac = (shoulderFrac + (36f * d / width)).coerceIn(shoulderFrac + 0.02f, 0.45f)
@@ -312,74 +351,59 @@ fun NotchGlowBorderLine(
             val p7 = 1.0f - p1
             val p8 = 1.0f
 
-            // Lớp 1: Ambient diffusion glow (~5.2dp)
-            val ambientGlowBrush = Brush.horizontalGradient(
-                p0 to Color(0xFF0866FF).copy(alpha = 0f),
-                p1 to Color(0xFF0866FF).copy(alpha = 0.07f * glowIntensity),
-                p2 to Color(0xFF0866FF).copy(alpha = 0.20f * glowIntensity),
-                p3 to Color(0xFF2B7FFF).copy(alpha = 0.38f * glowIntensity),
-                p4 to Color(0xFF38BDF8).copy(alpha = 0.50f * glowIntensity),
-                p5 to Color(0xFF2B7FFF).copy(alpha = 0.38f * glowIntensity),
-                p6 to Color(0xFF0866FF).copy(alpha = 0.20f * glowIntensity),
-                p7 to Color(0xFF0866FF).copy(alpha = 0.07f * glowIntensity),
-                p8 to Color(0xFF0866FF).copy(alpha = 0f)
-            )
+            val clickSpreadExtra = clickPulse * 3.5f * d
 
-            drawPath(
-                path = linePath,
-                brush = ambientGlowBrush,
-                style = Stroke(
-                    width = (5.2f * d + clickPulse * 1.8f * d),
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                )
-            )
+            // 3. Vẽ lần lượt từng tầng Gaussian Shadow từ rộng nhất (20dp) thu nhỏ dần tới lõi
+            for (tier in SHADOW_GLOW_TIERS) {
+                if (tier.isCoreLine) {
+                    // Line nét chính siêu mảnh 1.5dp sắc sảo với ánh sáng băng tuyết ở tâm
+                    val coreLineBrush = Brush.horizontalGradient(
+                        p0 to Color(0xFF0866FF).copy(alpha = 0.20f),
+                        p1 to Color(0xFF0866FF).copy(alpha = 0.38f),
+                        p2 to Color(0xFF2B7FFF).copy(alpha = 0.70f),
+                        p3 to Color(0xFF38BDF8).copy(alpha = 0.90f),
+                        p4 to Color(0xFFE0F2FE).copy(alpha = (0.98f + clickPulse * 0.02f).coerceAtMost(1f)),
+                        p5 to Color(0xFF38BDF8).copy(alpha = 0.90f),
+                        p6 to Color(0xFF2B7FFF).copy(alpha = 0.70f),
+                        p7 to Color(0xFF0866FF).copy(alpha = 0.38f),
+                        p8 to Color(0xFF0866FF).copy(alpha = 0.20f)
+                    )
 
-            // Lớp 2: Inner soft aura (~3dp)
-            val innerAuraBrush = Brush.horizontalGradient(
-                p0 to Color(0xFF0866FF).copy(alpha = 0.04f),
-                p1 to Color(0xFF0866FF).copy(alpha = 0.12f * glowIntensity),
-                p2 to Color(0xFF2B7FFF).copy(alpha = 0.32f * glowIntensity),
-                p3 to Color(0xFF38BDF8).copy(alpha = 0.55f * glowIntensity),
-                p4 to Color(0xFF7DD3FC).copy(alpha = 0.68f * glowIntensity),
-                p5 to Color(0xFF38BDF8).copy(alpha = 0.55f * glowIntensity),
-                p6 to Color(0xFF2B7FFF).copy(alpha = 0.32f * glowIntensity),
-                p7 to Color(0xFF0866FF).copy(alpha = 0.12f * glowIntensity),
-                p8 to Color(0xFF0866FF).copy(alpha = 0.04f)
-            )
+                    drawPath(
+                        path = linePath,
+                        brush = coreLineBrush,
+                        style = Stroke(
+                            width = tier.strokeWidthDp * d,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round
+                        )
+                    )
+                } else {
+                    // Lớp ánh sáng dạng Shadow tỏa mềm khuếch tán quang học
+                    val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
+                    val shadowBrush = Brush.horizontalGradient(
+                        p0 to Color(0xFF0866FF).copy(alpha = 0f),
+                        p1 to Color(0xFF0866FF).copy(alpha = 0.25f * tierAlpha),
+                        p2 to Color(0xFF0866FF).copy(alpha = 0.55f * tierAlpha),
+                        p3 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
+                        p4 to Color(0xFF38BDF8).copy(alpha = 1.00f * tierAlpha),
+                        p5 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
+                        p6 to Color(0xFF0866FF).copy(alpha = 0.55f * tierAlpha),
+                        p7 to Color(0xFF0866FF).copy(alpha = 0.25f * tierAlpha),
+                        p8 to Color(0xFF0866FF).copy(alpha = 0f)
+                    )
 
-            drawPath(
-                path = linePath,
-                brush = innerAuraBrush,
-                style = Stroke(
-                    width = (3.0f * d),
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                )
-            )
-
-            // Lớp 3: Razor Core Line (~1.65dp)
-            val coreLineBrush = Brush.horizontalGradient(
-                p0 to Color(0xFF0866FF).copy(alpha = 0.20f),
-                p1 to Color(0xFF0866FF).copy(alpha = 0.35f),
-                p2 to Color(0xFF2B7FFF).copy(alpha = 0.68f),
-                p3 to Color(0xFF38BDF8).copy(alpha = 0.88f),
-                p4 to Color(0xFFE0F2FE).copy(alpha = (0.95f + clickPulse * 0.05f).coerceAtMost(1f)),
-                p5 to Color(0xFF38BDF8).copy(alpha = 0.88f),
-                p6 to Color(0xFF2B7FFF).copy(alpha = 0.68f),
-                p7 to Color(0xFF0866FF).copy(alpha = 0.35f),
-                p8 to Color(0xFF0866FF).copy(alpha = 0.20f)
-            )
-
-            drawPath(
-                path = linePath,
-                brush = coreLineBrush,
-                style = Stroke(
-                    width = 1.65f * d,
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                )
-            )
+                    drawPath(
+                        path = linePath,
+                        brush = shadowBrush,
+                        style = Stroke(
+                            width = tier.strokeWidthDp * d + clickSpreadExtra,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round
+                        )
+                    )
+                }
+            }
         }
     }
 }
@@ -457,10 +481,10 @@ fun CustomBottomMenuBar(
                 .fillMaxWidth()
                 .height(72.dp)
                 .shadow(
-                    elevation = 16.dp,
+                    elevation = 20.dp,
                     shape = notchShape,
-                    spotColor = Color(0xFF0866FF).copy(alpha = 0.25f),
-                    ambientColor = Color(0xFF0866FF).copy(alpha = 0.15f)
+                    spotColor = Color(0xFF0866FF).copy(alpha = 0.30f),
+                    ambientColor = Color(0xFF0866FF).copy(alpha = 0.18f)
                 ),
             shape = notchShape,
             color = surfaceColor,
