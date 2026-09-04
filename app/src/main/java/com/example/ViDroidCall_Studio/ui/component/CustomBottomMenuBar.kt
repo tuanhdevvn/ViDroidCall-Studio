@@ -109,57 +109,83 @@ enum class NavTab(val title: String, val icon: ImageVector) {
 }
 
 class BottomNavCutoutShape(
-    private val cutoutRadius: Float = 44f, // Bán kính vòng lõm (chứa nút 62dp + viền)
-    private val cornerRadius: Float = 0f   // Không bo góc trái phải
+    private val buttonRadiusDp: Float = 36f,      // Bán kính nút tròn (72dp / 2 = 36dp)
+    private val gapDp: Float = 6f,               // Khe hở đều ôm khít xung quanh nút (6dp)
+    private val buttonCenterYDp: Float = 8f,     // Tọa độ Y tâm nút so với mép trên bar (8dp)
+    private val shoulderWidthDp: Float = 7f,     // Độ rộng chuyển tiếp vai bo gọn gàng (7dp)
+    private val cornerRadiusDp: Float = 0f       // Không bo góc trái phải của bar
 ) : androidx.compose.ui.graphics.Shape {
     override fun createOutline(
         size: androidx.compose.ui.geometry.Size,
         layoutDirection: androidx.compose.ui.unit.LayoutDirection,
         density: androidx.compose.ui.unit.Density
     ): androidx.compose.ui.graphics.Outline {
+        val d = density.density
+        val width = size.width
+        val height = size.height
+        val center = width / 2f
+
+        val cRadius = cornerRadiusDp * d
+        val cutR = (buttonRadiusDp + gapDp) * d         // Bán kính vòng cung lõm (42dp)
+        val centerY = buttonCenterYDp * d               // Tâm Y của vòng tròn lõm (8dp)
+        val shoulder = shoulderWidthDp * d              // Chiều rộng vai lượn (7dp)
+        val k = 0.55228475f * cutR                      // Hằng số bezier cho cung tròn 1/4 chuẩn xác
+
+        val startNotch = center - cutR - shoulder       // Điểm bắt đầu lượn xuống
+        val endNotch = center + cutR + shoulder         // Điểm kết thúc lượn lên
+
         val path = androidx.compose.ui.graphics.Path().apply {
-            val width = size.width
-            val height = size.height
-            val center = width / 2f
-
-            val cRadius = cornerRadius * density.density
-            val cutRadius = cutoutRadius * density.density
-
-            // Điểm bắt đầu góc bo trên cùng bên trái
+            // Bắt đầu từ góc trên bên trái
             moveTo(0f, cRadius)
-            quadraticBezierTo(0f, 0f, cRadius, 0f)
+            if (cRadius > 0f) {
+                quadraticTo(0f, 0f, cRadius, 0f)
+            } else {
+                moveTo(0f, 0f)
+            }
 
-            // Đoạn cắt (notch) ở giữa bám sát hơn
-            val notchWidth = cutRadius * 2.4f
-            val notchDepth = cutRadius * 1.0f
-            val startNotch = center - notchWidth / 2f
-            val endNotch = center + notchWidth / 2f
-
+            // Đoạn thẳng tới mép bắt đầu của notch
             lineTo(startNotch, 0f)
 
-            // Đường cong võng xuống bên trái ôm sát nút
+            // 1. Vai trái: lượn mềm mại từ mép ngang vào xích đạo
             cubicTo(
-                startNotch + notchWidth * 0.15f, 0f,
-                center - cutRadius * 0.95f, notchDepth,
-                center, notchDepth
+                startNotch + shoulder * 0.55f, 0f,
+                center - cutR, centerY - shoulder * 0.45f,
+                center - cutR, centerY
             )
-            // Đường cong vòng lên bên phải ôm sát nút
+
+            // 2. Cung tròn 1/4 bên trái: ôm sát nút tròn
             cubicTo(
-                center + cutRadius * 0.95f, notchDepth,
-                endNotch - notchWidth * 0.15f, 0f,
+                center - cutR, centerY + k,
+                center - k, centerY + cutR,
+                center, centerY + cutR
+            )
+
+            // 3. Cung tròn 1/4 bên phải: ôm sát nút tròn
+            cubicTo(
+                center + k, centerY + cutR,
+                center + cutR, centerY + k,
+                center + cutR, centerY
+            )
+
+            // 4. Vai phải: lượn mềm mại từ xích đạo lên mép ngang
+            cubicTo(
+                center + cutR, centerY - shoulder * 0.45f,
+                endNotch - shoulder * 0.55f, 0f,
                 endNotch, 0f
             )
 
-            // Điểm góc bo trên cùng bên phải
+            // Mép trên bên phải
             lineTo(width - cRadius, 0f)
-            quadraticBezierTo(width, 0f, width, cRadius)
+            if (cRadius > 0f) {
+                quadraticTo(width, 0f, width, cRadius)
+            }
 
-            // Góc dưới cùng bên phải (không bo)
+            // Mép dưới bên phải
             lineTo(width, height)
 
-            // Góc dưới cùng bên trái (không bo)
+            // Mép dưới bên trái
             lineTo(0f, height)
-            
+
             close()
         }
         return androidx.compose.ui.graphics.Outline.Generic(path)
@@ -223,7 +249,7 @@ fun CustomBottomMenuBar(
                 )
 
                 // Khoảng trống ở giữa dành cho Nút Micro lõm xuống
-                Spacer(modifier = Modifier.width(72.dp))
+                Spacer(modifier = Modifier.width(88.dp))
 
                 // MỤC BÊN PHẢI: Cài đặt
                 NavItem(
@@ -240,7 +266,7 @@ fun CustomBottomMenuBar(
             isTabSelected = selectedTab == NavTab.ASSISTANT,
             isListening = isListening && selectedTab == NavTab.ASSISTANT,
             onMicClick = onMicClick,
-            modifier = Modifier.offset(y = (-32).dp)
+            modifier = Modifier.offset(y = (-28).dp)
         )
     }
 }
@@ -359,22 +385,14 @@ private fun CenterMicButton(
     onMicClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val surfaceColor = MaterialTheme.colorScheme.surface
-
     val tabSelectionScale by animateFloatAsState(
-        targetValue = if (isTabSelected) 1.06f else 0.96f,
+        targetValue = if (isTabSelected) 1.04f else 0.98f,
         animationSpec = NavTabSpring,
         label = "micTabSelectionScale"
     )
 
-    val ringAlpha by animateFloatAsState(
-        targetValue = if (isTabSelected) 0.35f else 0f,
-        animationSpec = tween(durationMillis = 280),
-        label = "micRingAlpha"
-    )
-
     val micElevation by animateDpAsState(
-        targetValue = if (isTabSelected) 16.dp else 10.dp,
+        targetValue = if (isTabSelected) 12.dp else 8.dp,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMediumLow
@@ -404,13 +422,12 @@ private fun CenterMicButton(
     )
 
     Box(
-        modifier = modifier
-            .size(88.dp),
+        modifier = modifier.size(72.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Vòng hào quang xung quanh khi đang lắng nghe hoặc ở trạng thái chờ
-        Canvas(modifier = Modifier.fillMaxWidth()) {
-            if (isListening) {
+        // Vòng hào quang xung quanh CHỈ khi đang lắng nghe (KHÔNG vẽ đĩa trắng khi nghỉ)
+        if (isListening) {
+            Canvas(modifier = Modifier.size(92.dp)) {
                 drawCircle(
                     color = AppPrimary.copy(alpha = pulseAlpha),
                     radius = size.minDimension / 2 * pulseScale
@@ -420,25 +437,13 @@ private fun CenterMicButton(
                     radius = size.minDimension / 2 * 1.15f,
                     style = Stroke(width = 2.5f)
                 )
-            } else {
-                drawCircle(
-                    color = surfaceColor,
-                    radius = size.minDimension / 2 + 3.dp.toPx()
-                )
-                if (ringAlpha > 0f) {
-                    drawCircle(
-                        color = AppPrimary.copy(alpha = ringAlpha),
-                        radius = size.minDimension / 2 * 0.92f,
-                        style = Stroke(width = 2.5f)
-                    )
-                }
             }
         }
 
         // Khối hình tròn chính màu 0xFF0866FF
         Box(
             modifier = Modifier
-                .size(76.dp)
+                .size(72.dp)
                 .graphicsLayer {
                     scaleX = tabSelectionScale
                     scaleY = tabSelectionScale
@@ -447,7 +452,7 @@ private fun CenterMicButton(
                     elevation = micElevation,
                     shape = CircleShape,
                     spotColor = AppPrimary,
-                    ambientColor = AppPrimary.copy(alpha = 0.5f)
+                    ambientColor = AppPrimary.copy(alpha = 0.4f)
                 )
                 .background(
                     brush = Brush.verticalGradient(
@@ -459,13 +464,13 @@ private fun CenterMicButton(
                     ),
                     shape = CircleShape
                 )
-                .bounceClick(scaleDown = 0.65f, onClick = onMicClick),
+                .bounceClick(scaleDown = 0.75f, onClick = onMicClick),
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo_app),
                 contentDescription = "Logo App",
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier.size(56.dp),
                 contentScale = ContentScale.Fit
             )
         }
