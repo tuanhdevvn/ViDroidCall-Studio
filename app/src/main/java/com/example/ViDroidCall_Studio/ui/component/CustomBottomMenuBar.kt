@@ -71,7 +71,7 @@ import kotlinx.coroutines.launch
  * Các hằng số hình học cho phần Cutout Notch ôm nút Floating Action Button.
  * Đảm bảo sự đồng bộ tuyệt đối giữa hình dạng cắt của Surface và đường viền phát sáng (Glow Line).
  */
-private const val BUTTON_RADIUS_DP = 36f      // Bán kính nút tròn (72dp / 2 = 36dp)
+private const val BUTTON_RADIUS_DP = 32f      // Bán kính nút tròn (64dp / 2 = 32dp, gọn gàng vừa vặn)
 private const val GAP_DP = 6f                // Khe hở đều ôm khít xung quanh nút (6dp)
 private const val BUTTON_CENTER_Y_DP = 8f    // Tọa độ Y tâm nút so với mép trên bar (8dp)
 private const val SHOULDER_WIDTH_DP = 7f     // Độ rộng chuyển tiếp vai bo mềm mại (7dp)
@@ -478,7 +478,7 @@ fun CustomBottomMenuBar(
                 )
 
                 // Khoảng trống ở giữa dành cho Nút Micro lõm xuống
-                Spacer(modifier = Modifier.width(88.dp))
+                Spacer(modifier = Modifier.width(76.dp))
 
                 // MỤC BÊN PHẢI: Cài đặt
                 NavItem(
@@ -505,7 +505,7 @@ fun CustomBottomMenuBar(
             isTabSelected = selectedTab == NavTab.ASSISTANT,
             isListening = isListening && selectedTab == NavTab.ASSISTANT,
             onMicClick = handleMicClick,
-            modifier = Modifier.offset(y = (-28).dp)
+            modifier = Modifier.offset(y = (-32).dp)
         )
     }
 }
@@ -661,12 +661,12 @@ private fun CenterMicButton(
     )
 
     Box(
-        modifier = modifier.size(72.dp),
+        modifier = modifier.size(64.dp),
         contentAlignment = Alignment.Center
     ) {
         // Vòng hào quang xung quanh CHỈ khi đang lắng nghe (KHÔNG vẽ đĩa trắng khi nghỉ)
         if (isListening) {
-            Canvas(modifier = Modifier.size(92.dp)) {
+            Canvas(modifier = Modifier.size(82.dp)) {
                 drawCircle(
                     color = AppPrimary.copy(alpha = pulseAlpha),
                     radius = size.minDimension / 2 * pulseScale
@@ -682,7 +682,7 @@ private fun CenterMicButton(
         // Khối hình tròn chính màu 0xFF0866FF
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(64.dp)
                 .graphicsLayer {
                     scaleX = tabSelectionScale
                     scaleY = tabSelectionScale
@@ -709,7 +709,7 @@ private fun CenterMicButton(
             Image(
                 painter = painterResource(id = R.drawable.logo_app),
                 contentDescription = "Logo App",
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(48.dp),
                 contentScale = ContentScale.Fit
             )
         }
