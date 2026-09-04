@@ -221,19 +221,20 @@ private data class GlowShadowTier(
 )
 
 private val SHADOW_GLOW_TIERS = listOf(
-    GlowShadowTier(strokeWidthDp = 26.0f, alphaMultiplier = 0.045f), // Hào quang ngoại vi xa nhất
-    GlowShadowTier(strokeWidthDp = 20.0f, alphaMultiplier = 0.070f), // Lớp shadow tỏa rộng
-    GlowShadowTier(strokeWidthDp = 15.0f, alphaMultiplier = 0.100f), // Lớp shadow trung gian
-    GlowShadowTier(strokeWidthDp = 11.0f, alphaMultiplier = 0.140f), // Lớp shadow cận viền
-    GlowShadowTier(strokeWidthDp = 7.5f,  alphaMultiplier = 0.190f), // Lớp ánh sáng mờ mịn
-    GlowShadowTier(strokeWidthDp = 4.5f,  alphaMultiplier = 0.250f)  // Lớp tâm mờ dịu, không hề có nét nhọn
+    GlowShadowTier(strokeWidthDp = 24.0f, alphaMultiplier = 0.08f), // Hào quang ngoại vi khuếch tán xa nhất
+    GlowShadowTier(strokeWidthDp = 18.0f, alphaMultiplier = 0.12f), // Lớp shadow tỏa rộng
+    GlowShadowTier(strokeWidthDp = 13.0f, alphaMultiplier = 0.18f), // Lớp shadow trung gian
+    GlowShadowTier(strokeWidthDp = 9.0f,  alphaMultiplier = 0.26f), // Lớp shadow cận viền
+    GlowShadowTier(strokeWidthDp = 6.0f,  alphaMultiplier = 0.36f), // Lớp hào quang rõ nét
+    GlowShadowTier(strokeWidthDp = 3.8f,  alphaMultiplier = 0.50f), // Lớp sáng tâm mờ mượt
+    GlowShadowTier(strokeWidthDp = 2.4f,  alphaMultiplier = 0.65f)  // Lớp lõi shadow có độ đậm rõ ràng nhưng viền vẫn êm
 )
 
 /**
  * Hiệu ứng ánh sáng dạng ĐỔ BÓNG MỜ (Soft Shadow Glow) chạy dọc mép trên và rãnh notch:
- * - Hoàn toàn không có đường kẻ rõ nét / nét bút cứng.
- * - Ánh sáng tỏa khói mờ ảo (smoky / hazy aura) ôm lấy Floating Action Button.
- * - Gradient alpha tinh tế: tập trung êm dịu quanh rãnh notch và tan biến nhẹ dần về hai biên.
+ * - Ánh sáng dạng Shadow rõ nét, có độ sâu và nổi bật vừa vặn.
+ * - Các tầng khuếch tán quang học Gaussian giúp shadow tan êm vào nền, không bị viền mực cứng.
+ * - Vùng hốc nút tròn có hào quang tỏa tròn (Cradle Aura) ôm lấy Floating Action Button.
  *
  * Hỗ trợ các animation mượt 60 FPS:
  * - Entrance Reveal: Lan tỏa từ tâm ra 2 biên khi xuất hiện.
@@ -312,16 +313,16 @@ fun NotchGlowBorderLine(
             right = rightClip,
             bottom = size.height + 35f * d
         ) {
-            val glowIntensity = (pulseFactor * 0.75f + clickPulse * 0.65f).coerceIn(0.35f, 1.8f)
+            val glowIntensity = (pulseFactor * 0.85f + clickPulse * 0.70f).coerceIn(0.45f, 2.0f)
 
             // 1. Ánh sáng dạng Shadow tỏa tròn mềm mại bên trong lòng rãnh notch (Notch Cradle Aura)
             val cradleAuraRadius = cutR + shoulder * 0.4f
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF38BDF8).copy(alpha = (0.16f * glowIntensity).coerceIn(0f, 0.32f)),
-                        Color(0xFF2B7FFF).copy(alpha = (0.08f * glowIntensity).coerceIn(0f, 0.20f)),
-                        Color(0xFF0866FF).copy(alpha = (0.03f * glowIntensity).coerceIn(0f, 0.08f)),
+                        Color(0xFF38BDF8).copy(alpha = (0.28f * glowIntensity).coerceIn(0f, 0.45f)),
+                        Color(0xFF2B7FFF).copy(alpha = (0.16f * glowIntensity).coerceIn(0f, 0.30f)),
+                        Color(0xFF0866FF).copy(alpha = (0.06f * glowIntensity).coerceIn(0f, 0.15f)),
                         Color.Transparent
                     ),
                     center = androidx.compose.ui.geometry.Offset(center, centerY),
@@ -349,18 +350,18 @@ fun NotchGlowBorderLine(
 
             val clickSpreadExtra = clickPulse * 4f * d
 
-            // 3. Vẽ các tầng Gaussian Shadow mờ mượt (hoàn toàn không vẽ nét kẻ cứng)
+            // 3. Vẽ các tầng Gaussian Shadow (độ đậm rõ nét hơn nhưng viền vẫn êm mượt tự nhiên)
             for (tier in SHADOW_GLOW_TIERS) {
                 val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
                 val shadowBrush = Brush.horizontalGradient(
                     p0 to Color(0xFF0866FF).copy(alpha = 0f),
-                    p1 to Color(0xFF0866FF).copy(alpha = 0.12f * tierAlpha),
-                    p2 to Color(0xFF2B7FFF).copy(alpha = 0.35f * tierAlpha),
-                    p3 to Color(0xFF38BDF8).copy(alpha = 0.65f * tierAlpha),
-                    p4 to Color(0xFF7DD3FC).copy(alpha = 0.85f * tierAlpha),
-                    p5 to Color(0xFF38BDF8).copy(alpha = 0.65f * tierAlpha),
-                    p6 to Color(0xFF2B7FFF).copy(alpha = 0.35f * tierAlpha),
-                    p7 to Color(0xFF0866FF).copy(alpha = 0.12f * tierAlpha),
+                    p1 to Color(0xFF0866FF).copy(alpha = 0.28f * tierAlpha),
+                    p2 to Color(0xFF2B7FFF).copy(alpha = 0.55f * tierAlpha),
+                    p3 to Color(0xFF38BDF8).copy(alpha = 0.85f * tierAlpha),
+                    p4 to Color(0xFF38BDF8).copy(alpha = 1.00f * tierAlpha),
+                    p5 to Color(0xFF38BDF8).copy(alpha = 0.85f * tierAlpha),
+                    p6 to Color(0xFF2B7FFF).copy(alpha = 0.55f * tierAlpha),
+                    p7 to Color(0xFF0866FF).copy(alpha = 0.28f * tierAlpha),
                     p8 to Color(0xFF0866FF).copy(alpha = 0f)
                 )
 
