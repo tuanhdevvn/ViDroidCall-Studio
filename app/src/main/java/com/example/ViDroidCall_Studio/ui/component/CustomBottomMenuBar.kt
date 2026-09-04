@@ -222,12 +222,12 @@ private data class GlowShadowTier(
 )
 
 private val SHADOW_GLOW_TIERS = listOf(
-    GlowShadowTier(strokeWidthDp = 16.0f, alphaMultiplier = 0.08f), // Đỉnh làn sương (~8dp phía trên mép)
-    GlowShadowTier(strokeWidthDp = 11.0f, alphaMultiplier = 0.14f), // Tầng sương tỏa rộng (~5.5dp)
-    GlowShadowTier(strokeWidthDp = 7.0f,  alphaMultiplier = 0.22f), // Tầng sương trung gian (~3.5dp)
-    GlowShadowTier(strokeWidthDp = 4.0f,  alphaMultiplier = 0.35f), // Tầng sương cận mép (~2.0dp)
-    GlowShadowTier(strokeWidthDp = 2.0f,  alphaMultiplier = 0.55f), // Chân sương rõ nét (~1.0dp)
-    GlowShadowTier(strokeWidthDp = 1.2f,  alphaMultiplier = 0.75f)  // Đường viền mép đậm đà, mảnh mai (~0.6dp)
+    GlowShadowTier(strokeWidthDp = 18.0f, alphaMultiplier = 0.14f), // Đỉnh làn sương (~9dp phía trên mép)
+    GlowShadowTier(strokeWidthDp = 13.0f, alphaMultiplier = 0.22f), // Tầng sương tỏa rộng (~6.5dp)
+    GlowShadowTier(strokeWidthDp = 8.5f,  alphaMultiplier = 0.35f), // Tầng sương trung gian (~4.2dp)
+    GlowShadowTier(strokeWidthDp = 5.0f,  alphaMultiplier = 0.52f), // Tầng sương cận mép (~2.5dp)
+    GlowShadowTier(strokeWidthDp = 2.5f,  alphaMultiplier = 0.72f), // Chân sương rõ nét (~1.2dp)
+    GlowShadowTier(strokeWidthDp = 1.4f,  alphaMultiplier = 0.90f)  // Đường viền mép bừng sáng, mảnh mai (~0.7dp)
 )
 
 /**
@@ -349,7 +349,7 @@ fun NotchGlowBorderLine(
         ) {
             // Giới hạn vùng vẽ chỉ ở phía trên thanh Bar (Hiệu ứng sương sớm bốc lên)
             clipPath(aboveBarPath) {
-                val glowIntensity = (pulseFactor * 0.80f + clickPulse * 0.45f).coerceIn(0.40f, 1.5f)
+                val glowIntensity = (pulseFactor * 0.90f + clickPulse * 0.50f).coerceIn(0.60f, 1.8f)
 
                 // Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
                 val notchHalfWidth = cutR + shoulder
@@ -374,13 +374,13 @@ fun NotchGlowBorderLine(
                     val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
                     val shadowBrush = Brush.horizontalGradient(
                         p0 to Color(0xFF0866FF).copy(alpha = 0f),
-                        p1 to Color(0xFF0866FF).copy(alpha = 0.24f * tierAlpha),
-                        p2 to Color(0xFF2B7FFF).copy(alpha = 0.52f * tierAlpha),
-                        p3 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
-                        p4 to Color(0xFF38BDF8).copy(alpha = 0.95f * tierAlpha),
-                        p5 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
-                        p6 to Color(0xFF2B7FFF).copy(alpha = 0.52f * tierAlpha),
-                        p7 to Color(0xFF0866FF).copy(alpha = 0.24f * tierAlpha),
+                        p1 to Color(0xFF0866FF).copy(alpha = 0.35f * tierAlpha),
+                        p2 to Color(0xFF2B7FFF).copy(alpha = 0.65f * tierAlpha),
+                        p3 to Color(0xFF2B7FFF).copy(alpha = 0.88f * tierAlpha),
+                        p4 to Color(0xFF38BDF8).copy(alpha = 1.00f * tierAlpha),
+                        p5 to Color(0xFF2B7FFF).copy(alpha = 0.88f * tierAlpha),
+                        p6 to Color(0xFF2B7FFF).copy(alpha = 0.65f * tierAlpha),
+                        p7 to Color(0xFF0866FF).copy(alpha = 0.35f * tierAlpha),
                         p8 to Color(0xFF0866FF).copy(alpha = 0f)
                     )
 
@@ -434,7 +434,7 @@ fun CustomBottomMenuBar(
     // 2. Animation nhịp thở phát sáng nhẹ nhàng (2.6 giây / chu kỳ)
     val infiniteTransition = rememberInfiniteTransition(label = "GlowPulseTransition")
     val pulseFactor by infiniteTransition.animateFloat(
-        initialValue = 0.65f,
+        initialValue = 0.72f,
         targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
             animation = tween(1300, easing = FastOutSlowInEasing),
