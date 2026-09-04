@@ -1,9 +1,11 @@
 package com.example.ViDroidCall_Studio.ui.component
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -36,16 +38,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -57,6 +65,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ViDroidCall_Studio.R
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
+import kotlinx.coroutines.launch
+
+/**
+ * Các hằng số hình học cho phần Cutout Notch ôm nút Floating Action Button.
+ * Đảm bảo sự đồng bộ tuyệt đối giữa hình dạng cắt của Surface và đường viền phát sáng (Glow Line).
+ */
+private const val BUTTON_RADIUS_DP = 36f      // Bán kính nút tròn (72dp / 2 = 36dp)
+private const val GAP_DP = 6f                // Khe hở đều ôm khít xung quanh nút (6dp)
+private const val BUTTON_CENTER_Y_DP = 8f    // Tọa độ Y tâm nút so với mép trên bar (8dp)
+private const val SHOULDER_WIDTH_DP = 7f     // Độ rộng chuyển tiếp vai bo mềm mại (7dp)
 
 /**
  * Modifier tạo hiệu ứng co giãn (Bounce / Scale In-Out) mượt mà khi chạm vào và nhả ra.
@@ -109,11 +127,11 @@ enum class NavTab(val title: String, val icon: ImageVector) {
 }
 
 class BottomNavCutoutShape(
-    private val buttonRadiusDp: Float = 36f,      // Bán kính nút tròn (72dp / 2 = 36dp)
-    private val gapDp: Float = 6f,               // Khe hở đều ôm khít xung quanh nút (6dp)
-    private val buttonCenterYDp: Float = 8f,     // Tọa độ Y tâm nút so với mép trên bar (8dp)
-    private val shoulderWidthDp: Float = 7f,     // Độ rộng chuyển tiếp vai bo gọn gàng (7dp)
-    private val cornerRadiusDp: Float = 0f       // Không bo góc trái phải của bar
+    private val buttonRadiusDp: Float = BUTTON_RADIUS_DP,
+    private val gapDp: Float = GAP_DP,
+    private val buttonCenterYDp: Float = BUTTON_CENTER_Y_DP,
+    private val shoulderWidthDp: Float = SHOULDER_WIDTH_DP,
+    private val cornerRadiusDp: Float = 0f
 ) : androidx.compose.ui.graphics.Shape {
     override fun createOutline(
         size: androidx.compose.ui.geometry.Size,
@@ -193,12 +211,187 @@ class BottomNavCutoutShape(
 }
 
 /**
+ * Line trang trí viền trên uốn cong mềm mại ôm trọn Floating Action Button ở giữa.
+ * Bao gồm 3 lớp vẽ tinh tế:
+ * 1. Lớp Glow mềm khuếch tán diện rộng (Ambient Diffusion Glow, ~5.2dp)
+ * 2. Lớp Glow trung tâm sáng dịu (Inner Soft Aura, ~3dp)
+ * 3. Line chính siêu mảnh (Razor Core Line, ~1.65dp) với gradient sắc nét, sáng rực rỡ ở notch và dịu dần ra 2 mép.
+ *
+ * Hỗ trợ các animation mượt 60 FPS:
+ * - Entrance Reveal: Lan tỏa từ tâm ra 2 biên khi xuất hiện.
+ * - Breathing Pulse: Nhịp thở phát sáng êm dịu (chu kỳ ~2.6s).
+ * - Click Pulse: Bừng sáng nhẹ nhàng (~220ms) khi nhấn nút Micro.
+ */
+@Composable
+fun NotchGlowBorderLine(
+    modifier: Modifier = Modifier,
+    revealProgress: Float = 1f,
+    pulseFactor: Float = 1f,
+    clickPulse: Float = 0f,
+    buttonRadiusDp: Float = BUTTON_RADIUS_DP,
+    gapDp: Float = GAP_DP,
+    buttonCenterYDp: Float = BUTTON_CENTER_Y_DP,
+    shoulderWidthDp: Float = SHOULDER_WIDTH_DP
+) {
+    Canvas(modifier = modifier) {
+        val d = density
+        val width = size.width
+        val center = width / 2f
+
+        val cutR = (buttonRadiusDp + gapDp) * d
+        val centerY = buttonCenterYDp * d
+        val shoulder = shoulderWidthDp * d
+        val k = 0.55228475f * cutR
+
+        val startNotch = center - cutR - shoulder
+        val endNotch = center + cutR + shoulder
+
+        // Xây dựng đường Path uốn lượn ôm sát nút tròn
+        val linePath = Path().apply {
+            moveTo(0f, 0f)
+            lineTo(startNotch, 0f)
+
+            // Vai trái
+            cubicTo(
+                startNotch + shoulder * 0.55f, 0f,
+                center - cutR, centerY - shoulder * 0.45f,
+                center - cutR, centerY
+            )
+
+            // Cung tròn 1/4 bên trái
+            cubicTo(
+                center - cutR, centerY + k,
+                center - k, centerY + cutR,
+                center, centerY + cutR
+            )
+
+            // Cung tròn 1/4 bên phải
+            cubicTo(
+                center + k, centerY + cutR,
+                center + cutR, centerY + k,
+                center + cutR, centerY
+            )
+
+            // Vai phải
+            cubicTo(
+                center + cutR, centerY - shoulder * 0.45f,
+                endNotch - shoulder * 0.55f, 0f,
+                endNotch, 0f
+            )
+
+            lineTo(width, 0f)
+        }
+
+        // Entrance animation: Lan tỏa từ tâm ra 2 mép
+        val clampedReveal = revealProgress.coerceIn(0f, 1f)
+        val halfReveal = (width / 2f) * clampedReveal
+        val leftClip = center - halfReveal
+        val rightClip = center + halfReveal
+
+        clipRect(
+            left = leftClip,
+            top = -20f * d,
+            right = rightClip,
+            bottom = size.height + 20f * d
+        ) {
+            val glowIntensity = (pulseFactor * 0.8f + clickPulse * 0.65f).coerceIn(0.4f, 1.8f)
+
+            // Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
+            val notchHalfWidth = cutR + shoulder
+            val shoulderFrac = (notchHalfWidth / width).coerceIn(0.08f, 0.28f)
+            val fadeFrac = (shoulderFrac + (36f * d / width)).coerceIn(shoulderFrac + 0.02f, 0.45f)
+            val innerFrac = (shoulderFrac * 0.45f).coerceIn(0.02f, shoulderFrac - 0.01f)
+
+            val p0 = 0.0f
+            val p1 = (0.5f - fadeFrac).coerceAtLeast(0.01f)
+            val p2 = (0.5f - shoulderFrac).coerceIn(p1 + 0.01f, 0.45f)
+            val p3 = (0.5f - innerFrac).coerceIn(p2 + 0.01f, 0.49f)
+            val p4 = 0.5f
+            val p5 = 1.0f - p3
+            val p6 = 1.0f - p2
+            val p7 = 1.0f - p1
+            val p8 = 1.0f
+
+            // Lớp 1: Ambient diffusion glow (~5.2dp)
+            val ambientGlowBrush = Brush.horizontalGradient(
+                p0 to Color(0xFF0866FF).copy(alpha = 0f),
+                p1 to Color(0xFF0866FF).copy(alpha = 0.07f * glowIntensity),
+                p2 to Color(0xFF0866FF).copy(alpha = 0.20f * glowIntensity),
+                p3 to Color(0xFF2B7FFF).copy(alpha = 0.38f * glowIntensity),
+                p4 to Color(0xFF38BDF8).copy(alpha = 0.50f * glowIntensity),
+                p5 to Color(0xFF2B7FFF).copy(alpha = 0.38f * glowIntensity),
+                p6 to Color(0xFF0866FF).copy(alpha = 0.20f * glowIntensity),
+                p7 to Color(0xFF0866FF).copy(alpha = 0.07f * glowIntensity),
+                p8 to Color(0xFF0866FF).copy(alpha = 0f)
+            )
+
+            drawPath(
+                path = linePath,
+                brush = ambientGlowBrush,
+                style = Stroke(
+                    width = (5.2f * d + clickPulse * 1.8f * d),
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
+            )
+
+            // Lớp 2: Inner soft aura (~3dp)
+            val innerAuraBrush = Brush.horizontalGradient(
+                p0 to Color(0xFF0866FF).copy(alpha = 0.04f),
+                p1 to Color(0xFF0866FF).copy(alpha = 0.12f * glowIntensity),
+                p2 to Color(0xFF2B7FFF).copy(alpha = 0.32f * glowIntensity),
+                p3 to Color(0xFF38BDF8).copy(alpha = 0.55f * glowIntensity),
+                p4 to Color(0xFF7DD3FC).copy(alpha = 0.68f * glowIntensity),
+                p5 to Color(0xFF38BDF8).copy(alpha = 0.55f * glowIntensity),
+                p6 to Color(0xFF2B7FFF).copy(alpha = 0.32f * glowIntensity),
+                p7 to Color(0xFF0866FF).copy(alpha = 0.12f * glowIntensity),
+                p8 to Color(0xFF0866FF).copy(alpha = 0.04f)
+            )
+
+            drawPath(
+                path = linePath,
+                brush = innerAuraBrush,
+                style = Stroke(
+                    width = (3.0f * d),
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
+            )
+
+            // Lớp 3: Razor Core Line (~1.65dp)
+            val coreLineBrush = Brush.horizontalGradient(
+                p0 to Color(0xFF0866FF).copy(alpha = 0.20f),
+                p1 to Color(0xFF0866FF).copy(alpha = 0.35f),
+                p2 to Color(0xFF2B7FFF).copy(alpha = 0.68f),
+                p3 to Color(0xFF38BDF8).copy(alpha = 0.88f),
+                p4 to Color(0xFFE0F2FE).copy(alpha = (0.95f + clickPulse * 0.05f).coerceAtMost(1f)),
+                p5 to Color(0xFF38BDF8).copy(alpha = 0.88f),
+                p6 to Color(0xFF2B7FFF).copy(alpha = 0.68f),
+                p7 to Color(0xFF0866FF).copy(alpha = 0.35f),
+                p8 to Color(0xFF0866FF).copy(alpha = 0.20f)
+            )
+
+            drawPath(
+                path = linePath,
+                brush = coreLineBrush,
+                style = Stroke(
+                    width = 1.65f * d,
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
+            )
+        }
+    }
+}
+
+/**
  * Thanh menu điều hướng phía dưới (Custom Bottom Navigation Bar)
  * - Tông màu chủ đạo: 0xFF0866FF & Theme Surface
  * - Phần hình tròn ở giữa là Nút Micro nổi bật
  * - Bên trái: Lịch sử lệnh
  * - Bên phải: Cài đặt
  * - Hiệu ứng chạm phóng to / thu nhỏ linh hoạt (Bounce Scale animation)
+ * - Đường viền phát sáng NotchGlowBorderLine uốn cong ôm trọn FAB
  */
 @Composable
 fun CustomBottomMenuBar(
@@ -209,6 +402,47 @@ fun CustomBottomMenuBar(
     modifier: Modifier = Modifier
 ) {
     val surfaceColor = MaterialTheme.colorScheme.surface
+    val coroutineScope = rememberCoroutineScope()
+
+    // 1. Animation xuất hiện (Entrance Reveal) từ giữa lan tỏa ra 2 bên
+    val revealProgress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        revealProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = 600,
+                easing = FastOutSlowInEasing
+            )
+        )
+    }
+
+    // 2. Animation nhịp thở phát sáng nhẹ nhàng (2.6 giây / chu kỳ)
+    val infiniteTransition = rememberInfiniteTransition(label = "GlowPulseTransition")
+    val pulseFactor by infiniteTransition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1300, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowPulseFactor"
+    )
+
+    // 3. Animation phản hồi khi bấm nút tròn Micro (tăng nhẹ glow 150-250ms rồi trở về bình thường)
+    val clickPulseAlpha = remember { Animatable(0f) }
+    val handleMicClick: () -> Unit = {
+        coroutineScope.launch {
+            clickPulseAlpha.snapTo(1f)
+            clickPulseAlpha.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(
+                    durationMillis = 220,
+                    easing = FastOutSlowInEasing
+                )
+            )
+        }
+        onMicClick()
+    }
 
     Box(
         modifier = modifier
@@ -216,7 +450,7 @@ fun CustomBottomMenuBar(
         contentAlignment = Alignment.BottomCenter
     ) {
         val notchShape = remember { BottomNavCutoutShape() }
-        
+
         // Thanh Nền Menu chính
         Surface(
             modifier = Modifier
@@ -230,7 +464,7 @@ fun CustomBottomMenuBar(
                 ),
             shape = notchShape,
             color = surfaceColor,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+            border = null,
             tonalElevation = 0.dp
         ) {
             Row(
@@ -261,11 +495,21 @@ fun CustomBottomMenuBar(
             }
         }
 
+        // Line trang trí uốn cong ôm Floating Action Button với hiệu ứng Glow hiện đại
+        NotchGlowBorderLine(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp),
+            revealProgress = revealProgress.value,
+            pulseFactor = if (isListening) pulseFactor * 1.2f else pulseFactor,
+            clickPulse = clickPulseAlpha.value
+        )
+
         // NÚT PHẦN TRÒN Ở GIỮA (MICROPHONE FAB)
         CenterMicButton(
             isTabSelected = selectedTab == NavTab.ASSISTANT,
             isListening = isListening && selectedTab == NavTab.ASSISTANT,
-            onMicClick = onMicClick,
+            onMicClick = handleMicClick,
             modifier = Modifier.offset(y = (-28).dp)
         )
     }
