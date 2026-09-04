@@ -266,9 +266,9 @@ fun NotchGlowBorderLine(
         val startNotch = center - cutR - shoulder
         val endNotch = center + cutR + shoulder
 
-        // 1. Đường Path chạy theo mép trên và rãnh notch
+        // 1. Đường Path chạy theo mép trên và rãnh notch (trải dài toàn bộ chiều ngang)
         val linePath = Path().apply {
-            moveTo(0f, 0f)
+            moveTo(-10f * d, 0f)
             lineTo(startNotch, 0f)
 
             // Vai trái
@@ -299,7 +299,7 @@ fun NotchGlowBorderLine(
                 endNotch, 0f
             )
 
-            lineTo(width, 0f)
+            lineTo(width + 10f * d, 0f)
         }
 
         // 2. Vùng giới hạn CHỈ PHÍA TRÊN thanh Bar (Above-Bar Clipping Path)
@@ -338,8 +338,8 @@ fun NotchGlowBorderLine(
         // Entrance animation: Lan tỏa từ tâm ra 2 mép
         val clampedReveal = revealProgress.coerceIn(0f, 1f)
         val halfReveal = (width / 2f) * clampedReveal
-        val leftClip = center - halfReveal
-        val rightClip = center + halfReveal
+        val leftClip = if (clampedReveal >= 0.999f) -20f * d else center - halfReveal
+        val rightClip = if (clampedReveal >= 0.999f) width + 20f * d else center + halfReveal
 
         clipRect(
             left = leftClip,
@@ -354,34 +354,29 @@ fun NotchGlowBorderLine(
                 // Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
                 val notchHalfWidth = cutR + shoulder
                 val shoulderFrac = (notchHalfWidth / width).coerceIn(0.08f, 0.28f)
-                val fadeFrac = (shoulderFrac + (36f * d / width)).coerceIn(shoulderFrac + 0.02f, 0.45f)
                 val innerFrac = (shoulderFrac * 0.45f).coerceIn(0.02f, shoulderFrac - 0.01f)
 
                 val p0 = 0.0f
-                val p1 = (0.5f - fadeFrac).coerceAtLeast(0.01f)
-                val p2 = (0.5f - shoulderFrac).coerceIn(p1 + 0.01f, 0.45f)
-                val p3 = (0.5f - innerFrac).coerceIn(p2 + 0.01f, 0.49f)
-                val p4 = 0.5f
-                val p5 = 1.0f - p3
-                val p6 = 1.0f - p2
-                val p7 = 1.0f - p1
-                val p8 = 1.0f
+                val p1 = (0.5f - shoulderFrac).coerceIn(0.05f, 0.45f)
+                val p2 = (0.5f - innerFrac).coerceIn(p1 + 0.01f, 0.49f)
+                val p3 = 0.5f
+                val p4 = 1.0f - p2
+                val p5 = 1.0f - p1
+                val p6 = 1.0f
 
                 val clickSpreadExtra = clickPulse * 0.8f * d
 
-                // Vẽ các tầng sương sớm tỏa lên phía trên
+                // Vẽ các tầng sương sớm tỏa lên phía trên chạy trọn vẹn toàn bộ chiều ngang thanh bar
                 for (tier in SHADOW_GLOW_TIERS) {
                     val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
                     val shadowBrush = Brush.horizontalGradient(
-                        p0 to Color(0xFF0866FF).copy(alpha = 0f),
-                        p1 to Color(0xFF0866FF).copy(alpha = 0.28f * tierAlpha),
-                        p2 to Color(0xFF2B7FFF).copy(alpha = 0.58f * tierAlpha),
-                        p3 to Color(0xFF2B7FFF).copy(alpha = 0.82f * tierAlpha),
-                        p4 to Color(0xFF38BDF8).copy(alpha = 0.95f * tierAlpha),
-                        p5 to Color(0xFF2B7FFF).copy(alpha = 0.82f * tierAlpha),
-                        p6 to Color(0xFF2B7FFF).copy(alpha = 0.58f * tierAlpha),
-                        p7 to Color(0xFF0866FF).copy(alpha = 0.28f * tierAlpha),
-                        p8 to Color(0xFF0866FF).copy(alpha = 0f)
+                        p0 to Color(0xFF2B7FFF).copy(alpha = 0.40f * tierAlpha),
+                        p1 to Color(0xFF2B7FFF).copy(alpha = 0.62f * tierAlpha),
+                        p2 to Color(0xFF2B7FFF).copy(alpha = 0.82f * tierAlpha),
+                        p3 to Color(0xFF38BDF8).copy(alpha = 0.95f * tierAlpha),
+                        p4 to Color(0xFF2B7FFF).copy(alpha = 0.82f * tierAlpha),
+                        p5 to Color(0xFF2B7FFF).copy(alpha = 0.62f * tierAlpha),
+                        p6 to Color(0xFF2B7FFF).copy(alpha = 0.40f * tierAlpha)
                     )
 
                     drawPath(
