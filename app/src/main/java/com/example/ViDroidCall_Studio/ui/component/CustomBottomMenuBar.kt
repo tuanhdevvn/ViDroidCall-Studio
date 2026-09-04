@@ -221,20 +221,18 @@ private data class GlowShadowTier(
 )
 
 private val SHADOW_GLOW_TIERS = listOf(
-    GlowShadowTier(strokeWidthDp = 24.0f, alphaMultiplier = 0.08f), // Hào quang ngoại vi khuếch tán xa nhất
-    GlowShadowTier(strokeWidthDp = 18.0f, alphaMultiplier = 0.12f), // Lớp shadow tỏa rộng
-    GlowShadowTier(strokeWidthDp = 13.0f, alphaMultiplier = 0.18f), // Lớp shadow trung gian
-    GlowShadowTier(strokeWidthDp = 9.0f,  alphaMultiplier = 0.26f), // Lớp shadow cận viền
-    GlowShadowTier(strokeWidthDp = 6.0f,  alphaMultiplier = 0.36f), // Lớp hào quang rõ nét
-    GlowShadowTier(strokeWidthDp = 3.8f,  alphaMultiplier = 0.50f), // Lớp sáng tâm mờ mượt
-    GlowShadowTier(strokeWidthDp = 2.4f,  alphaMultiplier = 0.65f)  // Lớp lõi shadow có độ đậm rõ ràng nhưng viền vẫn êm
+    GlowShadowTier(strokeWidthDp = 14.0f, alphaMultiplier = 0.06f), // Hào quang ngoại vi khuếch tán nhẹ
+    GlowShadowTier(strokeWidthDp = 10.0f, alphaMultiplier = 0.12f), // Lớp shadow tỏa rộng vừa phải
+    GlowShadowTier(strokeWidthDp = 6.5f,  alphaMultiplier = 0.20f), // Lớp shadow trung gian
+    GlowShadowTier(strokeWidthDp = 4.0f,  alphaMultiplier = 0.32f), // Lớp hào quang ôm sát
+    GlowShadowTier(strokeWidthDp = 2.2f,  alphaMultiplier = 0.46f)  // Lớp lõi shadow mờ êm, không sắc cạnh
 )
 
 /**
  * Hiệu ứng ánh sáng dạng ĐỔ BÓNG MỜ (Soft Shadow Glow) chạy dọc mép trên và rãnh notch:
- * - Ánh sáng dạng Shadow rõ nét, có độ sâu và nổi bật vừa vặn.
- * - Các tầng khuếch tán quang học Gaussian giúp shadow tan êm vào nền, không bị viền mực cứng.
- * - Vùng hốc nút tròn có hào quang tỏa tròn (Cradle Aura) ôm lấy Floating Action Button.
+ * - Ánh sáng dạng Shadow thanh mảnh, tinh tế, bám khít theo đường cong của rãnh notch.
+ * - Loại bỏ hoàn toàn các hình vẽ thừa / vệt tròn thừa bên ngoài.
+ * - Gradient alpha tự nhiên: tập trung êm dịu quanh rãnh notch và tan dần về hai mép.
  *
  * Hỗ trợ các animation mượt 60 FPS:
  * - Entrance Reveal: Lan tỏa từ tâm ra 2 biên khi xuất hiện.
@@ -309,30 +307,13 @@ fun NotchGlowBorderLine(
 
         clipRect(
             left = leftClip,
-            top = -35f * d,
+            top = -25f * d,
             right = rightClip,
-            bottom = size.height + 35f * d
+            bottom = size.height + 25f * d
         ) {
-            val glowIntensity = (pulseFactor * 0.85f + clickPulse * 0.70f).coerceIn(0.45f, 2.0f)
+            val glowIntensity = (pulseFactor * 0.75f + clickPulse * 0.45f).coerceIn(0.35f, 1.4f)
 
-            // 1. Ánh sáng dạng Shadow tỏa tròn mềm mại bên trong lòng rãnh notch (Notch Cradle Aura)
-            val cradleAuraRadius = cutR + shoulder * 0.4f
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF38BDF8).copy(alpha = (0.28f * glowIntensity).coerceIn(0f, 0.45f)),
-                        Color(0xFF2B7FFF).copy(alpha = (0.16f * glowIntensity).coerceIn(0f, 0.30f)),
-                        Color(0xFF0866FF).copy(alpha = (0.06f * glowIntensity).coerceIn(0f, 0.15f)),
-                        Color.Transparent
-                    ),
-                    center = androidx.compose.ui.geometry.Offset(center, centerY),
-                    radius = cradleAuraRadius
-                ),
-                center = androidx.compose.ui.geometry.Offset(center, centerY),
-                radius = cradleAuraRadius
-            )
-
-            // 2. Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
+            // Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
             val notchHalfWidth = cutR + shoulder
             val shoulderFrac = (notchHalfWidth / width).coerceIn(0.08f, 0.28f)
             val fadeFrac = (shoulderFrac + (36f * d / width)).coerceIn(shoulderFrac + 0.02f, 0.45f)
@@ -348,20 +329,20 @@ fun NotchGlowBorderLine(
             val p7 = 1.0f - p1
             val p8 = 1.0f
 
-            val clickSpreadExtra = clickPulse * 4f * d
+            val clickSpreadExtra = clickPulse * 1.5f * d
 
-            // 3. Vẽ các tầng Gaussian Shadow (độ đậm rõ nét hơn nhưng viền vẫn êm mượt tự nhiên)
+            // Vẽ các tầng Gaussian Shadow thuần túy bám sát đường cong (không có hình tròn thừa)
             for (tier in SHADOW_GLOW_TIERS) {
                 val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
                 val shadowBrush = Brush.horizontalGradient(
                     p0 to Color(0xFF0866FF).copy(alpha = 0f),
-                    p1 to Color(0xFF0866FF).copy(alpha = 0.28f * tierAlpha),
-                    p2 to Color(0xFF2B7FFF).copy(alpha = 0.55f * tierAlpha),
-                    p3 to Color(0xFF38BDF8).copy(alpha = 0.85f * tierAlpha),
-                    p4 to Color(0xFF38BDF8).copy(alpha = 1.00f * tierAlpha),
-                    p5 to Color(0xFF38BDF8).copy(alpha = 0.85f * tierAlpha),
-                    p6 to Color(0xFF2B7FFF).copy(alpha = 0.55f * tierAlpha),
-                    p7 to Color(0xFF0866FF).copy(alpha = 0.28f * tierAlpha),
+                    p1 to Color(0xFF0866FF).copy(alpha = 0.20f * tierAlpha),
+                    p2 to Color(0xFF2B7FFF).copy(alpha = 0.45f * tierAlpha),
+                    p3 to Color(0xFF38BDF8).copy(alpha = 0.72f * tierAlpha),
+                    p4 to Color(0xFF38BDF8).copy(alpha = 0.88f * tierAlpha),
+                    p5 to Color(0xFF38BDF8).copy(alpha = 0.72f * tierAlpha),
+                    p6 to Color(0xFF2B7FFF).copy(alpha = 0.45f * tierAlpha),
+                    p7 to Color(0xFF0866FF).copy(alpha = 0.20f * tierAlpha),
                     p8 to Color(0xFF0866FF).copy(alpha = 0f)
                 )
 
@@ -452,10 +433,10 @@ fun CustomBottomMenuBar(
                 .fillMaxWidth()
                 .height(72.dp)
                 .shadow(
-                    elevation = 20.dp,
+                    elevation = 14.dp,
                     shape = notchShape,
-                    spotColor = Color(0xFF0866FF).copy(alpha = 0.30f),
-                    ambientColor = Color(0xFF0866FF).copy(alpha = 0.18f)
+                    spotColor = Color(0xFF0866FF).copy(alpha = 0.18f),
+                    ambientColor = Color(0xFF0866FF).copy(alpha = 0.10f)
                 ),
             shape = notchShape,
             color = surfaceColor,
