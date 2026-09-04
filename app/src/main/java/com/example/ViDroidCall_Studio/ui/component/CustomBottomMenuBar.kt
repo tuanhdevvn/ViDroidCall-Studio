@@ -221,16 +221,16 @@ private data class GlowShadowTier(
 )
 
 private val SHADOW_GLOW_TIERS = listOf(
-    GlowShadowTier(strokeWidthDp = 11.0f, alphaMultiplier = 0.08f), // Hào quang ngoại vi mỏng gọn, khuếch tán nhẹ
-    GlowShadowTier(strokeWidthDp = 8.0f,  alphaMultiplier = 0.16f), // Lớp shadow tỏa vừa vặn
-    GlowShadowTier(strokeWidthDp = 5.2f,  alphaMultiplier = 0.26f), // Lớp shadow trung gian
-    GlowShadowTier(strokeWidthDp = 3.2f,  alphaMultiplier = 0.40f), // Lớp hào quang ôm sát
-    GlowShadowTier(strokeWidthDp = 1.8f,  alphaMultiplier = 0.58f)  // Lớp lõi shadow đậm đà vừa phải, viền vẫn êm mượt
+    GlowShadowTier(strokeWidthDp = 7.5f, alphaMultiplier = 0.10f), // Hào quang ngoại vi mảnh mai, khuếch tán nhẹ
+    GlowShadowTier(strokeWidthDp = 5.5f, alphaMultiplier = 0.20f), // Lớp shadow tỏa vừa vặn
+    GlowShadowTier(strokeWidthDp = 3.8f, alphaMultiplier = 0.32f), // Lớp shadow trung gian
+    GlowShadowTier(strokeWidthDp = 2.4f, alphaMultiplier = 0.48f), // Lớp hào quang ôm sát
+    GlowShadowTier(strokeWidthDp = 1.4f, alphaMultiplier = 0.65f)  // Lớp lõi shadow mảnh mai, đậm đà, viền êm
 )
 
 /**
  * Hiệu ứng ánh sáng dạng ĐỔ BÓNG MỜ (Soft Shadow Glow) chạy dọc mép trên và rãnh notch:
- * - Dáng shadow thanh mảnh (thắt gọn còn tối đa ~11dp), đậm đà hơn 1 chút mà vẫn giữ được độ mờ mượt tự nhiên.
+ * - Dáng shadow siêu thanh mảnh (tối đa ~7.5dp), đậm đà sắc nét nhưng viền vẫn êm mượt tự nhiên.
  * - Loại bỏ hoàn toàn các vệt tròn thừa, bám khít hình học notch.
  * - Gradient alpha tự nhiên: tập trung êm dịu quanh rãnh notch và tan dần về hai mép.
  *
@@ -307,9 +307,9 @@ fun NotchGlowBorderLine(
 
         clipRect(
             left = leftClip,
-            top = -20f * d,
+            top = -15f * d,
             right = rightClip,
-            bottom = size.height + 20f * d
+            bottom = size.height + 15f * d
         ) {
             val glowIntensity = (pulseFactor * 0.80f + clickPulse * 0.45f).coerceIn(0.40f, 1.5f)
 
@@ -329,9 +329,9 @@ fun NotchGlowBorderLine(
             val p7 = 1.0f - p1
             val p8 = 1.0f
 
-            val clickSpreadExtra = clickPulse * 1.2f * d
+            val clickSpreadExtra = clickPulse * 0.8f * d
 
-            // Vẽ các tầng Gaussian Shadow thuần túy bám sát đường cong (gọn gàng, mảnh mai và đậm đà hơn 1 chút)
+            // Vẽ các tầng Gaussian Shadow thuần túy bám sát đường cong (siêu thanh mảnh, gọn gàng và đậm đà)
             for (tier in SHADOW_GLOW_TIERS) {
                 val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
                 val shadowBrush = Brush.horizontalGradient(
