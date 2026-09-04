@@ -221,17 +221,17 @@ private data class GlowShadowTier(
 )
 
 private val SHADOW_GLOW_TIERS = listOf(
-    GlowShadowTier(strokeWidthDp = 14.0f, alphaMultiplier = 0.06f), // Hào quang ngoại vi khuếch tán nhẹ
-    GlowShadowTier(strokeWidthDp = 10.0f, alphaMultiplier = 0.12f), // Lớp shadow tỏa rộng vừa phải
-    GlowShadowTier(strokeWidthDp = 6.5f,  alphaMultiplier = 0.20f), // Lớp shadow trung gian
-    GlowShadowTier(strokeWidthDp = 4.0f,  alphaMultiplier = 0.32f), // Lớp hào quang ôm sát
-    GlowShadowTier(strokeWidthDp = 2.2f,  alphaMultiplier = 0.46f)  // Lớp lõi shadow mờ êm, không sắc cạnh
+    GlowShadowTier(strokeWidthDp = 11.0f, alphaMultiplier = 0.08f), // Hào quang ngoại vi mỏng gọn, khuếch tán nhẹ
+    GlowShadowTier(strokeWidthDp = 8.0f,  alphaMultiplier = 0.16f), // Lớp shadow tỏa vừa vặn
+    GlowShadowTier(strokeWidthDp = 5.2f,  alphaMultiplier = 0.26f), // Lớp shadow trung gian
+    GlowShadowTier(strokeWidthDp = 3.2f,  alphaMultiplier = 0.40f), // Lớp hào quang ôm sát
+    GlowShadowTier(strokeWidthDp = 1.8f,  alphaMultiplier = 0.58f)  // Lớp lõi shadow đậm đà vừa phải, viền vẫn êm mượt
 )
 
 /**
  * Hiệu ứng ánh sáng dạng ĐỔ BÓNG MỜ (Soft Shadow Glow) chạy dọc mép trên và rãnh notch:
- * - Ánh sáng dạng Shadow thanh mảnh, tinh tế, bám khít theo đường cong của rãnh notch.
- * - Loại bỏ hoàn toàn các hình vẽ thừa / vệt tròn thừa bên ngoài.
+ * - Dáng shadow thanh mảnh (thắt gọn còn tối đa ~11dp), đậm đà hơn 1 chút mà vẫn giữ được độ mờ mượt tự nhiên.
+ * - Loại bỏ hoàn toàn các vệt tròn thừa, bám khít hình học notch.
  * - Gradient alpha tự nhiên: tập trung êm dịu quanh rãnh notch và tan dần về hai mép.
  *
  * Hỗ trợ các animation mượt 60 FPS:
@@ -307,11 +307,11 @@ fun NotchGlowBorderLine(
 
         clipRect(
             left = leftClip,
-            top = -25f * d,
+            top = -20f * d,
             right = rightClip,
-            bottom = size.height + 25f * d
+            bottom = size.height + 20f * d
         ) {
-            val glowIntensity = (pulseFactor * 0.75f + clickPulse * 0.45f).coerceIn(0.35f, 1.4f)
+            val glowIntensity = (pulseFactor * 0.80f + clickPulse * 0.45f).coerceIn(0.40f, 1.5f)
 
             // Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
             val notchHalfWidth = cutR + shoulder
@@ -329,20 +329,20 @@ fun NotchGlowBorderLine(
             val p7 = 1.0f - p1
             val p8 = 1.0f
 
-            val clickSpreadExtra = clickPulse * 1.5f * d
+            val clickSpreadExtra = clickPulse * 1.2f * d
 
-            // Vẽ các tầng Gaussian Shadow thuần túy bám sát đường cong (không có hình tròn thừa)
+            // Vẽ các tầng Gaussian Shadow thuần túy bám sát đường cong (gọn gàng, mảnh mai và đậm đà hơn 1 chút)
             for (tier in SHADOW_GLOW_TIERS) {
                 val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
                 val shadowBrush = Brush.horizontalGradient(
                     p0 to Color(0xFF0866FF).copy(alpha = 0f),
-                    p1 to Color(0xFF0866FF).copy(alpha = 0.20f * tierAlpha),
-                    p2 to Color(0xFF2B7FFF).copy(alpha = 0.45f * tierAlpha),
-                    p3 to Color(0xFF38BDF8).copy(alpha = 0.72f * tierAlpha),
-                    p4 to Color(0xFF38BDF8).copy(alpha = 0.88f * tierAlpha),
-                    p5 to Color(0xFF38BDF8).copy(alpha = 0.72f * tierAlpha),
-                    p6 to Color(0xFF2B7FFF).copy(alpha = 0.45f * tierAlpha),
-                    p7 to Color(0xFF0866FF).copy(alpha = 0.20f * tierAlpha),
+                    p1 to Color(0xFF0866FF).copy(alpha = 0.24f * tierAlpha),
+                    p2 to Color(0xFF2B7FFF).copy(alpha = 0.52f * tierAlpha),
+                    p3 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
+                    p4 to Color(0xFF38BDF8).copy(alpha = 0.95f * tierAlpha),
+                    p5 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
+                    p6 to Color(0xFF2B7FFF).copy(alpha = 0.52f * tierAlpha),
+                    p7 to Color(0xFF0866FF).copy(alpha = 0.24f * tierAlpha),
                     p8 to Color(0xFF0866FF).copy(alpha = 0f)
                 )
 
