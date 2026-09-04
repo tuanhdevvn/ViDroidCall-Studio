@@ -575,60 +575,29 @@ private fun NavItem(
     Column(
         modifier = modifier
             .bounceClick(scaleDown = 0.88f, onClick = onSelect)
-            .padding(vertical = 6.dp),
+            .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.graphicsLayer {
-                scaleX = iconScale
-                scaleY = iconScale
-            }
-        ) {
-            // Pill nền — fade + scale theo tiến trình chọn tab
-            Box(
-                modifier = Modifier
-                    .size(50.dp, 30.dp)
-                    .graphicsLayer {
-                        alpha = selectionProgress
-                        scaleX = 0.75f + 0.25f * selectionProgress
-                        scaleY = 0.75f + 0.25f * selectionProgress
-                    }
-                    .background(
-                        color = activeColor.copy(alpha = 0.14f),
-                        shape = RoundedCornerShape(15.dp)
-                    )
-            )
-            Icon(
-                imageVector = tab.icon,
-                contentDescription = tab.title,
-                tint = iconTint,
-                modifier = Modifier.size(26.dp)
-            )
-        }
+        Icon(
+            imageVector = tab.icon,
+            contentDescription = tab.title,
+            tint = iconTint,
+            modifier = Modifier
+                .size(26.dp)
+                .graphicsLayer {
+                    scaleX = iconScale
+                    scaleY = iconScale
+                }
+        )
 
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = tab.title,
             fontSize = 14.sp,
             fontWeight = if (selectionProgress > 0.5f) FontWeight.Bold else FontWeight.Medium,
             color = labelColor
-        )
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        // Gạch indicator — co giãn ngang khi chọn tab
-        Box(
-            modifier = Modifier
-                .width(20.dp)
-                .height(3.dp)
-                .graphicsLayer {
-                    scaleX = selectionProgress
-                    alpha = selectionProgress
-                }
-                .background(activeColor, RoundedCornerShape(2.dp))
         )
     }
 }
