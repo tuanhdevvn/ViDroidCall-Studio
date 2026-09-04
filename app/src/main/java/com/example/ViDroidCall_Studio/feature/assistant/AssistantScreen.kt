@@ -19,6 +19,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -313,24 +314,38 @@ private fun VoiceAssistantSection(
     val context = LocalContext.current
     val isAiReady = modelState is NluModelState.Ready
 
-    val infiniteTransition = rememberInfiniteTransition(label = "VoiceRings")
-    val ringScale1 by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = if (isListening) 1.40f else 1.30f,
+    val infiniteTransition = rememberInfiniteTransition(label = "VoiceAssistantWaves")
+
+    // 1. Quầng hào quang phát sáng thở êm dịu (Soft Breathing Aura Glow) bọc lấy nút Micro
+    val auraScale by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
+        targetValue = if (isListening) 1.28f else 1.10f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (isListening) 1500 else 2400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
+            animation = tween(if (isListening) 900 else 2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
         ),
-        label = "ringScale1"
+        label = "auraScale"
     )
-    val ringAlpha1 by infiniteTransition.animateFloat(
-        initialValue = if (isListening) 0.55f else 0.35f,
-        targetValue = 0.0f,
+    val auraAlpha by infiniteTransition.animateFloat(
+        initialValue = if (isListening) 0.35f else 0.16f,
+        targetValue = if (isListening) 0.75f else 0.38f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (isListening) 1500 else 2400, easing = FastOutSlowInEasing),
+            animation = tween(if (isListening) 900 else 2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "auraAlpha"
+    )
+
+    // 2. Chu kỳ lan tỏa sóng âm 3 tầng liên hoàn (Continuous Staggered Ripples)
+    val waveDuration = if (isListening) 1500 else 2600
+    val rippleProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = waveDuration, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "ringAlpha1"
+        label = "rippleProgress"
     )
 
     // Animation nhịp thở (breathing/pulse) của Logo App và vầng hào quang khi AI đang phân tích dữ liệu
@@ -400,30 +415,87 @@ private fun VoiceAssistantSection(
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Nút Micro lớn ở trung tâm với hiệu ứng sóng lan toả liên tục kể cả khi chưa nói
+        // Nút Micro lớn ở trung tâm với hiệu ứng sóng lan toả liên tục (Ripple Waves & Soft Glow)
         Box(
-            modifier = Modifier.size(210.dp),
+            modifier = Modifier.size(240.dp),
             contentAlignment = Alignment.Center
         ) {
-            val waveColor = if (isAiReady) AppPrimary else AppPrimary.copy(alpha = 0.25f)
+            val wavePrimary = if (isAiReady) AppPrimary else AppPrimary.copy(alpha = 0.25f)
+            val waveAccent = if (isListening) Color(0xFF38BDF8) else Color(0xFF60A5FA)
 
             Canvas(modifier = Modifier.fillMaxSize()) {
-                drawCircle(
-                    color = waveColor.copy(alpha = if (isAiReady) 0.08f else 0.03f),
-                    radius = size.minDimension / 2
-                )
+                val centerPt = this.center
+                val baseRadius = 63f * density // Bán kính nút tròn Micro (126dp / 2)
+                val maxRadius = size.minDimension / 2f
+                val d = density
+
                 if (isAiReady) {
-                    // Vòng sóng âm lan toả liên tục khi AI đã sẵn sàng
+                    // 1. Quầng hào quang Radial Gradient thở êm dịu (Không có viền cứng)
+                    val currentAuraR = (baseRadius * auraScale).coerceAtMost(maxRadius)
                     drawCircle(
-                        color = waveColor.copy(alpha = ringAlpha1),
-                        radius = (size.minDimension / 2) * ringScale1,
-                        style = Stroke(width = if (isListening) 4.5f else 3.5f)
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                (if (isListening) waveAccent else wavePrimary).copy(alpha = auraAlpha * 0.70f),
+                                wavePrimary.copy(alpha = auraAlpha * 0.25f),
+                                Color.Transparent
+                            ),
+                            center = centerPt,
+                            radius = currentAuraR
+                        ),
+                        radius = currentAuraR,
+                        center = centerPt
+                    )
+
+                    // 2. Ba vòng sóng lan tỏa gối đầu liên tục (Staggered Ambient / Sonic Ripples)
+                    val waveCount = 3
+                    for (i in 0 until waveCount) {
+                        val phase = (rippleProgress + i.toFloat() / waveCount) % 1f
+                        val easedPhase = FastOutSlowInEasing.transform(phase)
+                        val r = baseRadius + (maxRadius - baseRadius) * easedPhase
+
+                        // Alpha đạt độ sáng rõ lúc mới xuất hiện, tan biến dần về 0 khi lan ra xa
+                        val waveAlpha = ((1f - phase) * (if (isListening) 0.65f else 0.38f)).coerceIn(0f, 1f)
+
+                        // Vệt màu mờ bên trong vòng sóng
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    wavePrimary.copy(alpha = waveAlpha * 0.16f),
+                                    waveAccent.copy(alpha = waveAlpha * 0.08f),
+                                    Color.Transparent
+                                ),
+                                center = centerPt,
+                                radius = r
+                            ),
+                            radius = r,
+                            center = centerPt
+                        )
+
+                        // Vòng sóng viền mảnh phát sáng tinh tế
+                        drawCircle(
+                            color = (if (isListening) waveAccent else wavePrimary).copy(alpha = waveAlpha),
+                            radius = r,
+                            center = centerPt,
+                            style = Stroke(
+                                width = (if (isListening) 2.4f else 1.5f) * (1f - phase * 0.35f) * d
+                            )
+                        )
+                    }
+                } else {
+                    // Trạng thái AI chưa sẵn sàng: Quầng sáng mờ tĩnh lặng
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                wavePrimary.copy(alpha = 0.12f),
+                                Color.Transparent
+                            ),
+                            center = centerPt,
+                            radius = baseRadius * 1.15f
+                        ),
+                        radius = baseRadius * 1.15f,
+                        center = centerPt
                     )
                 }
-                drawCircle(
-                    color = waveColor.copy(alpha = if (isListening) 0.22f else if (isAiReady) 0.12f else 0.05f),
-                    radius = size.minDimension * 0.38f
-                )
             }
 
             // Màu gradient của Micro (Nếu chưa sẵn sàng thì làm mờ xanh dương)
@@ -445,9 +517,21 @@ private fun VoiceAssistantSection(
                 modifier = Modifier
                     .size(126.dp)
                     .shadow(
-                        elevation = if (isAiReady) 20.dp else 4.dp,
+                        elevation = if (isAiReady) (if (isListening) 24.dp else 16.dp) else 4.dp,
                         shape = CircleShape,
-                        spotColor = AppPrimary
+                        spotColor = if (isListening) Color(0xFF38BDF8) else AppPrimary,
+                        ambientColor = AppPrimary.copy(alpha = 0.35f)
+                    )
+                    .border(
+                        width = if (isListening) 2.dp else 1.2.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = if (isListening) 0.70f else 0.35f),
+                                Color(0xFF38BDF8).copy(alpha = if (isListening) 0.85f else 0.25f),
+                                AppPrimary.copy(alpha = 0.40f)
+                            )
+                        ),
+                        shape = CircleShape
                     )
                     .background(
                         brush = Brush.radialGradient(colors = micGradientColors),
