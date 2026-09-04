@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -221,18 +222,20 @@ private data class GlowShadowTier(
 )
 
 private val SHADOW_GLOW_TIERS = listOf(
-    GlowShadowTier(strokeWidthDp = 7.5f, alphaMultiplier = 0.10f), // Hào quang ngoại vi mảnh mai, khuếch tán nhẹ
-    GlowShadowTier(strokeWidthDp = 5.5f, alphaMultiplier = 0.20f), // Lớp shadow tỏa vừa vặn
-    GlowShadowTier(strokeWidthDp = 3.8f, alphaMultiplier = 0.32f), // Lớp shadow trung gian
-    GlowShadowTier(strokeWidthDp = 2.4f, alphaMultiplier = 0.48f), // Lớp hào quang ôm sát
-    GlowShadowTier(strokeWidthDp = 1.4f, alphaMultiplier = 0.65f)  // Lớp lõi shadow mảnh mai, đậm đà, viền êm
+    GlowShadowTier(strokeWidthDp = 16.0f, alphaMultiplier = 0.08f), // Đỉnh làn sương (~8dp phía trên mép)
+    GlowShadowTier(strokeWidthDp = 11.0f, alphaMultiplier = 0.14f), // Tầng sương tỏa rộng (~5.5dp)
+    GlowShadowTier(strokeWidthDp = 7.0f,  alphaMultiplier = 0.22f), // Tầng sương trung gian (~3.5dp)
+    GlowShadowTier(strokeWidthDp = 4.0f,  alphaMultiplier = 0.35f), // Tầng sương cận mép (~2.0dp)
+    GlowShadowTier(strokeWidthDp = 2.0f,  alphaMultiplier = 0.55f), // Chân sương rõ nét (~1.0dp)
+    GlowShadowTier(strokeWidthDp = 1.2f,  alphaMultiplier = 0.75f)  // Đường viền mép đậm đà, mảnh mai (~0.6dp)
 )
 
 /**
- * Hiệu ứng ánh sáng dạng ĐỔ BÓNG MỜ (Soft Shadow Glow) chạy dọc mép trên và rãnh notch:
- * - Dáng shadow siêu thanh mảnh (tối đa ~7.5dp), đậm đà sắc nét nhưng viền vẫn êm mượt tự nhiên.
- * - Loại bỏ hoàn toàn các vệt tròn thừa, bám khít hình học notch.
- * - Gradient alpha tự nhiên: tập trung êm dịu quanh rãnh notch và tan dần về hai mép.
+ * Hiệu ứng ánh sáng dạng SƯƠNG SỚM (Morning Mist Glow):
+ * - Ánh sáng CHỈ TỎA HƯỚNG LÊN TRÊN (Upward-Only), tuyệt đối không lem xuống thanh Bar.
+ * - Sử dụng aboveBarPath clip để cắt bỏ toàn bộ phần ánh sáng phía dưới mép, tạo cảm giác
+ *   một làn sương mai thanh khiết bốc lên từ viền thanh Bar và rãnh notch.
+ * - Bám khít tuyệt đối theo hình học của Bottom Navigation Bar.
  *
  * Hỗ trợ các animation mượt 60 FPS:
  * - Entrance Reveal: Lan tỏa từ tâm ra 2 biên khi xuất hiện.
@@ -263,7 +266,7 @@ fun NotchGlowBorderLine(
         val startNotch = center - cutR - shoulder
         val endNotch = center + cutR + shoulder
 
-        // Xây dựng đường Path uốn lượn ôm sát nút tròn
+        // 1. Đường Path chạy theo mép trên và rãnh notch
         val linePath = Path().apply {
             moveTo(0f, 0f)
             lineTo(startNotch, 0f)
@@ -299,6 +302,39 @@ fun NotchGlowBorderLine(
             lineTo(width, 0f)
         }
 
+        // 2. Vùng giới hạn CHỈ PHÍA TRÊN thanh Bar (Above-Bar Clipping Path)
+        // Đảm bảo ánh sáng sương sớm chỉ bay tỏa lên trên, KHÔNG lem một pixel nào xuống thân thanh Bar
+        val aboveBarPath = Path().apply {
+            moveTo(-20f * d, -60f * d)
+            lineTo(-20f * d, 0f)
+            lineTo(startNotch, 0f)
+
+            cubicTo(
+                startNotch + shoulder * 0.55f, 0f,
+                center - cutR, centerY - shoulder * 0.45f,
+                center - cutR, centerY
+            )
+            cubicTo(
+                center - cutR, centerY + k,
+                center - k, centerY + cutR,
+                center, centerY + cutR
+            )
+            cubicTo(
+                center + k, centerY + cutR,
+                center + cutR, centerY + k,
+                center + cutR, centerY
+            )
+            cubicTo(
+                center + cutR, centerY - shoulder * 0.45f,
+                endNotch - shoulder * 0.55f, 0f,
+                endNotch, 0f
+            )
+
+            lineTo(width + 20f * d, 0f)
+            lineTo(width + 20f * d, -60f * d)
+            close()
+        }
+
         // Entrance animation: Lan tỏa từ tâm ra 2 mép
         val clampedReveal = revealProgress.coerceIn(0f, 1f)
         val halfReveal = (width / 2f) * clampedReveal
@@ -307,54 +343,57 @@ fun NotchGlowBorderLine(
 
         clipRect(
             left = leftClip,
-            top = -15f * d,
+            top = -60f * d,
             right = rightClip,
-            bottom = size.height + 15f * d
+            bottom = size.height + 20f * d
         ) {
-            val glowIntensity = (pulseFactor * 0.80f + clickPulse * 0.45f).coerceIn(0.40f, 1.5f)
+            // Giới hạn vùng vẽ chỉ ở phía trên thanh Bar (Hiệu ứng sương sớm bốc lên)
+            clipPath(aboveBarPath) {
+                val glowIntensity = (pulseFactor * 0.80f + clickPulse * 0.45f).coerceIn(0.40f, 1.5f)
 
-            // Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
-            val notchHalfWidth = cutR + shoulder
-            val shoulderFrac = (notchHalfWidth / width).coerceIn(0.08f, 0.28f)
-            val fadeFrac = (shoulderFrac + (36f * d / width)).coerceIn(shoulderFrac + 0.02f, 0.45f)
-            val innerFrac = (shoulderFrac * 0.45f).coerceIn(0.02f, shoulderFrac - 0.01f)
+                // Tính toán các mốc color stop đối xứng, đảm bảo luôn strictly ascending
+                val notchHalfWidth = cutR + shoulder
+                val shoulderFrac = (notchHalfWidth / width).coerceIn(0.08f, 0.28f)
+                val fadeFrac = (shoulderFrac + (36f * d / width)).coerceIn(shoulderFrac + 0.02f, 0.45f)
+                val innerFrac = (shoulderFrac * 0.45f).coerceIn(0.02f, shoulderFrac - 0.01f)
 
-            val p0 = 0.0f
-            val p1 = (0.5f - fadeFrac).coerceAtLeast(0.01f)
-            val p2 = (0.5f - shoulderFrac).coerceIn(p1 + 0.01f, 0.45f)
-            val p3 = (0.5f - innerFrac).coerceIn(p2 + 0.01f, 0.49f)
-            val p4 = 0.5f
-            val p5 = 1.0f - p3
-            val p6 = 1.0f - p2
-            val p7 = 1.0f - p1
-            val p8 = 1.0f
+                val p0 = 0.0f
+                val p1 = (0.5f - fadeFrac).coerceAtLeast(0.01f)
+                val p2 = (0.5f - shoulderFrac).coerceIn(p1 + 0.01f, 0.45f)
+                val p3 = (0.5f - innerFrac).coerceIn(p2 + 0.01f, 0.49f)
+                val p4 = 0.5f
+                val p5 = 1.0f - p3
+                val p6 = 1.0f - p2
+                val p7 = 1.0f - p1
+                val p8 = 1.0f
 
-            val clickSpreadExtra = clickPulse * 0.8f * d
+                val clickSpreadExtra = clickPulse * 0.8f * d
 
-            // Vẽ các tầng Gaussian Shadow thuần túy bám sát đường cong (siêu thanh mảnh, gọn gàng và đậm đà)
-            for (tier in SHADOW_GLOW_TIERS) {
-                val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
-                val shadowBrush = Brush.horizontalGradient(
-                    p0 to Color(0xFF0866FF).copy(alpha = 0f),
-                    p1 to Color(0xFF0866FF).copy(alpha = 0.24f * tierAlpha),
-                    p2 to Color(0xFF2B7FFF).copy(alpha = 0.52f * tierAlpha),
-                    p3 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
-                    p4 to Color(0xFF38BDF8).copy(alpha = 0.95f * tierAlpha),
-                    p5 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
-                    p6 to Color(0xFF2B7FFF).copy(alpha = 0.52f * tierAlpha),
-                    p7 to Color(0xFF0866FF).copy(alpha = 0.24f * tierAlpha),
-                    p8 to Color(0xFF0866FF).copy(alpha = 0f)
-                )
-
-                drawPath(
-                    path = linePath,
-                    brush = shadowBrush,
-                    style = Stroke(
-                        width = tier.strokeWidthDp * d + clickSpreadExtra,
-                        cap = StrokeCap.Round,
-                        join = StrokeJoin.Round
+                // Vẽ các tầng sương sớm tỏa lên phía trên
+                for (tier in SHADOW_GLOW_TIERS) {
+                    val tierAlpha = (tier.alphaMultiplier * glowIntensity).coerceIn(0f, 1f)
+                    val shadowBrush = Brush.horizontalGradient(
+                        p0 to Color(0xFF0866FF).copy(alpha = 0f),
+                        p1 to Color(0xFF0866FF).copy(alpha = 0.24f * tierAlpha),
+                        p2 to Color(0xFF2B7FFF).copy(alpha = 0.52f * tierAlpha),
+                        p3 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
+                        p4 to Color(0xFF38BDF8).copy(alpha = 0.95f * tierAlpha),
+                        p5 to Color(0xFF2B7FFF).copy(alpha = 0.80f * tierAlpha),
+                        p6 to Color(0xFF2B7FFF).copy(alpha = 0.52f * tierAlpha),
+                        p7 to Color(0xFF0866FF).copy(alpha = 0.24f * tierAlpha),
+                        p8 to Color(0xFF0866FF).copy(alpha = 0f)
                     )
-                )
+
+                    drawPath(
+                        path = linePath,
+                        brush = shadowBrush,
+                        style = Stroke(
+                            width = tier.strokeWidthDp * d + clickSpreadExtra,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round
+                        )
+                    )
+                }
             }
         }
     }
