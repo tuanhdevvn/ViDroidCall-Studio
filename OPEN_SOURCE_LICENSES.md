@@ -1,6 +1,8 @@
 # 📜 Giấy Phép Mã Nguồn Mở (Open Source Licenses)
 
-Dự án **ViDroidCall Studio** sử dụng các thư viện, mô hình trí tuệ nhân tạo (AI) và công cụ mã nguồn mở của bên thứ ba (Third-Party Open Source Software). Chúng tôi xin chân thành cảm ơn cộng đồng các nhà phát triển và các tổ chức đã đóng góp vào các dự án mã nguồn mở này.
+Mã nguồn **ViDroidCall Studio** được cấp phép theo **Apache License 2.0** (OSI-approved). Xem [LICENSE](LICENSE) và [NOTICE](NOTICE).
+
+Dự án còn sử dụng các thư viện, mô hình trí tuệ nhân tạo (AI) và công cụ mã nguồn mở của bên thứ ba (Third-Party Open Source Software). Chúng tôi xin chân thành cảm ơn cộng đồng các nhà phát triển và các tổ chức đã đóng góp vào các dự án mã nguồn mở này.
 
 Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở được tích hợp trong dự án:
 

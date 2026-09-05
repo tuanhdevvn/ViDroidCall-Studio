@@ -17,6 +17,7 @@
   <img src="https://img.shields.io/badge/Fast--Path-Zero--LLM%20Latency-8A2BE2?style=for-the-badge" alt="Fast-Path"/>
   <img src="https://img.shields.io/badge/AI%20Engine-Llama.cpp%20(GGUF%20Offline)-FF6F00?style=for-the-badge" alt="AI Engine"/>
   <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD"/>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License: Apache 2.0"/></a>
 </p>
 
 ---
@@ -230,5 +231,19 @@ Dự án được bảo vệ tự động bằng **GitHub Actions CI/CD Pipeline
 
 ## 📄 Bản Quyền & Giấy Phép Mã Nguồn Mở (Licenses)
 
-* Xem thông tin chi tiết về các giấy phép mã nguồn mở của các thư viện (Sherpa-ONNX, Zipformer, Llama.cpp, Material Design,...) tại [OPEN_SOURCE_LICENSES.md](file:///Users/nguyentuananh/AndroidStudioProjects/ViDroidCall-Studio/OPEN_SOURCE_LICENSES.md).
-* Dự án được xây dựng và phát triển bởi **Tuấn Anh** ([@tuanhdevvn](https://github.com/tuanhdevvn)). Mọi quyền được bảo lưu.
+**ViDroidCall Studio** được phát hành theo [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (OSI-approved).
+
+```text
+Copyright 2026 Tuấn Anh
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+```
+
+* Văn bản giấy phép đầy đủ: [LICENSE](LICENSE)
+* Thông tin bản quyền / attribution: [NOTICE](NOTICE)
+* Giấy phép thư viện bên thứ ba (Sherpa-ONNX, Zipformer, Llama.cpp, Material Design, …): [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md)
+* Dự án được xây dựng và phát triển bởi **Tuấn Anh** ([@tuanhdevvn](https://github.com/tuanhdevvn)).
