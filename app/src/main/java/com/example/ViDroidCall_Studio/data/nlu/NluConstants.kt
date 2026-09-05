@@ -7,10 +7,10 @@ package com.example.ViDroidCall_Studio.data.nlu
  */
 object NluConstants {
 
-    const val MODEL_FILE_NAME = "qwen2.5-1.5b-nlu-q8_0.gguf"
+    const val MODEL_FILE_NAME = "qwen3-nlu-run-006-Q4_K_M.gguf"
 
     /**
-     * System prompt bắt buộc của mô hình Qwen2.5-1.5B-NLU
+     * System prompt bắt buộc của mô hình Qwen3-0.6B-NLU
      */
     const val MANDATORY_SYSTEM_PROMPT =
         "Bạn là bộ phân tích NLU trích xuất ý định (intent) và tham số (arguments). Các intent hỗ trợ: [set_alarm, set_timer, open_app, open_map, call_contact, send_sms, search_video, play_music, clarify, unsupported]. Chỉ trả về JSON duy nhất: {\"intent\": string, \"arguments\": object, \"risk_level\": \"low\"|\"medium\"|\"high\", \"status\": \"success\"|\"needs_clarification\"|\"invalid\"|\"unsupported\", \"requires_confirmation\": boolean}."

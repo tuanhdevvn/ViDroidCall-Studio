@@ -5,7 +5,7 @@ Thank you for helping improve this project. Contributions are licensed under the
 
 ## Report a bug
 
-Open an issue at [GitHub Issues](https://github.com/tuanhdevvn/Emma-ViDroidCall/issues).
+Open an issue at [GitHub Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues).
 Include device model, Android version, and steps to reproduce.
 
 ## Build locally
@@ -13,8 +13,8 @@ Include device model, Android version, and steps to reproduce.
 See [docs/BUILD.md](docs/BUILD.md) for full requirements. Short version:
 
 ```bash
-git clone https://github.com/tuanhdevvn/Emma-ViDroidCall.git
-cd Emma-ViDroidCall
+git clone https://github.com/tuanhdevvn/ViDroidCall-Studio.git
+cd ViDroidCall-Studio
 ./gradlew assembleDebug
 ./gradlew testDebugUnitTest
 ```
@@ -22,8 +22,9 @@ cd Emma-ViDroidCall
 You need **JDK 21** and an Android SDK with API 36+. Android Studio is optional;
 the Gradle wrapper is enough.
 
-Speech-to-text and Fast-Path work without a GGUF file. On-device LLM needs a
-`.gguf` model in the device Download folder. See
+Speech-to-text and Fast-Path work without a GGUF file. On-device LLM needs
+[`qwen3-nlu-run-006-Q4_K_M.gguf`](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
+in the device Download folder. See
 [docs/02-Huong_dan_tai_va_nap_model_GGUF.md](docs/02-Huong_dan_tai_va_nap_model_GGUF.md).
 
 ## Pull requests

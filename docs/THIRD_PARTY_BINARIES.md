@@ -46,12 +46,17 @@ Replace by downloading the Hugging Face repo and copying those files into
 
 ## GGUF NLU models (not in this repo)
 
-Qwen2.5 fine-tunes in GGUF form are loaded at runtime from the device
-Download folder. Download instructions:
+Qwen3 0.6B NLU weights (GGUF `Q4_K_M`) are loaded at runtime from the device
+Download folder. Official weights:
+
+[tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
+
+File: `qwen3-nlu-run-006-Q4_K_M.gguf`. Install steps:
 [02-Huong_dan_tai_va_nap_model_GGUF.md](02-Huong_dan_tai_va_nap_model_GGUF.md).
 
 - Engine: llama.cpp via `io.github.ljcamargo:llamacpp-kotlin:0.4.0` (MIT)
-- Base model family: [Qwen2.5](https://github.com/QwenLM/Qwen2.5) (Apache-2.0)
+- Base model family: [Qwen3](https://github.com/QwenLM/Qwen3) (Apache-2.0)
+- App source that consumes this model: [ViDroidCall-Studio](https://github.com/tuanhdevvn/ViDroidCall-Studio)
 
 ## Kotlin API copy
 

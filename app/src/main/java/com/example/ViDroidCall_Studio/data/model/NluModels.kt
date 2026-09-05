@@ -6,7 +6,7 @@ import org.json.JSONObject
 import java.util.UUID
 
 /**
- * Các Intent được hỗ trợ bởi mô hình Qwen2.5-1.5B-NLU
+ * Các Intent được hỗ trợ bởi mô hình Qwen3-0.6B-NLU
  */
 enum class NluIntent(val value: String, val title: String) {
     SET_ALARM("set_alarm", "Cài báo thức"),

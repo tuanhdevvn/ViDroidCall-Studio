@@ -18,6 +18,7 @@
   <img src="https://img.shields.io/badge/AI%20Engine-Llama.cpp%20(GGUF%20Offline)-FF6F00?style=for-the-badge" alt="AI Engine"/>
   <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License: Apache 2.0"/></a>
+  <a href="https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6"><img src="https://img.shields.io/badge/HuggingFace-Qwen3%200.6B%20NLU-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black" alt="Hugging Face NLU model"/></a>
 </p>
 
 ---
@@ -93,7 +94,7 @@ flowchart TD
     
     subgraph AI_Engine ["Bộ Xử Lý AI On-Device (GGUF Engine)"]
         G --> H{"File .GGUF sẵn sàng?"}
-        H -- "CÓ" --> I["Native Llama.cpp Engine<br/>Qwen2.5 GGUF On-Device"]
+        H -- "CÓ" --> I["Native Llama.cpp Engine<br/>Qwen3 0.6B GGUF On-Device"]
         I --> J["NluJsonParser (Parse JSON Chuẩn)"]
         H -- "CHƯA CÓ" --> K["Thông báo trạng thái chưa nạp AI"]
     end
@@ -188,7 +189,7 @@ com.example.ViDroidCall_Studio/
 ## 🚀 Hướng Dẫn Cài Đặt & Nạp Mô Hình AI
 
 Hướng dẫn đầy đủ (JDK 21, SDK, lệnh Gradle): [docs/BUILD.md](docs/BUILD.md).
-Đóng góp / báo lỗi: [CONTRIBUTING.md](CONTRIBUTING.md) · [GitHub Issues](https://github.com/tuanhdevvn/Emma-ViDroidCall/issues).
+Đóng góp / báo lỗi: [CONTRIBUTING.md](CONTRIBUTING.md) · [GitHub Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues).
 Lịch sử phiên bản: [CHANGELOG.md](CHANGELOG.md).
 
 **Chưa có file GGUF vẫn dùng được** nhận dạng giọng nói và Fast-Path (gọi, SMS, báo thức, mở app, …). Llama.cpp chỉ cần khi câu lệnh không khớp Fast-Path.
@@ -198,8 +199,8 @@ Yêu cầu: **JDK 21**, Android SDK (`compileSdk` 37 / `minSdk` 26). Android Stu
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/tuanhdevvn/Emma-ViDroidCall.git
-cd Emma-ViDroidCall
+git clone https://github.com/tuanhdevvn/ViDroidCall-Studio.git
+cd ViDroidCall-Studio
 
 # 2. Biên dịch APK (không cần cắm điện thoại)
 ./gradlew assembleDebug
@@ -211,14 +212,14 @@ cd Emma-ViDroidCall
 APK nằm tại `app/build/outputs/apk/debug/app-debug.apk` và chạy độc lập sau khi cài, không phụ thuộc thư mục mã nguồn.
 
 ### 2. Tải & Nạp file mô hình AI GGUF vào điện thoại (tuỳ chọn)
-* 📥 **Link tải mô hình GGUF (Google Drive):** [Google Drive Models Folder](https://drive.google.com/drive/folders/1nmWkENo5Oo_fYT5k5dA9e8-Mm3Napln2)
+* 📥 **Mô hình NLU (Qwen3 0.6B, GGUF):** [tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
 * 📖 **Hướng dẫn chi tiết:** [docs/02-Huong_dan_tai_va_nap_model_GGUF.md](docs/02-Huong_dan_tai_va_nap_model_GGUF.md)
 
 Ứng dụng tự động quét file `.gguf` tại **thư mục Download**:
 
 ```bash
-# Nạp file model vào thư mục Download của điện thoại qua ADB
-adb push ~/Downloads/qwen2.5-0.5b-nlu-q8_0.gguf /sdcard/Download/
+# Tải qwen3-nlu-run-006-Q4_K_M.gguf từ Hugging Face, rồi:
+adb push ~/Downloads/qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
 ```
 
 Sau khi nạp file vào `/sdcard/Download/`:
@@ -258,6 +259,7 @@ You may obtain a copy of the License at
 
 * Văn bản giấy phép đầy đủ: [LICENSE](LICENSE)
 * Thông tin bản quyền / attribution: [NOTICE](NOTICE)
-* Giấy phép thư viện bên thứ ba (Sherpa-ONNX, Zipformer, Llama.cpp, Qwen2.5, Material Design, …): [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md)
+* Giấy phép thư viện bên thứ ba (Sherpa-ONNX, Zipformer, Llama.cpp, Qwen3, Material Design, …): [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md)
 * Binary native và mô hình STT đính kèm (không sửa từ upstream): [docs/THIRD_PARTY_BINARIES.md](docs/THIRD_PARTY_BINARIES.md)
-* Kho mã nguồn: [tuanhdevvn/Emma-ViDroidCall](https://github.com/tuanhdevvn/Emma-ViDroidCall).
+* Mô hình NLU GGUF (không nằm trong Git): [Hugging Face — Qwen3 0.6B run-006](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
+* Kho mã nguồn: [tuanhdevvn/ViDroidCall-Studio](https://github.com/tuanhdevvn/ViDroidCall-Studio).

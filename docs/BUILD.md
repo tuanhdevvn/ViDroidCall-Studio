@@ -23,8 +23,8 @@ If `JAVA_HOME` points to an older JDK, set it to JDK 21 before building.
 ## Clone and compile
 
 ```bash
-git clone https://github.com/tuanhdevvn/Emma-ViDroidCall.git
-cd Emma-ViDroidCall
+git clone https://github.com/tuanhdevvn/ViDroidCall-Studio.git
+cd ViDroidCall-Studio
 chmod +x gradlew
 ./gradlew assembleDebug
 ```
@@ -58,9 +58,11 @@ and the Zipformer STT model ship inside the APK (`jniLibs` + `assets`).
 
 ## Optional: on-device LLM (GGUF)
 
-Complex utterances that miss Fast-Path are sent to Llama.cpp. Place a `.gguf`
-file in the device **Download** folder. Details:
-[02-Huong_dan_tai_va_nap_model_GGUF.md](02-Huong_dan_tai_va_nap_model_GGUF.md).
+Complex utterances that miss Fast-Path are sent to Llama.cpp. Place
+`qwen3-nlu-run-006-Q4_K_M.gguf` in the device **Download** folder.
+
+Weights: [Hugging Face Qwen3 0.6B NLU](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6).
+Steps: [02-Huong_dan_tai_va_nap_model_GGUF.md](02-Huong_dan_tai_va_nap_model_GGUF.md).
 
 Without a GGUF file the assistant still listens and executes Fast-Path commands.
 
