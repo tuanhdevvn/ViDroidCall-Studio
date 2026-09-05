@@ -1,8 +1,14 @@
 ViDroidCall Studio
-Copyright 2026 Tuấn Anh
+Copyright 2026 ViDroidCall Studio contributors
 
 This product is licensed under the Apache License, Version 2.0.
 See the LICENSE file in the project root for the full license text.
 
 This product includes third-party open source software.
 See OPEN_SOURCE_LICENSES.md for attribution and license details.
+
+Native binaries and speech models shipped in this repository
+(jniLibs Sherpa-ONNX / ONNX Runtime, and assets/sherpa-onnx-vi Zipformer + Silero VAD)
+are unmodified upstream artifacts. See docs/THIRD_PARTY_BINARIES.md for sources
+and how to replace them. GGUF NLU weights are not included in the source tree;
+they are downloaded separately by the user.

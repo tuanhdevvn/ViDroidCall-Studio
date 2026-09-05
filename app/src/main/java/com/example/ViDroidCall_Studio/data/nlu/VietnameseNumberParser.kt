@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package com.example.ViDroidCall_Studio.data.nlu
 
 import java.text.Normalizer

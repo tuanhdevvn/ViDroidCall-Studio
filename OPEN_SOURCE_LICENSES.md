@@ -20,13 +20,15 @@ Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở đ
 | 6 | **Kotlin & Kotlinx Coroutines** | JetBrains s.r.o. | Ngôn ngữ lập trình chính & Quản lý luồng bất đồng bộ (Asynchronous) | **Apache-2.0** | [GitHub Repo](https://github.com/JetBrains/kotlin) |
 | 7 | **Material Components for Android 3** | Google LLC | Hệ thống thiết kế giao diện chuẩn Material You (M3) | **Apache-2.0** | [GitHub Repo](https://github.com/material-components/material-components-android) |
 | 8 | **JSON in Java (org.json)** | JSON.org | Phân tích và xử lý cấu trúc dữ liệu JSON NLU | **Apache-2.0 / JSON** | [GitHub Repo](https://github.com/stleary/JSON-java) |
+| 9 | **llama.cpp / llamacpp-kotlin 0.4.0** | Georgi Gerganov / Luis Camargo | Engine suy luận GGUF on-device (NLU) | **MIT License** | [llama.cpp](https://github.com/ggerganov/llama.cpp) · [Maven](https://central.sonatype.com/artifact/io.github.ljcamargo/llamacpp-kotlin) |
+| 10 | **Qwen2.5 (NLU GGUF)** | Alibaba Qwen Team | Mô hình ngôn ngữ on-device (tải riêng, không đính kèm repo) | **Apache-2.0** | [GitHub Repo](https://github.com/QwenLM/Qwen2.5) |
 
 ---
 
 ## 📑 Chi Tiết Các Giấy Phép Mã Nguồn Mở
 
 ### 1. Apache License, Version 2.0
-Áp dụng cho: **Sherpa-ONNX**, **Zipformer Vietnamese Model**, **Android Jetpack / Compose**, **Kotlin / Coroutines**, **Material Design Components**.
+Áp dụng cho: **Sherpa-ONNX**, **Zipformer Vietnamese Model**, **Android Jetpack / Compose**, **Kotlin / Coroutines**, **Material Design Components**, **Qwen2.5**.
 
 ```text
                                  Apache License
@@ -51,7 +53,7 @@ Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở đ
 ---
 
 ### 2. The MIT License (MIT)
-Áp dụng cho: **ONNX Runtime (Microsoft)**, **Silero VAD (Silero Team)**.
+Áp dụng cho: **ONNX Runtime (Microsoft)**, **Silero VAD (Silero Team)**, **llama.cpp / llamacpp-kotlin**.
 
 ```text
 MIT License
@@ -74,6 +76,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+---
+
+Binary native (`.so`) và mô hình Zipformer/Silero trong `assets` là bản **không chỉnh sửa** từ upstream. Cách tải lại: [docs/THIRD_PARTY_BINARIES.md](docs/THIRD_PARTY_BINARIES.md). File GGUF **không** nằm trong kho mã nguồn.
 
 ---
 

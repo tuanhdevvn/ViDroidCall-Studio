@@ -187,19 +187,32 @@ com.example.ViDroidCall_Studio/
 
 ## 🚀 Hướng Dẫn Cài Đặt & Nạp Mô Hình AI
 
-### 1. Biên dịch và cài đặt APK lên thiết bị
+Hướng dẫn đầy đủ (JDK 21, SDK, lệnh Gradle): [docs/BUILD.md](docs/BUILD.md).
+Đóng góp / báo lỗi: [CONTRIBUTING.md](CONTRIBUTING.md) · [GitHub Issues](https://github.com/tuanhdevvn/Emma-ViDroidCall/issues).
+Lịch sử phiên bản: [CHANGELOG.md](CHANGELOG.md).
+
+**Chưa có file GGUF vẫn dùng được** nhận dạng giọng nói và Fast-Path (gọi, SMS, báo thức, mở app, …). Llama.cpp chỉ cần khi câu lệnh không khớp Fast-Path.
+
+### 1. Biên dịch từ mã nguồn
+Yêu cầu: **JDK 21**, Android SDK (`compileSdk` 37 / `minSdk` 26). Android Studio không bắt buộc.
+
 ```bash
 # 1. Clone repository
-git clone https://github.com/tuanhdevvn/ViDroidCall-Studio.git
-cd ViDroidCall-Studio
+git clone https://github.com/tuanhdevvn/Emma-ViDroidCall.git
+cd Emma-ViDroidCall
 
-# 2. Cài đặt trực tiếp lên điện thoại đang kết nối qua ADB
+# 2. Biên dịch APK (không cần cắm điện thoại)
+./gradlew assembleDebug
+
+# 3. Cài lên điện thoại đang kết nối qua ADB (tuỳ chọn)
 ./gradlew installDebug
 ```
 
-### 2. Tải & Nạp file mô hình AI GGUF vào điện thoại
-* 📥 **Link tải toàn bộ mô hình GGUF (Google Drive):** [Google Drive Models Folder](https://drive.google.com/drive/folders/1nmWkENo5Oo_fYT5k5dA9e8-Mm3Napln2)
-* 📖 **Xem hướng dẫn chi tiết:** [02-Huong_dan_tai_va_nap_model_GGUF.md](file:///Users/nguyentuananh/AndroidStudioProjects/ViDroidCall-Studio/docs/02-Huong_dan_tai_va_nap_model_GGUF.md)
+APK nằm tại `app/build/outputs/apk/debug/app-debug.apk` và chạy độc lập sau khi cài, không phụ thuộc thư mục mã nguồn.
+
+### 2. Tải & Nạp file mô hình AI GGUF vào điện thoại (tuỳ chọn)
+* 📥 **Link tải mô hình GGUF (Google Drive):** [Google Drive Models Folder](https://drive.google.com/drive/folders/1nmWkENo5Oo_fYT5k5dA9e8-Mm3Napln2)
+* 📖 **Hướng dẫn chi tiết:** [docs/02-Huong_dan_tai_va_nap_model_GGUF.md](docs/02-Huong_dan_tai_va_nap_model_GGUF.md)
 
 Ứng dụng tự động quét file `.gguf` tại **thư mục Download**:
 
@@ -210,7 +223,7 @@ adb push ~/Downloads/qwen2.5-0.5b-nlu-q8_0.gguf /sdcard/Download/
 
 Sau khi nạp file vào `/sdcard/Download/`:
 * Màn hình chính hiển thị huy hiệu: **`🟢 Trợ lý AI đã sẵn sàng`**.
-* Các câu lệnh ngắn sẽ được xử lý tức thì qua **`⚡ Fast-Path`**, các câu lệnh phức tạp sẽ được phân tích trực tiếp qua **`🧠 On-Device AI`**.
+* Câu lệnh ngắn đi qua **`⚡ Fast-Path`**; câu phức tạp đi qua **`🧠 On-Device AI`**.
 
 ---
 
@@ -234,7 +247,7 @@ Dự án được bảo vệ tự động bằng **GitHub Actions CI/CD Pipeline
 **ViDroidCall Studio** được phát hành theo [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (OSI-approved).
 
 ```text
-Copyright 2026 Tuấn Anh
+Copyright 2026 ViDroidCall Studio contributors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -245,5 +258,6 @@ You may obtain a copy of the License at
 
 * Văn bản giấy phép đầy đủ: [LICENSE](LICENSE)
 * Thông tin bản quyền / attribution: [NOTICE](NOTICE)
-* Giấy phép thư viện bên thứ ba (Sherpa-ONNX, Zipformer, Llama.cpp, Material Design, …): [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md)
-* Dự án được xây dựng và phát triển bởi **Tuấn Anh** ([@tuanhdevvn](https://github.com/tuanhdevvn)).
+* Giấy phép thư viện bên thứ ba (Sherpa-ONNX, Zipformer, Llama.cpp, Qwen2.5, Material Design, …): [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md)
+* Binary native và mô hình STT đính kèm (không sửa từ upstream): [docs/THIRD_PARTY_BINARIES.md](docs/THIRD_PARTY_BINARIES.md)
+* Kho mã nguồn: [tuanhdevvn/Emma-ViDroidCall](https://github.com/tuanhdevvn/Emma-ViDroidCall).
