@@ -24,8 +24,8 @@ the Gradle wrapper is enough.
 
 Speech-to-text and Fast-Path work without a GGUF file. On-device LLM needs
 [`qwen3-nlu-run-006-Q4_K_M.gguf`](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
-in the device Download folder. See
-[docs/02-Huong_dan_tai_va_nap_model_GGUF.md](docs/02-Huong_dan_tai_va_nap_model_GGUF.md).
+in the device Download folder. See [README.md](README.md) and
+[docs/BUILD.md](docs/BUILD.md).
 
 ## Pull requests
 

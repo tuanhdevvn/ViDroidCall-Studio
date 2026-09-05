@@ -62,7 +62,7 @@ Complex utterances that miss Fast-Path are sent to Llama.cpp. Place
 `qwen3-nlu-run-006-Q4_K_M.gguf` in the device **Download** folder.
 
 Weights: [Hugging Face Qwen3 0.6B NLU](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6).
-Steps: [02-Huong_dan_tai_va_nap_model_GGUF.md](02-Huong_dan_tai_va_nap_model_GGUF.md).
+See [README](../README.md) for `adb push` into `/sdcard/Download/`.
 
 Without a GGUF file the assistant still listens and executes Fast-Path commands.
 

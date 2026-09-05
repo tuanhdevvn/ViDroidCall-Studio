@@ -16,7 +16,7 @@ Fine-tune of [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B), exported as G
 
 - App source: https://github.com/tuanhdevvn/ViDroidCall-Studio
 - Issues: https://github.com/tuanhdevvn/ViDroidCall-Studio/issues
-- Load guide: https://github.com/tuanhdevvn/ViDroidCall-Studio/blob/main/docs/02-Huong_dan_tai_va_nap_model_GGUF.md
+- Load guide: https://github.com/tuanhdevvn/ViDroidCall-Studio/blob/main/docs/BUILD.md
 
 ## File
 

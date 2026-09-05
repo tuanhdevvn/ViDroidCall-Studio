@@ -213,7 +213,6 @@ APK nằm tại `app/build/outputs/apk/debug/app-debug.apk` và chạy độc l�
 
 ### 2. Tải & Nạp file mô hình AI GGUF vào điện thoại (tuỳ chọn)
 * 📥 **Mô hình NLU (Qwen3 0.6B, GGUF):** [tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
-* 📖 **Hướng dẫn chi tiết:** [docs/02-Huong_dan_tai_va_nap_model_GGUF.md](docs/02-Huong_dan_tai_va_nap_model_GGUF.md)
 
 Ứng dụng tự động quét file `.gguf` tại **thư mục Download**:
 

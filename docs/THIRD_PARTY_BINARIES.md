@@ -51,8 +51,8 @@ Download folder. Official weights:
 
 [tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
 
-File: `qwen3-nlu-run-006-Q4_K_M.gguf`. Install steps:
-[02-Huong_dan_tai_va_nap_model_GGUF.md](02-Huong_dan_tai_va_nap_model_GGUF.md).
+File: `qwen3-nlu-run-006-Q4_K_M.gguf`. Place it in the device Download folder
+(`adb push` as in the [README](../README.md)).
 
 - Engine: llama.cpp via `io.github.ljcamargo:llamacpp-kotlin:0.4.0` (MIT)
 - Base model family: [Qwen3](https://github.com/QwenLM/Qwen3) (Apache-2.0)
