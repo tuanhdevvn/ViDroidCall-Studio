@@ -189,7 +189,7 @@ com.example.ViDroidCall_Studio/
 ## 🚀 Hướng Dẫn Cài Đặt & Nạp Mô Hình AI
 
 Hướng dẫn đầy đủ (JDK 21, SDK, lệnh Gradle): [docs/BUILD.md](docs/BUILD.md).
-Đóng góp / báo lỗi: [CONTRIBUTING.md](CONTRIBUTING.md) · [GitHub Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues).
+Báo lỗi: [GitHub Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues).
 Lịch sử phiên bản: [CHANGELOG.md](CHANGELOG.md).
 
 **Chưa có file GGUF vẫn dùng được** nhận dạng giọng nói và Fast-Path (gọi, SMS, báo thức, mở app, …). Llama.cpp chỉ cần khi câu lệnh không khớp Fast-Path.
