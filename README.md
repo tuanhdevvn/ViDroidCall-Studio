@@ -192,7 +192,9 @@ Hướng dẫn đầy đủ (JDK 21, SDK, lệnh Gradle): [docs/BUILD.md](docs/B
 Báo lỗi: [GitHub Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues).
 Lịch sử phiên bản: [CHANGELOG.md](CHANGELOG.md).
 
-**Chưa có file GGUF vẫn dùng được** nhận dạng giọng nói và Fast-Path (gọi, SMS, báo thức, mở app, …). Llama.cpp chỉ cần khi câu lệnh không khớp Fast-Path.
+**Cần file GGUF để bật nút nghe.** Màn hình trợ lý chỉ cho phép thu âm khi huy hiệu **`🟢 Trợ lý AI đã sẵn sàng`** (đã nạp `.gguf`). Chưa có file thì nút micro vẫn bấm được nhưng **không ghi âm**; ứng dụng báo *“Chưa có file mô hình AI trong thư mục Download”*.
+
+Sau khi model sẵn sàng, câu lệnh ngắn vẫn đi **Fast-Path** (gọi, SMS, báo thức, mở app, …) **không gọi Llama.cpp**. Llama.cpp chỉ chạy khi câu **không khớp** Fast-Path.
 
 ### 1. Biên dịch từ mã nguồn
 Yêu cầu: **JDK 21**, Android SDK (`compileSdk` 37 / `minSdk` 26). Android Studio không bắt buộc.
@@ -211,7 +213,7 @@ cd ViDroidCall-Studio
 
 APK nằm tại `app/build/outputs/apk/debug/app-debug.apk` và chạy độc lập sau khi cài, không phụ thuộc thư mục mã nguồn.
 
-### 2. Tải & Nạp file mô hình AI GGUF vào điện thoại (tuỳ chọn)
+### 2. Tải & Nạp file mô hình AI GGUF vào điện thoại (bắt buộc để dùng giọng nói)
 * 📥 **Mô hình NLU (Qwen3 0.6B, GGUF):** [tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
 
 Ứng dụng tự động quét file `.gguf` tại **thư mục Download**:
@@ -221,8 +223,8 @@ APK nằm tại `app/build/outputs/apk/debug/app-debug.apk` và chạy độc l�
 adb push ~/Downloads/qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
 ```
 
-Sau khi nạp file vào `/sdcard/Download/`:
-* Màn hình chính hiển thị huy hiệu: **`🟢 Trợ lý AI đã sẵn sàng`**.
+Sau khi nạp file vào `/sdcard/Download/` (cấp quyền truy cập tệp nếu hệ thống yêu cầu):
+* Màn hình chính hiển thị huy hiệu: **`🟢 Trợ lý AI đã sẵn sàng`** — lúc này nút micro mới bắt đầu nghe.
 * Câu lệnh ngắn đi qua **`⚡ Fast-Path`**; câu phức tạp đi qua **`🧠 On-Device AI`**.
 
 ---

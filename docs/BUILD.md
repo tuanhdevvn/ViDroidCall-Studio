@@ -50,21 +50,20 @@ Run unit tests:
 The APK runs independently of the source tree after install. Native libraries
 and the Zipformer STT model ship inside the APK (`jniLibs` + `assets`).
 
-## What works without extra downloads
+## Voice assistant needs a GGUF file
 
-- Speech-to-text (Sherpa-ONNX Zipformer + Silero VAD)
-- Fast-Path NLU (rules in `app/src/main/assets/fast_path_rules.json`)
-- Native actions (call, SMS, alarm, timer, apps, maps, music)
+The APK already includes Sherpa-ONNX STT and Fast-Path rules, but the
+assistant screen **does not start the microphone** until a `.gguf` model is
+loaded (`NluModelState.Ready`). Tapping the mic without a model shows a toast
+and does not record.
 
-## Optional: on-device LLM (GGUF)
-
-Complex utterances that miss Fast-Path are sent to Llama.cpp. Place
-`qwen3-nlu-run-006-Q4_K_M.gguf` in the device **Download** folder.
+Place `qwen3-nlu-run-006-Q4_K_M.gguf` in the device **Download** folder.
 
 Weights: [Hugging Face Qwen3 0.6B NLU](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6).
 See [README](../README.md) for `adb push` into `/sdcard/Download/`.
 
-Without a GGUF file the assistant still listens and executes Fast-Path commands.
+After the model is ready, short commands still use Fast-Path (no Llama.cpp).
+Llama.cpp runs only when Fast-Path does not match.
 
 ## Third-party native binaries
 
