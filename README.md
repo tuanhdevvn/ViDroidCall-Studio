@@ -189,6 +189,7 @@ com.example.ViDroidCall_Studio/
 ## 🚀 Hướng Dẫn Cài Đặt & Nạp Mô Hình AI
 
 Hướng dẫn đầy đủ (JDK 21, SDK, lệnh Gradle): [docs/BUILD.md](docs/BUILD.md).
+Đóng góp: [CONTRIBUTING.md](CONTRIBUTING.md).
 Báo lỗi: [GitHub Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues).
 Lịch sử phiên bản: [CHANGELOG.md](CHANGELOG.md).
 
