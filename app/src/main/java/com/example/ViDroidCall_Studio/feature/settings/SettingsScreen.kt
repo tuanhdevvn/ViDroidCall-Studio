@@ -601,6 +601,101 @@ fun SettingsScreen(
             }
         }
 
+        // 4. Thẻ Mô Hình AI (Tách riêng hàng Tiêu đề & Hộp hiển thị đầy đủ tên Model)
+        item {
+            val modelName = when (modelState) {
+                is NluModelState.Ready -> modelState.modelPath
+                is NluModelState.Loading -> "Đang nạp mô hình..."
+                is NluModelState.ModelNotFound -> "Chưa có file mô hình trong Download"
+                is NluModelState.Error -> "Lỗi mô hình"
+                is NluModelState.Uninitialized -> "Đang khởi tạo..."
+            }
+            val statusColor = when (modelState) {
+                is NluModelState.Ready -> Color(0xFF10B981)
+                is NluModelState.Loading -> Color(0xFFF59E0B)
+                else -> Color(0xFFEF4444)
+            }
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp)
+                ) {
+                    // Header: Tiêu đề + Badge Trạng thái
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color(0xFF8B5CF6).copy(alpha = 0.12f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Settings,
+                                    contentDescription = null,
+                                    tint = Color(0xFF8B5CF6),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Mô hình AI",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Surface(
+                            shape = CircleShape,
+                            color = statusColor.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = when (modelState) {
+                                    is NluModelState.Ready -> "Đã sẵn sàng"
+                                    is NluModelState.Loading -> "Đang nạp"
+                                    else -> "Chưa nạp"
+                                },
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = statusColor,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Khối hiển thị Tên Model tách biệt rõ ràng, không bị cắt chữ
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = modelName,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (modelState is NluModelState.Ready) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         // 6. Thông tin phiên bản (App Info Footer)
         item {
             Surface(
