@@ -1730,7 +1730,7 @@ class FastPathMatcherTest {
     // ========================================================================
 
     @Test
-    fun `ha anh tuan la ai -^ search web`() {
+    fun `ha anh tuan la ai - search web`() {
         val result = matcher.match("Hà Anh Tuấn là ai")
         assertNotNull(result)
         assertEquals("search_web", result?.intent)
@@ -1743,7 +1743,7 @@ class FastPathMatcherTest {
     }
 
     @Test
-    fun `vneid la gi -^ search web`() {
+    fun `vneid la gi - search web`() {
         val result = matcher.match("VNeID là gì")
         assertNotNull(result)
         assertEquals("search_web", result?.intent)
@@ -1753,7 +1753,7 @@ class FastPathMatcherTest {
     }
 
     @Test
-    fun `ha noi co mua khong -^ search web`() {
+    fun `ha noi co mua khong - search web`() {
         val result = matcher.match("Hôm nay Hà Nội có mưa không")
         assertNotNull(result)
         assertEquals("search_web", result?.intent)
@@ -1762,7 +1762,7 @@ class FastPathMatcherTest {
     }
 
     @Test
-    fun `tra cuu di -^ clarify`() {
+    fun `tra cuu di - clarify`() {
         val result = matcher.match("Tra cứu đi")
         assertNotNull(result)
         assertEquals("clarify", result?.intent)
@@ -1774,7 +1774,7 @@ class FastPathMatcherTest {
     }
 
     @Test
-    fun `quan pho gan toi -^ open map`() {
+    fun `quan pho gan toi - open map`() {
         val result = matcher.match("quán phở gần tôi")
         assertNotNull(result)
         assertEquals("open_map", result?.intent)
@@ -1784,7 +1784,7 @@ class FastPathMatcherTest {
     }
 
     @Test
-    fun `tim video youtube -^ search video`() {
+    fun `tim video youtube - search video`() {
         val result = matcher.match("tìm video Sơn Tùng trên YouTube")
         assertNotNull(result)
         assertEquals("search_video", result?.intent)
@@ -1794,7 +1794,7 @@ class FastPathMatcherTest {
     }
 
     @Test
-    fun `goi anh tuan -^ call contact`() {
+    fun `goi anh tuan - call contact`() {
         val result = matcher.match("gọi anh Tuấn")
         assertNotNull(result)
         assertEquals("call_contact", result?.intent)
@@ -1817,6 +1817,7 @@ class FastPathMatcherTest {
             Triple("quán phở gần tôi", "open_map", "quán phở gần tôi"),
             Triple("cây xăng gần nhất", "open_map", "cây xăng gần nhất"),
             Triple("tìm video Sơn Tùng trên YouTube", "search_video", "Sơn Tùng trên YouTube"),
+            Triple("phát nhạc Sơn Tùng", "play_music", "Sơn Tùng"),
             Triple("phát nhạc Trịnh Công Sơn", "play_music", "Trịnh Công Sơn"),
             Triple("gọi cho anh Tuấn", "call_contact", "anh Tuấn")
         )
