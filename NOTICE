@@ -12,3 +12,8 @@ Native binaries and speech models shipped in this repository
 are unmodified upstream artifacts. See docs/THIRD_PARTY_BINARIES.md for sources
 and how to replace them. GGUF NLU weights are not included in the source tree;
 they are downloaded separately by the user.
+
+Qwen3-0.6B: Copyright Alibaba Cloud, Apache License 2.0
+https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE
+NLU fine-tune (GGUF run-006):
+https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6

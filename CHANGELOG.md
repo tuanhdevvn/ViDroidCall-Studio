@@ -5,6 +5,14 @@ All notable changes to ViDroidCall Studio are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-09-08
+
+### Changed
+
+- Menu bar: larger Home/mic control, no glow border around the bar (PR #44)
+- Restore `CONTRIBUTING.md` for the GitHub community tab
+- README: microphone starts only after a GGUF model is loaded
+
 ## [1.0.0] - 2026-09-05
 
 First public open-source release (Apache License 2.0).
