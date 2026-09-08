@@ -122,16 +122,12 @@ fun AssistantScreen(
     onCancelAction: () -> Unit = {},
     onSaveFeedback: () -> Unit = {}
 ) {
-    val scrollState = rememberScrollState()
-
     Column(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .verticalScroll(scrollState)
             .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 1. Trạng thái Mô hình NLU AI & Quản lý Quyền
         ModelEngineStatusBadge(
@@ -141,33 +137,26 @@ fun AssistantScreen(
             onRescanModel = onRescanModel
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 2. Khu vực Trung tâm Ra lệnh giọng nói AI (Chiếm trọn Full màn hình)
-        VoiceAssistantSection(
-            isListening = isListening,
-            speechText = speechText,
-            currentCommand = currentCommand,
-            isNluProcessing = isNluProcessing,
-            modelState = modelState,
-            isTtsSpeaking = isTtsSpeaking,
-            onToggleListening = onToggleListening,
-            onCancelListening = onCancelListening
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 3. Thẻ Kết Quả Phân Tích Ý Định JSON NLU AI (Khi có kết quả hoặc đang phân tích)
-        if (isNluProcessing || nluResult != null) {
-            NluJsonResultCard(
-                nluResult = nluResult,
-                isProcessing = isNluProcessing,
-                onSaveFeedback = onSaveFeedback
+        // 2. Khu vực Trung tâm Ra lệnh giọng nói AI (Căn giữa hoàn hảo giữa màn hình như cũ)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            VoiceAssistantSection(
+                isListening = isListening,
+                speechText = speechText,
+                currentCommand = currentCommand,
+                isNluProcessing = isNluProcessing,
+                modelState = modelState,
+                isTtsSpeaking = isTtsSpeaking,
+                onToggleListening = onToggleListening,
+                onCancelListening = onCancelListening
             )
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // 4. Hộp thoại Xác nhận thực thi hành động nhạy cảm (Không che mất hay xóa NluJsonResultCard)
+        // 3. Hộp thoại Xác nhận thực thi hành động nhạy cảm
         if (showConfirmationDialog && pendingAction != null) {
             ActionConfirmationDialog(
                 title = pendingAction.getConfirmationTitle(),
@@ -679,27 +668,6 @@ private fun VoiceAssistantSection(
                                 color = MaterialTheme.colorScheme.primary,
                                 textAlign = TextAlign.Center
                             )
-                            // Nếu AI đang phân tích, hiển thị thêm dòng trạng thái phụ bên dưới câu nói
-                            if (isNluProcessing) {
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "AI đang phân tích câu lệnh...",
-                                        fontSize = 14.5.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
-                                    )
-                                }
-                            }
                         }
                         // 6. AI phân tích từ nguồn khác (fallback khi chưa kịp có command text)
                         isNluProcessing -> {

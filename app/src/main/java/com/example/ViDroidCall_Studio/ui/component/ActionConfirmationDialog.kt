@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -155,7 +156,7 @@ fun ActionConfirmationDialog(
                     // Hàng nút thao tác Hủy / Xác nhận
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         // Nút Hủy
                         OutlinedButton(
@@ -165,6 +166,7 @@ fun ActionConfirmationDialog(
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                             modifier = Modifier
                                 .weight(1f)
                                 .height(52.dp)
@@ -174,11 +176,13 @@ fun ActionConfirmationDialog(
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = cancelText,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
 
@@ -191,8 +195,9 @@ fun ActionConfirmationDialog(
                                 contentColor = Color.White
                             ),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                             modifier = Modifier
-                                .weight(1.2f)
+                                .weight(1.35f)
                                 .height(52.dp)
                         ) {
                             Icon(
@@ -200,11 +205,13 @@ fun ActionConfirmationDialog(
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = confirmText,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
