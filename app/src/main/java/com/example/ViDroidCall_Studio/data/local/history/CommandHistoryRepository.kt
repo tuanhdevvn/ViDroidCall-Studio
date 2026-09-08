@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 ViDroidCall Studio contributors
 
 package com.example.ViDroidCall_Studio.data.local.history
 
