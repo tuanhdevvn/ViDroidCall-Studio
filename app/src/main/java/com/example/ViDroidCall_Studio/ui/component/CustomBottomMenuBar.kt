@@ -205,7 +205,6 @@ class BottomNavCutoutShape(
 }
 
 
-
 /**
  * Thanh menu điều hướng phía dưới (Custom Bottom Navigation Bar)
  * - Tông màu chủ đạo: Theme Surface phẳng, thanh thoát
@@ -447,7 +446,7 @@ private fun CenterMicButton(
             Image(
                 painter = painterResource(id = R.drawable.logo_app),
                 contentDescription = "Logo App",
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(90.dp),
                 contentScale = ContentScale.Fit
             )
         }
