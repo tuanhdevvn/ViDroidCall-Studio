@@ -38,6 +38,20 @@ Phiên bản nguồn: [GitHub Release v1.0.1](https://github.com/tuanhdevvn/ViDr
 
 ---
 
+## Giao diện
+
+<p align="center">
+  <img src="docs/screenshots/01-home-mic.png" width="240" alt="Màn trợ lý — AI sẵn sàng, chạm micro để ra lệnh"/>
+  <img src="docs/screenshots/02-history.png" width="240" alt="Lịch sử câu lệnh — chạy lại hoặc xóa"/>
+  <img src="docs/screenshots/03-settings.png" width="240" alt="Cài đặt theme, cỡ chữ và trạng thái mô hình GGUF"/>
+</p>
+
+<p align="center">
+  <sub>Home (mic) · Lịch sử · Cài đặt</sub>
+</p>
+
+---
+
 ## ✨ Tính năng
 
 ### 1. Nhận dạng giọng nói ngoại tuyến (Sherpa-ONNX)
