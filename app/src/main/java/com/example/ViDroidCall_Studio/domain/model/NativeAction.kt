@@ -116,6 +116,17 @@ sealed class NativeAction {
     }
 
     /**
+     * Tìm kiếm thông tin trên Web (Google Search)
+     */
+    data class SearchWeb(
+        override val actionId: String = UUID.randomUUID().toString(),
+        val query: String,
+        override val requiresConfirmation: Boolean = false
+    ) : NativeAction() {
+        override val intentName: String = "search_web"
+    }
+
+    /**
      * Phản hồi thông tin (Chào hỏi, tạm biệt, làm rõ thông tin)
      */
     data class Informational(
@@ -149,6 +160,7 @@ sealed class NativeAction {
             is SetTimer -> "Xác nhận hẹn giờ?"
             is OpenApp -> "Xác nhận mở ứng dụng?"
             is OpenMap -> "Xác nhận mở bản đồ?"
+            is SearchWeb -> "Xác nhận tìm kiếm trên web?"
             else -> "Xác nhận thực hiện thao tác?"
         }
     }
@@ -189,6 +201,9 @@ sealed class NativeAction {
             is OpenMap -> {
                 "Bạn có muốn tìm đường tới $destination không?"
             }
+            is SearchWeb -> {
+                "Bạn có muốn tìm kiếm '$query' trên Google không?"
+            }
             else -> "Bạn có chắc chắn muốn thực hiện hành động này?"
         }
     }
@@ -220,6 +235,7 @@ sealed class NativeAction {
                 "Đang hẹn giờ $displayDuration $unitText"
             }
             is SearchVideo -> "Đang tìm video $query trên YouTube"
+            is SearchWeb -> "Đang tìm: $query"
             is PlayMusic -> {
                 if (musicQuery.isNotBlank()) "Đang phát $musicQuery" else "Đang mở trình phát nhạc"
             }
@@ -239,10 +255,24 @@ sealed class NativeAction {
 
             val status = nluResult.status
             if (status == "needs_clarification") {
+                val missingArr = try {
+                    JSONObject(nluResult.argumentsJson).optJSONArray("missing")
+                } catch (e: Exception) { null }
+                val isSearchQueryMissing = missingArr != null && missingArr.toString().contains("query")
+                val messageText = if (isSearchQueryMissing) {
+                    "Bạn muốn tìm kiếm thông tin gì?"
+                } else {
+                    "Bạn vui lòng cung cấp thêm thông tin."
+                }
+                val speechText = if (isSearchQueryMissing) {
+                    "Bạn muốn tìm kiếm thông tin gì?"
+                } else {
+                    "Bạn vui lòng cung cấp thêm thông tin"
+                }
                 return Informational(
                     intentName = nluResult.intent,
-                    message = "Bạn vui lòng cung cấp thêm thông tin.",
-                    speechText = "Bạn vui lòng cung cấp thêm thông tin"
+                    message = messageText,
+                    speechText = speechText
                 )
             }
 
@@ -394,6 +424,23 @@ sealed class NativeAction {
                         musicQuery = musicQuery,
                         requiresConfirmation = requiresConf
                     )
+                }
+
+                "search_web" -> {
+                    val rawArg = if (args.isNull("query")) "" else args.optString("query")
+                    val rawSlot = nluResult.slots["query"]?.toString() ?: ""
+                    val query = (if (rawArg.isNotBlank() && rawArg.trim() != "null") rawArg else rawSlot)
+                        .let { if (it.trim() == "null") "" else it }
+                        .trim()
+                    if (query.isBlank()) {
+                        Informational(
+                            intentName = "clarify",
+                            message = "Bạn muốn tìm kiếm thông tin gì?",
+                            speechText = "Bạn muốn tìm kiếm thông tin gì?"
+                        )
+                    } else {
+                        SearchWeb(query = query, requiresConfirmation = false)
+                    }
                 }
 
                 "greeting" -> Informational(

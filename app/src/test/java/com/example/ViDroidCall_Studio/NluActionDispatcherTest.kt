@@ -184,4 +184,54 @@ class NluActionDispatcherTest {
         )
         assertEquals("Bạn có muốn soạn tin nhắn gửi cho bố không?", smsActionNoMsg.getConfirmationDescription())
     }
+
+    @Test
+    fun testTtsSpeechFeedbackForSearchWeb() {
+        var spokenText = ""
+        val dispatcher = NluActionDispatcher(context = null) { text ->
+            spokenText = text
+        }
+
+        val json = """
+            {
+                "intent": "search_web",
+                "arguments": { "query": "Python là gì" },
+                "status": "success",
+                "risk_level": "low",
+                "requires_confirmation": false
+            }
+        """.trimIndent()
+
+        dispatcher.executeNluResponse(json)
+        assertEquals("Đang tìm: Python là gì", spokenText)
+    }
+
+    @Test
+    fun testSearchWebExecutionValidation() {
+        var actionError = ""
+        var spokenText = ""
+        val dispatcher = NluActionDispatcher(
+            context = null,
+            enableAppLaunch = true,
+            onActionError = { err -> actionError = err },
+            onSpeakFeedback = { text -> spokenText = text }
+        )
+
+        // Empty query action
+        val emptyAction = com.example.ViDroidCall_Studio.domain.model.NativeAction.SearchWeb(query = "")
+        org.junit.Assert.assertFalse(emptyAction.requiresConfirmation)
+        assertEquals("search_web", emptyAction.intentName)
+        assertEquals("Đang tìm: ", emptyAction.getSpeechFeedbackText())
+
+        // Blank query should NOT crash when executed
+        dispatcher.executeNativeAction(emptyAction)
+        assertEquals("", actionError)
+
+        // Valid query action
+        val validAction = com.example.ViDroidCall_Studio.domain.model.NativeAction.SearchWeb(query = "Python")
+        org.junit.Assert.assertFalse(validAction.requiresConfirmation)
+        assertEquals("Đang tìm: Python", validAction.getSpeechFeedbackText())
+        assertEquals("Xác nhận tìm kiếm trên web?", validAction.getConfirmationTitle())
+        assertEquals("Bạn có muốn tìm kiếm 'Python' trên Google không?", validAction.getConfirmationDescription())
+    }
 }

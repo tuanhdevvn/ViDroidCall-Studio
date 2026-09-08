@@ -149,4 +149,55 @@ class NluIntegrationTest {
         assertEquals("Diễm Xưa", JSONObject(result.argumentsJson).optString("song_name"))
         assertEquals("Khánh Ly", JSONObject(result.argumentsJson).optString("artist"))
     }
+
+    @Test
+    fun testJsonParsingExample6_SearchWeb() {
+        val modelRawOutput = """
+        {
+          "intent": "search_web",
+          "arguments": {
+            "query": "VNeID là gì"
+          },
+          "risk_level": "low",
+          "requires_confirmation": false
+        }
+        """.trimIndent()
+
+        val result = NluJsonParser.parse(modelRawOutput)
+        assertTrue(result.isParsedSuccessfully)
+        assertEquals("search_web", result.intent)
+        assertEquals(NluIntent.SEARCH_WEB, result.intentEnum)
+        assertEquals("low", result.riskLevel)
+        assertFalse(result.requiresConfirmation)
+
+        val action = com.example.ViDroidCall_Studio.domain.model.NativeAction.fromNluResult(result)
+        assertTrue("Action must be SearchWeb", action is com.example.ViDroidCall_Studio.domain.model.NativeAction.SearchWeb)
+        val searchAction = action as com.example.ViDroidCall_Studio.domain.model.NativeAction.SearchWeb
+        assertEquals("VNeID là gì", searchAction.query)
+        assertFalse(searchAction.requiresConfirmation)
+        assertEquals("Đang tìm: VNeID là gì", searchAction.getSpeechFeedbackText())
+    }
+
+    @Test
+    fun testSearchWebParserEdgeCases_NoCrash() {
+        val edgeCaseJsonList = listOf(
+            """{"intent": "search_web", "arguments": {"query": ""}}""",
+            """{"intent": "search_web", "arguments": {"query": "   "}}""",
+            """{"intent": "search_web", "arguments": {}}""",
+            """{"intent": "search_web", "arguments": {"query": null}}""",
+            """{"intent": "search_web"}"""
+        )
+
+        for (json in edgeCaseJsonList) {
+            val result = NluJsonParser.parse(json)
+            assertTrue(result.isParsedSuccessfully)
+            assertEquals("search_web", result.intent)
+            val action = com.example.ViDroidCall_Studio.domain.model.NativeAction.fromNluResult(result)
+            // Should fallback to clarify instead of invalid SearchWeb action
+            assertTrue("Should convert empty query to Informational clarify", action is com.example.ViDroidCall_Studio.domain.model.NativeAction.Informational)
+            val info = action as com.example.ViDroidCall_Studio.domain.model.NativeAction.Informational
+            assertEquals("clarify", info.intentName)
+            assertEquals("Bạn muốn tìm kiếm thông tin gì?", info.speechText)
+        }
+    }
 }

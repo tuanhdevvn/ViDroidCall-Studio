@@ -44,6 +44,42 @@
     },
     {
       "patterns": [
+        "tra cứu đi",
+        "tìm trên mạng",
+        "google giúp tôi",
+        "google giúp",
+        "hỏi google",
+        "tìm kiếm đi",
+        "tìm google đi",
+        "tra cứu trên mạng"
+      ],
+      "intent": "clarify",
+      "arguments": {
+        "missing": [
+          "query"
+        ]
+      },
+      "risk_level": "low",
+      "status": "needs_clarification",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
+        "giá vàng hôm nay",
+        "giá vàng",
+        "giá vàng 9999",
+        "giá vàng sjc"
+      ],
+      "intent": "search_web",
+      "arguments": {
+        "query": "giá vàng"
+      },
+      "risk_level": "low",
+      "status": "success",
+      "requires_confirmation": false
+    },
+    {
+      "patterns": [
         "gọi 113",
         "gọi số 113",
         "gọi điện 113",

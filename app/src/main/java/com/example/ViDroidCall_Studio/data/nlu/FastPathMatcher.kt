@@ -121,6 +121,32 @@ class FastPathMatcher(
         )
 
         addRule(
+            patterns = listOf(
+                "tra cứu đi",
+                "tìm trên mạng",
+                "google giúp tôi",
+                "google giúp",
+                "hỏi google",
+                "tìm kiếm đi",
+                "tìm google đi",
+                "tra cứu trên mạng"
+            ),
+            intent = "clarify",
+            args = JSONObject().put("missing", JSONArray().put("query")),
+            risk = "low",
+            status = "needs_clarification",
+            confirm = false
+        )
+        addRule(
+            patterns = listOf("giá vàng hôm nay", "giá vàng", "giá vàng 9999", "giá vàng sjc"),
+            intent = "search_web",
+            args = JSONObject().put("query", "giá vàng"),
+            risk = "low",
+            status = "success",
+            confirm = false
+        )
+
+        addRule(
             patterns = listOf("gọi 113", "gọi cảnh sát", "gọi công an", "báo công an"),
             intent = "call_contact",
             args = JSONObject().put("contact", "113"),
@@ -547,6 +573,17 @@ class FastPathMatcher(
             val unaccented = normalizeText(normalizedQuery)
             if (unaccented.isEmpty()) return null
 
+            // Kiểm tra câu phức tạp cần rơi về LLM (ví dụ câu điều kiện 'nếu... thì', câu hỏi giải thích 'tôi muốn hỏi...', 'giải thích...')
+            if (unaccented.startsWith("toi muon hoi") ||
+                unaccented.startsWith("toi muon biet") ||
+                unaccented.startsWith("giai thich") ||
+                unaccented.startsWith("neu ") ||
+                unaccented.contains(" thi nhac toi") ||
+                unaccented.contains(" thi bao thuc")
+            ) {
+                return null
+            }
+
             // 1. Khớp O(1) Exact Match từ bảng index
             val directMatch = lookupMap[unaccented]
             if (directMatch != null) {
@@ -646,7 +683,7 @@ class FastPathMatcher(
         }
 
         // g. Ưu tiên tìm kiếm video YouTube trước khi khớp mở ứng dụng tổng quát
-        val videoMatcher = VIDEO_PATTERN.matcher(text)
+        val videoMatcher = VIDEO_PATTERN.matcher(originalText)
         if (videoMatcher.find()) {
             val query = videoMatcher.group(1)?.trim() ?: ""
             if (query.isNotEmpty()) {
@@ -658,7 +695,7 @@ class FastPathMatcher(
         }
 
         // h. Ưu tiên phát nhạc / bài hát
-        val songMatcher = SONG_PATTERN.matcher(text)
+        val songMatcher = SONG_PATTERN.matcher(originalText)
         if (songMatcher.find()) {
             val songName = songMatcher.group(1)?.trim() ?: ""
             if (songName.isNotEmpty()) {
@@ -669,19 +706,84 @@ class FastPathMatcher(
             }
         }
 
-        val genreMusicMatcher = GENRE_MUSIC_PATTERN.matcher(text)
+        val genreMusicMatcher = GENRE_MUSIC_PATTERN.matcher(originalText)
         if (genreMusicMatcher.find()) {
             val genre = genreMusicMatcher.group(1)?.trim() ?: ""
             if (genre.isNotEmpty()) {
                 val args = JSONObject().apply {
+                    put("song_name", genre)
                     put("genre", "nhạc $genre")
                 }
                 return buildNluResult("play_music", args, "low", "success", false)
             }
         }
 
-        // i. Mở ứng dụng (open_app) động
-        val openAppMatcher = OPEN_APP_PATTERN.matcher(text)
+        // i. Mở bản đồ / Chỉ đường (open_map) - ưu tiên trước search_web
+        val mapNearbyMatcher = MAP_NEARBY_PATTERN.matcher(originalText)
+        if (mapNearbyMatcher.find()) {
+            val destination = mapNearbyMatcher.group(1)?.trim() ?: originalText.trim()
+            if (destination.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("destination", destination)
+                }
+                return buildNluResult("open_map", args, "low", "success", false)
+            }
+        }
+
+        val mapMatcher = MAP_PATTERN.matcher(originalText)
+        if (mapMatcher.find()) {
+            val destination = mapMatcher.group(1)?.trim() ?: ""
+            if (destination.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("destination", destination)
+                }
+                return buildNluResult("open_map", args, "low", "success", false)
+            }
+        }
+
+        // j. Tra cứu thông tin trên web (search_web) & Clarify
+        // j1. Clarify cho các câu lệnh tra cứu không có nội dung query
+        if (SEARCH_WEB_CLARIFY_PATTERN.matcher(unaccentedText).matches() || SEARCH_WEB_CLARIFY_PATTERN.matcher(text).matches()) {
+            val args = JSONObject().apply {
+                put("missing", JSONArray().put("query"))
+            }
+            return buildNluResult("clarify", args, "low", "needs_clarification", false)
+        }
+
+        // j2. Prefix rules (tra cứu, tìm trên mạng, tìm google, google giúp, ...)
+        val searchPrefixMatcher = SEARCH_WEB_PREFIX_PATTERN.matcher(originalText)
+        if (searchPrefixMatcher.find()) {
+            var cleanQuery = searchPrefixMatcher.group(1)?.trim() ?: ""
+            for (filler in SEARCH_FILLER_WORDS) {
+                if (cleanQuery.startsWith(filler, ignoreCase = true)) {
+                    cleanQuery = cleanQuery.substring(filler.length).trim()
+                }
+            }
+            if (cleanQuery.isBlank() || cleanQuery in setOf("đi", "di", "nào", "nao", "xem", "coi", "với", "hộ")) {
+                val args = JSONObject().apply {
+                    put("missing", JSONArray().put("query"))
+                }
+                return buildNluResult("clarify", args, "low", "needs_clarification", false)
+            }
+            val args = JSONObject().apply {
+                put("query", cleanQuery)
+            }
+            return buildNluResult("search_web", args, "low", "success", false)
+        }
+
+        // j3. Slot / Semantic rules (X là ai, X là gì, nghĩa là gì, thời tiết, giá vàng, có mưa không, ...)
+        if (SEARCH_WEB_SLOT_PATTERN.matcher(unaccentedText).find()) {
+            val cleanQuery = originalText.trim()
+            if (cleanQuery.isNotEmpty()) {
+                val args = JSONObject().apply {
+                    put("query", cleanQuery)
+                }
+                return buildNluResult("search_web", args, "low", "success", false)
+            }
+        }
+
+        // k. Mở ứng dụng (open_app) động
+        val openAppMatcher = OPEN_APP_PATTERN.matcher(originalText)
         if (openAppMatcher.find()) {
             val targetApp = openAppMatcher.group(1)?.trim() ?: ""
             val unaccentedTarget = stripAccents(targetApp.lowercase())
@@ -699,26 +801,14 @@ class FastPathMatcher(
             }
         }
 
-        // j. Mở bản đồ / Chỉ đường
-        val mapMatcher = MAP_PATTERN.matcher(text)
-        if (mapMatcher.find()) {
-            val destination = mapMatcher.group(1)?.trim() ?: ""
-            if (destination.isNotEmpty()) {
-                val args = JSONObject().apply {
-                    put("destination", destination)
-                }
-                return buildNluResult("open_map", args, "low", "success", false)
-            }
-        }
-
-        // k. Gửi tin nhắn có nội dung (send_sms with content)
+        // l. Gửi tin nhắn có nội dung (send_sms with content)
         val smsContentResult = parseSmsCommand(text, originalText)
         if (smsContentResult != null) {
             return smsContentResult
         }
 
-        // l. Soạn tin nhắn không nội dung (send_sms without content)
-        val smsSimpleMatcher = SMS_SIMPLE_PATTERN.matcher(text)
+        // m. Soạn tin nhắn không nội dung (send_sms without content)
+        val smsSimpleMatcher = SMS_SIMPLE_PATTERN.matcher(originalText)
         if (smsSimpleMatcher.find()) {
             var contact = smsSimpleMatcher.group(1)?.trim() ?: ""
             if (contact.endsWith(" tin nhắn", ignoreCase = true)) {
@@ -741,10 +831,19 @@ class FastPathMatcher(
             }
         }
 
-        // m. Gọi điện (call_contact)
-        val callMatcher = CALL_PATTERN.matcher(text)
+        // n. Gọi điện (call_contact) kèm Safety Net
+        val callMatcher = CALL_PATTERN.matcher(originalText)
         if (callMatcher.find()) {
             var contact = callMatcher.group(1)?.trim() ?: ""
+
+            // 🛡️ Safety Net: Nếu câu hoặc contact chứa "là ai|là gì|là người nào|nghĩa là gì" -> ép sang search_web
+            if (SAFETY_NET_SEARCH_PATTERN.matcher(unaccentedText).find() || SAFETY_NET_SEARCH_PATTERN.matcher(stripAccents(contact)).find()) {
+                val args = JSONObject().apply {
+                    put("query", originalText.trim())
+                }
+                return buildNluResult("search_web", args, "low", "success", false)
+            }
+
             if (contact.startsWith("số ", ignoreCase = true) || contact.startsWith("so ", ignoreCase = true)) {
                 val clean = contact.substring(3).trim()
                 if (clean.isNotEmpty()) {
@@ -774,6 +873,11 @@ class FastPathMatcher(
                 unaccented.startsWith("nhan cho") ||
                 unaccented.startsWith("nhan ") ||
                 unaccented.startsWith("gui ")
+
+        val nonSmsWords = listOf("email", "mail", "tien", "thu", "hang", "xe", "bao cao", "tai lieu", "don")
+        if (nonSmsWords.any { unaccented.startsWith("gui $it") || unaccented.startsWith("nhan $it") }) {
+            return null
+        }
 
         if (!isSmsPrefix) return null
 
@@ -874,6 +978,7 @@ class FastPathMatcher(
     }
 
     private fun isTimerCommand(text: String): Boolean {
+        if (ALARM_PREFIXES.any { text.contains(it) }) return false
         return TIMER_PREFIXES.any { text.contains(it) } || text.contains("phut") || text.contains("giay")
     }
 
@@ -1082,12 +1187,21 @@ class FastPathMatcher(
                     unaccented.startsWith("chieu ") ||
                     isXeChieu
 
-        val isToi =
-            unaccented.contains(" toi") ||
-                    unaccented.startsWith("toi ") ||
-                    isChangVang ||
-                    isSamToi ||
-                    isChapToi
+        val hasExplicitToi = text.lowercase().contains("tối") ||
+                unaccented.contains("buoi toi") ||
+                unaccented.contains("chieu toi") ||
+                isChangVang ||
+                isSamToi ||
+                isChapToi
+        val isToi = hasExplicitToi || (
+                (unaccented.contains(" toi") || unaccented.startsWith("toi ")) &&
+                !unaccented.contains("nhac toi") &&
+                !unaccented.contains("bao toi") &&
+                !unaccented.contains("goi toi") &&
+                !unaccented.contains("danh thuc toi") &&
+                !unaccented.contains("giup toi") &&
+                !unaccented.contains("cho toi")
+        )
 
         val isDem =
             unaccented.contains(" dem") ||
@@ -1356,6 +1470,37 @@ class FastPathMatcher(
 
         payload = payload.trim()
 
+        val compoundHourMin = Regex("(\\d+)\\s*(?:tieng|gio|h)\\s*(\\d+)(?:\\s*phut|\\s*p)?")
+        val matchHm = compoundHourMin.find(payload)
+        if (matchHm != null) {
+            val h = matchHm.groupValues[1].toIntOrNull() ?: 0
+            val m = matchHm.groupValues[2].toIntOrNull() ?: 0
+            val totalMins = h * 60 + m
+            if (totalMins > 0) {
+                val args = JSONObject().apply {
+                    put("duration", totalMins)
+                    put("unit", "minutes")
+                    put("label", "Hẹn giờ")
+                }
+                return buildNluResult("set_timer", args, "low", "success", false)
+            }
+        }
+        val compoundMinSec = Regex("(\\d+)\\s*(?:phut|p)\\s*(\\d+)(?:\\s*giay|\\s*s)?")
+        val matchMs = compoundMinSec.find(payload)
+        if (matchMs != null) {
+            val m = matchMs.groupValues[1].toIntOrNull() ?: 0
+            val s = matchMs.groupValues[2].toIntOrNull() ?: 0
+            val totalSecs = m * 60 + s
+            if (totalSecs > 0) {
+                val args = JSONObject().apply {
+                    put("duration", totalSecs)
+                    put("unit", "seconds")
+                    put("label", "Hẹn giờ")
+                }
+                return buildNluResult("set_timer", args, "low", "success", false)
+            }
+        }
+
         val unit = when {
             payload.contains("giay") || payload.endsWith("s") -> "seconds"
             payload.contains("tieng") || payload.contains("gio") || payload.endsWith("h") -> "hours"
@@ -1459,6 +1604,10 @@ class FastPathMatcher(
             "nhac toi",
             "bao thuc",
             "bao toi",
+            "goi toi day",
+            "goi em day",
+            "danh thuc toi",
+            "danh thuc",
             "nhac"
         )
 
@@ -1604,7 +1753,7 @@ class FastPathMatcher(
             Pattern.CASE_INSENSITIVE
         )
         private val VIDEO_PATTERN = Pattern.compile(
-            "^(?:mở\\s+youtube\\s+tìm|mo\\s+youtube\\s+tim|tìm\\s+video|tim\\s+video|xem\\s+video|bật\\s+video|bat\\s+video|tìm\\s+clip|tim\\s+clip)\\s+(.+)$",
+            "^(?:mở\\s+youtube\\s+tìm|mo\\s+youtube\\s+tim|tìm\\s+(?:trên\\s+)?youtube|tim\\s+(?:tren\\s+)?youtube|tìm\\s+video|tim\\s+video|xem\\s+video|bật\\s+video|bat\\s+video|tìm\\s+clip|tim\\s+clip)\\s+(.+)$",
             Pattern.CASE_INSENSITIVE
         )
         private val SONG_PATTERN = Pattern.compile(
@@ -1613,5 +1762,35 @@ class FastPathMatcher(
         )
         private val GENRE_MUSIC_PATTERN =
             Pattern.compile("^(?:mở|mo|bật|bat|phát|phat|nghe)\\s+nhạc\\s+(.+)$", Pattern.CASE_INSENSITIVE)
+
+        private val MAP_NEARBY_PATTERN = Pattern.compile(
+            "^(?:tìm\\s+)?(.+?\\s+(?:gần\\s+tôi|gần\\s+đây|gần\\s+nhất|gan\\s+toi|gan\\s+day|gan\\s+nhat))$",
+            Pattern.CASE_INSENSITIVE
+        )
+
+        private val SEARCH_WEB_CLARIFY_PATTERN = Pattern.compile(
+            "^(?:tra\\s+cuu|tra\\s+cứu|tim\\s+tren\\s+mang|tìm\\s+trên\\s+mạng|tim\\s+kiem\\s+tren\\s+mang|tìm\\s+kiếm\\s+trên\\s+mạng|tim\\s+google|tìm\\s+google|google\\s+giup(?:\\s+toi)?|google\\s+giúp(?:\\s+tôi)?|hoi\\s+google|hỏi\\s+google|tim\\s+kiem|tìm\\s+kiếm)(?:\\s+(?:di|đi|nao|nào|giup\\s+toi|giúp\\s+tôi|giup|giúp|ho|hộ|xem|coi))?$",
+            Pattern.CASE_INSENSITIVE
+        )
+
+        private val SEARCH_WEB_PREFIX_PATTERN = Pattern.compile(
+            "^(?:tra\\s+cứu|tra\\s+cuu|tìm\\s+trên\\s+mạng|tim\\s+tren\\s+mang|tìm\\s+kiếm\\s+trên\\s+mạng|tim\\s+kiem\\s+tren\\s+mang|tìm\\s+google|tim\\s+google|tìm\\s+kiếm\\s+google|tim\\s+kiem\\s+google|hỏi\\s+google|hoi\\s+google|google\\s+giúp\\s+tôi|google\\s+giup\\s+toi|google\\s+giúp|google\\s+giup|tìm\\s+thông\\s+tin\\s+về|tim\\s+thong\\s+tin\\s+ve|thông\\s+tin\\s+về|thong\\s+tin\\s+ve|tìm\\s+kiếm|tim\\s+kiem|google|gúc\\s+gồ|guc\\s+go)\\s+(.+)$",
+            Pattern.CASE_INSENSITIVE
+        )
+
+        private val SEARCH_WEB_SLOT_PATTERN = Pattern.compile(
+            "(?:\\b(?:la\\s+ai|ai\\s+la|la\\s+gi|la\\s+cai\\s+gi|la\\s+con\\s+gi|nghia\\s+la\\s+gi|la\\s+nguoi\\s+nao|nghia\\s+cua|xuat\\s+xu|nguon\\s+goc|thoi\\s+tiet|gia\\s+vang|tin\\s+tuc|co\\s+mua\\s+khong|mua\\s+khong|bao\\s+nhieu\\s+tuoi|cach\\s+nau|cach\\s+lam)\\b)",
+            Pattern.CASE_INSENSITIVE
+        )
+
+        private val SAFETY_NET_SEARCH_PATTERN = Pattern.compile(
+            "(?:\\b(?:la\\s+ai|la\\s+gi|la\\s+nguoi\\s+nao|nghia\\s+la\\s+gi)\\b)",
+            Pattern.CASE_INSENSITIVE
+        )
+
+        private val SEARCH_FILLER_WORDS = listOf(
+            "cho tôi ", "cho toi ", "giúp tôi ", "giup toi ", "dùm tôi ", "dum toi ",
+            "hộ tôi ", "ho toi ", "với ", "voi ", "về ", "ve "
+        )
     }
 }

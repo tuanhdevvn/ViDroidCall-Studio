@@ -14,7 +14,7 @@ object NluConstants {
      * System prompt bắt buộc của mô hình Qwen3-0.6B-NLU
      */
     const val MANDATORY_SYSTEM_PROMPT =
-        "Bạn là bộ phân tích NLU trích xuất ý định (intent) và tham số (arguments). Các intent hỗ trợ: [set_alarm, set_timer, open_app, open_map, call_contact, send_sms, search_video, play_music, clarify, unsupported]. Chỉ trả về JSON duy nhất: {\"intent\": string, \"arguments\": object, \"risk_level\": \"low\"|\"medium\"|\"high\", \"status\": \"success\"|\"needs_clarification\"|\"invalid\"|\"unsupported\", \"requires_confirmation\": boolean}."
+        "Bạn là bộ phân tích NLU trích xuất ý định (intent) và tham số (arguments). Các intent hỗ trợ: [set_alarm, set_timer, open_app, open_map, call_contact, send_sms, search_video, play_music, search_web, clarify, greeting, goodbye, unsupported]. search_web dùng để tìm kiếm thông tin trên web (vd: X là ai, X là gì, nghĩa là gì, xuất xứ của X, thời tiết, giá vàng, tin tức, thông tin về X, hôm nay ... mưa không). Chỉ trả về JSON duy nhất: {\"intent\": string, \"arguments\": object, \"risk_level\": \"low\"|\"medium\"|\"high\", \"status\": \"success\"|\"needs_clarification\"|\"invalid\"|\"unsupported\", \"requires_confirmation\": boolean}."
 
     /**
      * Format prompt theo định dạng ChatML: <|im_start|>system...<|im_end|><|im_start|>user...<|im_end|><|im_start|>assistant
