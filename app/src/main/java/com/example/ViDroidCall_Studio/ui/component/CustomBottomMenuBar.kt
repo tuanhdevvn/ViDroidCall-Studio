@@ -446,7 +446,7 @@ private fun CenterMicButton(
             Image(
                 painter = painterResource(id = R.drawable.logo_app),
                 contentDescription = "Logo App",
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(66.dp),
                 contentScale = ContentScale.Fit
             )
         }
