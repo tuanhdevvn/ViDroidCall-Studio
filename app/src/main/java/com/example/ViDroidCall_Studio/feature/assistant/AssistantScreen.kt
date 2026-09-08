@@ -121,16 +121,12 @@ fun AssistantScreen(
     onCancelAction: () -> Unit = {},
     onSaveFeedback: () -> Unit = {}
 ) {
-    val scrollState = rememberScrollState()
-
     Column(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .verticalScroll(scrollState)
             .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 1. Trạng thái Mô hình NLU AI & Quản lý Quyền
         ModelEngineStatusBadge(
@@ -140,23 +136,26 @@ fun AssistantScreen(
             onRescanModel = onRescanModel
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // 2. Khu vực Trung tâm Ra lệnh giọng nói AI (Căn giữa hoàn hảo giữa màn hình như cũ)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            VoiceAssistantSection(
+                isListening = isListening,
+                speechText = speechText,
+                currentCommand = currentCommand,
+                isNluProcessing = isNluProcessing,
+                modelState = modelState,
+                isTtsSpeaking = isTtsSpeaking,
+                onToggleListening = onToggleListening,
+                onCancelListening = onCancelListening
+            )
+        }
 
-        // 2. Khu vực Trung tâm Ra lệnh giọng nói AI (Chiếm trọn Full màn hình)
-        VoiceAssistantSection(
-            isListening = isListening,
-            speechText = speechText,
-            currentCommand = currentCommand,
-            isNluProcessing = isNluProcessing,
-            modelState = modelState,
-            isTtsSpeaking = isTtsSpeaking,
-            onToggleListening = onToggleListening,
-            onCancelListening = onCancelListening
-        )
-
-
-
-        // 4. Hộp thoại Xác nhận thực thi hành động nhạy cảm (Không che mất hay xóa NluJsonResultCard)
+        // 3. Hộp thoại Xác nhận thực thi hành động nhạy cảm
         if (showConfirmationDialog && pendingAction != null) {
             ActionConfirmationDialog(
                 title = pendingAction.getConfirmationTitle(),
