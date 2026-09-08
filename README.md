@@ -42,7 +42,7 @@ Phiên bản nguồn: [GitHub Release v1.0.1](https://github.com/tuanhdevvn/ViDr
 
 <p align="center">
   <img src="docs/screenshots/01-home-mic.png" width="240" alt="Màn trợ lý — AI sẵn sàng, chạm micro để ra lệnh"/>
-  <img src="docs/screenshots/04-command-result.png" width="240" alt="Câu lệnh đã nhận và thẻ kết quả phân tích AI"/>
+  <img src="docs/screenshots/04-command-result.png" width="240" alt="Màn trợ lý — câu lệnh Gọi điện cho mẹ"/>
   <img src="docs/screenshots/05-call-confirm.png" width="240" alt="Hộp thoại xác nhận cuộc gọi"/>
 </p>
 <p align="center">
