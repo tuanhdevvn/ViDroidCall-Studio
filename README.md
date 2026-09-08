@@ -27,9 +27,10 @@
 
 **ViDroidCall Studio** (sản phẩm **ViDroidCall**) là ứng dụng Android trợ lý giọng nói tiếng Việt, kiến trúc **Hybrid NLU**:
 
-1. **Sherpa-ONNX ASR & Silero-VAD** — nhận diện tiếng Việt trên máy (Zipformer 30M Int8), ngắt câu theo VAD, chuẩn hóa số (ITN).
-2. **Fast-Path** — câu ngắn / cố định khớp quy tắc và regex **không gọi LLM**.
-3. **On-device LLM (Llama.cpp, Qwen3 0.6B GGUF)** — khi Fast-Path không khớp.
+1. **Nạp GGUF** — chưa có file `.gguf` thì **không ghi âm**, Fast-Path cũng không chạy từ giọng nói.
+2. **Sherpa-ONNX ASR & Silero-VAD** — nhận diện tiếng Việt trên máy (Zipformer 30M Int8), ngắt câu theo VAD, chuẩn hóa số (ITN).
+3. **Fast-Path** — sau khi AI Ready: câu ngắn khớp quy tắc/regex **không gọi LLM**.
+4. **On-device LLM (Llama.cpp, Qwen3 0.6B GGUF)** — khi Fast-Path không khớp.
 
 STT và NLU **không cần internet**. Gọi / SMS / mở app / báo thức chạy local. **Chỉ đường, YouTube, tìm web** mở app hệ thống và có thể cần mạng.
 
@@ -53,8 +54,9 @@ Phiên bản nguồn: [GitHub Release v1.0.1](https://github.com/tuanhdevvn/ViDr
 
 Nghe bằng **nút Micro trên màn trợ lý**. Logo giữa menu bar chỉ về tab Home / Hỏi đáp.
 
-### 3. Fast-Path (không LLM)
-* Quy tắc `assets/fast_path_rules.json` + regex trong `FastPathMatcher`.
+### 3. Fast-Path (không LLM, chỉ khi đã nạp GGUF)
+* Micro / STT tắt cho đến khi huy hiệu **Trợ lý AI đã sẵn sàng**.
+* Khi Ready: quy tắc `assets/fast_path_rules.json` + regex trong `FastPathMatcher` — **không gọi Llama.cpp**.
 * Huy hiệu: `⚡ Fast-Path` hoặc `🧠 On-Device AI (GGUF)`.
 
 ### 4. Quyền & an toàn
@@ -91,19 +93,19 @@ Nghe bằng **nút Micro trên màn trợ lý**. Logo giữa menu bar chỉ về
 
 ```mermaid
 flowchart TD
-    A["Giọng nói (Microphone)"] --> B["Silero-VAD"]
+    A["NluEngineManager quét .gguf"] --> H{"File .gguf Ready?"}
+    H -- "Chưa" --> K["Không ghi âm — Fast-Path cũng không chạy"]
+    H -- "Có" --> M0["Nút micro được phép nghe"]
+    M0 --> B["Silero-VAD"]
     B -->|"Dứt câu"| C["Sherpa-ONNX ASR"]
     C --> D["ITN / SpeechTextFormatter"]
     D --> E{"Fast-Path?"}
-    E -- "Khớp" --> F["Fast-Path JSON"]
-    E -- "Không khớp" --> G["NluEngineManager + GGUF"]
-    G --> H{"File .gguf?"}
-    H -- "Có" --> I["Llama.cpp Qwen3 0.6B"]
+    E -- "Khớp" --> F["Fast-Path JSON không gọi LLM"]
+    E -- "Không khớp" --> I["Llama.cpp Qwen3 0.6B"]
     I --> J["NluJsonParser"]
-    H -- "Chưa" --> K["Chưa nạp AI — không ghi âm"]
     F --> L["NluResult"]
     J --> L
-    L --> M["AssistantScreen"]
+    L --> UI["AssistantScreen"]
     L --> N["Lịch sử SQLite tối đa 10"]
     L --> O["NluActionDispatcher"]
 ```
@@ -134,9 +136,9 @@ Chi tiết file: xem cây trong IDE. `SpeechTextFormatter.kt` — casing STT. `T
 
 [docs/BUILD.md](docs/BUILD.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues) · [CHANGELOG.md](CHANGELOG.md)
 
-**Micro chỉ nghe** khi huy hiệu **Trợ lý AI đã sẵn sàng** (đã nạp `.gguf` trong Download). Chưa có file: bấm mic được, **không ghi âm**.
+**Micro chỉ nghe** khi huy hiệu **Trợ lý AI đã sẵn sàng** (đã nạp `.gguf` trong Download). Chưa có file: bấm mic được nhưng **không ghi âm** — **Fast-Path cũng không chạy** (không có câu STT).
 
-Sau khi Ready, câu ngắn vẫn **Fast-Path** (không Llama.cpp). LLM chỉ khi không khớp Fast-Path.
+Sau khi Ready, câu ngắn đi **Fast-Path** (không Llama.cpp). LLM chỉ khi không khớp Fast-Path.
 
 ### Biên dịch
 
