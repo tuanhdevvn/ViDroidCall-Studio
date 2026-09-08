@@ -143,7 +143,7 @@ object VietnameseNumberNormalizer {
                 val isAfterNumberKeyword = output.isNotEmpty() && (
                     stripAccents(output.last().lowercase()).let { it == "so" || it == "den" || it == "cho" }
                 )
-                if (originalChunk.size >= 3 || (originalChunk.size >= 2 && isAfterNumberKeyword) || digitChunk.startsWith("0")) {
+                if (originalChunk.size >= 3 || (originalChunk.size >= 2 && (isAfterNumberKeyword || digitChunk.startsWith("0")))) {
                     output.add(digitChunk.toString())
                     i = j
                     continue

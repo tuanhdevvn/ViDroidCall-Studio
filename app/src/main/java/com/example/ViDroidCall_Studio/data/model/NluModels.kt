@@ -17,6 +17,7 @@ enum class NluIntent(val value: String, val title: String) {
     SEND_SMS("send_sms", "Gửi tin nhắn"),
     SEARCH_VIDEO("search_video", "Tìm kiếm video YouTube"),
     PLAY_MUSIC("play_music", "Phát nhạc"),
+    SEARCH_WEB("search_web", "Tìm kiếm thông tin trên Web"),
     CLARIFY("clarify", "Yêu cầu bổ sung thông tin"),
     GREETING("greeting", "Chào hỏi"),
     GOODBYE("goodbye", "Tạm biệt"),
@@ -117,10 +118,25 @@ object NluJsonParser {
             val jsonObject = JSONObject(jsonString)
 
             val intent = jsonObject.optString("intent", "unsupported")
-            val status = jsonObject.optString("status", "unsupported")
+            val status = if (jsonObject.has("status") && jsonObject.optString("status").isNotBlank()) {
+                jsonObject.getString("status")
+            } else {
+                when (intent) {
+                    "clarify" -> "needs_clarification"
+                    "unsupported" -> "unsupported"
+                    else -> "success"
+                }
+            }
             val riskLevel = jsonObject.optString("risk_level", "low")
             val requiresConfirmation = jsonObject.optBoolean("requires_confirmation", false)
-            val argsObj = jsonObject.optJSONObject("arguments") ?: jsonObject.optJSONObject("slots") ?: JSONObject()
+            val argsObj = jsonObject.optJSONObject("arguments") ?: jsonObject.optJSONObject("slots") ?: run {
+                val directArgsStr = jsonObject.optString("arguments")
+                if (directArgsStr.isNotBlank() && !directArgsStr.startsWith("{")) {
+                    JSONObject().put("query", directArgsStr)
+                } else {
+                    JSONObject()
+                }
+            }
             val slotsMap = jsonObjectToMap(argsObj)
 
             val prettyJson = jsonObject.toString(2)

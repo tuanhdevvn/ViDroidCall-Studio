@@ -1724,4 +1724,173 @@ class FastPathMatcherTest {
             assertTrue(res.requiresConfirmation)
         }
     }
+
+    // ========================================================================
+    // SPEC SECTION 15 & 16: SEARCH_WEB & CONTRAST TESTS
+    // ========================================================================
+
+    @Test
+    fun `ha anh tuan la ai -^ search web`() {
+        val result = matcher.match("Hà Anh Tuấn là ai")
+        assertNotNull(result)
+        assertEquals("search_web", result?.intent)
+        assertEquals(NluIntent.SEARCH_WEB, result?.intentEnum)
+        assertEquals("low", result?.riskLevel)
+        assertEquals("success", result?.status)
+        assertEquals(false, result?.requiresConfirmation)
+        val query = JSONObject(result!!.argumentsJson).optString("query")
+        assertEquals("Hà Anh Tuấn là ai", query)
+    }
+
+    @Test
+    fun `vneid la gi -^ search web`() {
+        val result = matcher.match("VNeID là gì")
+        assertNotNull(result)
+        assertEquals("search_web", result?.intent)
+        assertEquals(NluIntent.SEARCH_WEB, result?.intentEnum)
+        val query = JSONObject(result!!.argumentsJson).optString("query")
+        assertEquals("VNeID là gì", query)
+    }
+
+    @Test
+    fun `ha noi co mua khong -^ search web`() {
+        val result = matcher.match("Hôm nay Hà Nội có mưa không")
+        assertNotNull(result)
+        assertEquals("search_web", result?.intent)
+        val query = JSONObject(result!!.argumentsJson).optString("query")
+        assertEquals("Hôm nay Hà Nội có mưa không", query)
+    }
+
+    @Test
+    fun `tra cuu di -^ clarify`() {
+        val result = matcher.match("Tra cứu đi")
+        assertNotNull(result)
+        assertEquals("clarify", result?.intent)
+        assertEquals(NluIntent.CLARIFY, result?.intentEnum)
+        assertEquals("needs_clarification", result?.status)
+        val missing = JSONObject(result!!.argumentsJson).optJSONArray("missing")
+        assertNotNull(missing)
+        assertEquals("query", missing!!.getString(0))
+    }
+
+    @Test
+    fun `quan pho gan toi -^ open map`() {
+        val result = matcher.match("quán phở gần tôi")
+        assertNotNull(result)
+        assertEquals("open_map", result?.intent)
+        assertEquals(NluIntent.OPEN_MAP, result?.intentEnum)
+        val destination = JSONObject(result!!.argumentsJson).optString("destination")
+        assertEquals("quán phở gần tôi", destination)
+    }
+
+    @Test
+    fun `tim video youtube -^ search video`() {
+        val result = matcher.match("tìm video Sơn Tùng trên YouTube")
+        assertNotNull(result)
+        assertEquals("search_video", result?.intent)
+        assertEquals(NluIntent.SEARCH_VIDEO, result?.intentEnum)
+        val query = JSONObject(result!!.argumentsJson).optString("query")
+        assertTrue(query.contains("Sơn Tùng"))
+    }
+
+    @Test
+    fun `goi anh tuan -^ call contact`() {
+        val result = matcher.match("gọi anh Tuấn")
+        assertNotNull(result)
+        assertEquals("call_contact", result?.intent)
+        assertEquals(NluIntent.CALL_CONTACT, result?.intentEnum)
+        val contact = JSONObject(result!!.argumentsJson).optString("contact")
+        assertEquals("anh Tuấn", contact)
+    }
+
+    @Test
+    fun testContrastTableGoldenDataset() {
+        // Table in Section 16 & Section 5 of Android_search_web.md
+        val testTable = listOf(
+            Triple("Hà Anh Tuấn là ai", "search_web", "Hà Anh Tuấn là ai"),
+            Triple("VNeID là gì", "search_web", "VNeID là gì"),
+            Triple("Hôm nay Hà Nội có mưa không", "search_web", "Hôm nay Hà Nội có mưa không"),
+            Triple("Thời tiết Đà Nẵng ngày mai", "search_web", "Thời tiết Đà Nẵng ngày mai"),
+            Triple("Giá vàng hôm nay bao nhiêu", "search_web", "Giá vàng hôm nay bao nhiêu"),
+            Triple("Tra cứu lịch thi đấu bóng đá", "search_web", "lịch thi đấu bóng đá"),
+            Triple("Tìm google cách làm bánh chưng", "search_web", "cách làm bánh chưng"),
+            Triple("quán phở gần tôi", "open_map", "quán phở gần tôi"),
+            Triple("cây xăng gần nhất", "open_map", "cây xăng gần nhất"),
+            Triple("tìm video Sơn Tùng trên YouTube", "search_video", "Sơn Tùng trên YouTube"),
+            Triple("phát nhạc Trịnh Công Sơn", "play_music", "Trịnh Công Sơn"),
+            Triple("gọi cho anh Tuấn", "call_contact", "anh Tuấn")
+        )
+
+        for ((input, expectedIntent, expectedArg) in testTable) {
+            val res = matcher.match(input)
+            assertNotNull("Input '$input' must match", res)
+            assertEquals("Intent mismatch for '$input'", expectedIntent, res?.intent)
+            val json = JSONObject(res!!.argumentsJson)
+            when (expectedIntent) {
+                "search_web" -> assertEquals("Query mismatch for '$input'", expectedArg, json.optString("query"))
+                "open_map" -> assertEquals("Destination mismatch for '$input'", expectedArg, json.optString("destination"))
+                "search_video" -> assertTrue("Video query mismatch for '$input'", json.optString("query").contains(expectedArg))
+                "play_music" -> assertTrue("Song/music mismatch for '$input'", json.optString("song_name").contains(expectedArg) || json.optString("genre").contains(expectedArg))
+                "call_contact" -> assertEquals("Contact mismatch for '$input'", expectedArg, json.optString("contact"))
+            }
+        }
+
+        // Clarify inputs
+        val clarifyInputs = listOf("Tra cứu đi", "Tìm trên mạng", "Google giúp tôi", "Tìm kiếm đi")
+        for (input in clarifyInputs) {
+            val res = matcher.match(input)
+            assertNotNull("Clarify input '$input' must match", res)
+            assertEquals("Intent must be clarify for '$input'", "clarify", res?.intent)
+            val missing = JSONObject(res!!.argumentsJson).optJSONArray("missing")
+            assertNotNull("Missing array must exist for '$input'", missing)
+            assertEquals("query", missing!!.getString(0))
+        }
+    }
+
+    @Test
+    fun testSearchWebPrefixRules() {
+        val cases = listOf(
+            Pair("tra cứu Python", "Python"),
+            Pair("tìm trên mạng giá iPhone", "giá iPhone"),
+            Pair("tìm google Hà Nội hôm nay", "Hà Nội hôm nay"),
+            Pair("google giúp tôi VNeID", "VNeID"),
+            Pair("hỏi google Python là gì", "Python là gì")
+        )
+        for ((input, expectedQuery) in cases) {
+            val res = matcher.match(input)
+            assertNotNull("Input '$input' must match", res)
+            assertEquals("search_web", res?.intent)
+            val q = JSONObject(res!!.argumentsJson).optString("query")
+            assertEquals("Query mismatch for '$input'", expectedQuery, q)
+        }
+    }
+
+    @Test
+    fun testSafetyNetConflicts() {
+        // Must NOT be call_contact:
+        val searchQuestions = listOf(
+            "Anh Tuấn là ai",
+            "VNeID là gì",
+            "Thế nào là người nào",
+            "Hà Anh Tuấn nghĩa là gì"
+        )
+        for (q in searchQuestions) {
+            val res = matcher.match(q)
+            assertNotNull("Question '$q' must match", res)
+            assertEquals("Should be search_web not call_contact for '$q'", "search_web", res?.intent)
+        }
+
+        // Must remain call_contact:
+        val validCalls = listOf(
+            "gọi anh Tuấn",
+            "gọi cho anh Tuấn",
+            "gọi điện cho anh Tuấn",
+            "alo cho anh Tuấn"
+        )
+        for (c in validCalls) {
+            val res = matcher.match(c)
+            assertNotNull("Call '$c' must match", res)
+            assertEquals("Should remain call_contact for '$c'", "call_contact", res?.intent)
+        }
+    }
 }

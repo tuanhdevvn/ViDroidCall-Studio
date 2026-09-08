@@ -143,6 +143,7 @@ class NluActionDispatcher(
                 is NativeAction.SetTimer -> executeSetTimer(targetContext, action)
                 is NativeAction.SearchVideo -> executeSearchVideo(targetContext, action)
                 is NativeAction.PlayMusic -> executePlayMusic(targetContext, action)
+                is NativeAction.SearchWeb -> executeSearchWeb(targetContext, action)
                 else -> {
                     logLifecycle("ACTION_SUCCESS", "intent=${action.intentName}")
                 }
@@ -532,6 +533,48 @@ class NluActionDispatcher(
             }
             context.startActivity(browserIntent)
             logLifecycle("ACTION_SUCCESS", "intent=search_video, app=browser")
+        }
+    }
+
+    private fun executeSearchWeb(context: Context, action: NativeAction.SearchWeb) {
+        val cleanQuery = action.query.trim()
+        if (cleanQuery.isBlank()) {
+            val error = "Nội dung tìm kiếm không được để trống."
+            showToast(error)
+            onActionError(error)
+            return
+        }
+
+        showToast("🌐 Đang tìm: $cleanQuery...")
+
+        val searchUri = Uri.Builder()
+            .scheme("https")
+            .authority("www.google.com")
+            .appendPath("search")
+            .appendQueryParameter("q", cleanQuery)
+            .build()
+
+        val browserIntent = Intent(Intent.ACTION_VIEW, searchUri).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        if (browserIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(browserIntent)
+            logLifecycle("ACTION_SUCCESS", "intent=search_web, query=$cleanQuery")
+        } else {
+            val webSearchIntent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+                putExtra(android.app.SearchManager.QUERY, cleanQuery)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            if (webSearchIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(webSearchIntent)
+                logLifecycle("ACTION_SUCCESS", "intent=search_web, type=web_search_fallback, query=$cleanQuery")
+            } else {
+                val errorMsg = "Thiết bị không có trình duyệt hoặc ứng dụng để tìm kiếm."
+                logLifecycle("ACTION_FAILED", "intent=search_web, error=No activity found to handle search intent")
+                showToast(errorMsg)
+                onActionError(errorMsg)
+            }
         }
     }
 

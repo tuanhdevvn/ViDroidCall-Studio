@@ -72,10 +72,26 @@ class NluEngineManager(
                     is LlamaHelper.LLMEvent.Done -> {
                         val fullResponse = streamingResponseBuilder.toString()
                         val parsed = NluJsonParser.parse(fullResponse)
-                        _lastResult.value = parsed
-                        _nluEvents.tryEmit(parsed)
+                        var finalParsed = parsed
+                        if (finalParsed.intent == "call_contact") {
+                            val currentInput = _currentQuery.value
+                            if (SAFETY_NET_SEARCH_REGEX.containsMatchIn(currentInput)) {
+                                finalParsed = NluResult(
+                                    rawJson = finalParsed.rawJson,
+                                    intent = "search_web",
+                                    status = "success",
+                                    riskLevel = "low",
+                                    requiresConfirmation = false,
+                                    argumentsJson = org.json.JSONObject().put("query", currentInput.trim()).toString(2),
+                                    isParsedSuccessfully = true,
+                                    slots = mapOf("query" to currentInput.trim())
+                                )
+                            }
+                        }
+                        _lastResult.value = finalParsed
+                        _nluEvents.tryEmit(finalParsed)
                         _isGenerating.value = false
-                        Log.i(TAG, "✅ [100% GGUF Model Output]:\n${parsed.rawJson}")
+                        Log.i(TAG, "✅ [100% GGUF Model Output]:\n${finalParsed.rawJson}")
                     }
                     is LlamaHelper.LLMEvent.Error -> {
                         val errResult = NluResult.fromError(event.message)
@@ -283,5 +299,9 @@ class NluEngineManager(
 
     companion object {
         private const val TAG = "NluEngineManager"
+        private val SAFETY_NET_SEARCH_REGEX = Regex(
+            "(?:\\b(?:là\\s+ai|la\\s+ai|là\\s+gì|la\\s+gi|là\\s+người\\s+nào|la\\s+nguoi\\s+nao|nghĩa\\s+là\\s+gì|nghia\\s+la\\s+gi)\\b)",
+            RegexOption.IGNORE_CASE
+        )
     }
 }
