@@ -154,17 +154,7 @@ fun AssistantScreen(
             onCancelListening = onCancelListening
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Thẻ Kết Quả Phân Tích Ý Định JSON NLU AI (Khi có kết quả hoặc đang phân tích)
-        if (isNluProcessing || nluResult != null) {
-            NluJsonResultCard(
-                nluResult = nluResult,
-                isProcessing = isNluProcessing,
-                onSaveFeedback = onSaveFeedback
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
 
         // 4. Hộp thoại Xác nhận thực thi hành động nhạy cảm (Không che mất hay xóa NluJsonResultCard)
         if (showConfirmationDialog && pendingAction != null) {
