@@ -9,7 +9,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added
 
-- NLU GGUF weights in `models/` via Git LFS (`qwen3-nlu-run-006-Q4_K_M.gguf`)
+- NLU GGUF weights in `models/` via Git LFS (`qwen3-nlu-run-Q4_K_M.gguf`); docs no longer point to Hugging Face for that file
+- Stable GGUF filename (no run/version suffix); replace in place on updates
 
 ## [1.0.1] - 2026-09-08
 
@@ -36,4 +37,4 @@ First public open-source release (Apache License 2.0).
 
 - Project source is licensed under Apache-2.0 (`LICENSE`, `NOTICE`)
 - Third-party components are listed in `OPEN_SOURCE_LICENSES.md`
-- NLU GGUF weights: [Hugging Face Qwen3 0.6B run-006](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
+- NLU GGUF weights: `models/qwen3-nlu-run-Q4_K_M.gguf` (Git LFS)

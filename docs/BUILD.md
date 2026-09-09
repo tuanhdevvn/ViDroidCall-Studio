@@ -58,16 +58,16 @@ loaded (`NluModelState.Ready`). Tapping the mic without a model shows a toast
 and does not record.
 
 The weights file is stored in this Git repo under `models/` via Git LFS
-(`qwen3-nlu-run-006-Q4_K_M.gguf`). Run `git lfs pull` after clone.
+(`qwen3-nlu-run-Q4_K_M.gguf`). Run `git lfs pull` after clone.
 
 The app still loads the file from the device **Download** folder (not from
 the source tree). Copy it onto the phone:
 
 ```bash
-adb push models/qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
+adb push models/qwen3-nlu-run-Q4_K_M.gguf /sdcard/Download/
 ```
 
-Upstream copy: [Hugging Face Qwen3 0.6B NLU](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6).
+See [models/README.md](../models/README.md).
 
 After the model is ready, short commands still use Fast-Path (no Llama.cpp).
 Llama.cpp runs only when Fast-Path does not match.

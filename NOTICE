@@ -10,10 +10,8 @@ See OPEN_SOURCE_LICENSES.md for attribution and license details.
 Native binaries and speech models shipped in this repository
 (jniLibs Sherpa-ONNX / ONNX Runtime, and assets/sherpa-onnx-vi Zipformer + Silero VAD)
 are unmodified upstream artifacts. See docs/THIRD_PARTY_BINARIES.md for sources
-and how to replace them. GGUF NLU weights are not included in the source tree;
-they are downloaded separately by the user.
+and how to replace them. GGUF NLU weights are stored in models/ (Git LFS).
 
 Qwen3-0.6B: Copyright Alibaba Cloud, Apache License 2.0
-https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE
-NLU fine-tune (GGUF run-006):
-https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6
+https://github.com/QwenLM/Qwen3
+NLU fine-tune (GGUF): models/qwen3-nlu-run-Q4_K_M.gguf

@@ -49,9 +49,7 @@ Replace by downloading the Hugging Face repo and copying those files into
 Qwen3 0.6B NLU weights (GGUF `Q4_K_M`) are stored in `models/` via Git LFS
 and loaded at runtime from the device Download folder (not from the APK).
 
-Repo path: `models/qwen3-nlu-run-006-Q4_K_M.gguf`
-
-Upstream: [tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
+Repo path: [`models/qwen3-nlu-run-Q4_K_M.gguf`](../models/qwen3-nlu-run-Q4_K_M.gguf)
 
 After `git lfs pull`, copy onto the device (`adb push` as in the [README](../README.md)).
 

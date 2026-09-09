@@ -37,7 +37,7 @@ Yêu cầu: **JDK 21**, Android SDK (`compileSdk` 37 / `minSdk` 26). Android Stu
 
 Trợ lý giọng nói **chỉ bắt đầu nghe** khi đã nạp file GGUF vào thư mục Download của máy:
 
-[`models/qwen3-nlu-run-006-Q4_K_M.gguf`](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6) (Git LFS; `adb push` sang Download trên máy)
+[`models/qwen3-nlu-run-Q4_K_M.gguf`](models/qwen3-nlu-run-Q4_K_M.gguf) (Git LFS; `adb push` sang Download trên máy)
 
 Chi tiết `adb push` và Fast-Path: [README.md](README.md).
 
@@ -59,7 +59,7 @@ PR nhắm vào nhánh `main`. GitHub Actions sẽ biên dịch Kotlin và chạy
 
 ## Phạm vi đóng góp nên tránh (Out of scope)
 
-* **Không commit** file `.gguf` ngoài `models/` (Git LFS), hay file `.bin` linh tinh. Trọng số NLU chính thức là `models/qwen3-nlu-run-006-Q4_K_M.gguf`.
+* **Không commit** file `.gguf` ngoài `models/` (Git LFS), hay file `.bin` linh tinh. Trọng số NLU chính thức là `models/qwen3-nlu-run-Q4_K_M.gguf` (ghi đè cùng tên khi cập nhật, không đổi tên file).
 * **Không commit** `local.properties`, `.idea/`, hay khóa máy local.
 * **Không sửa** binary native chưa ghi rõ nguồn. File `.so` / ONNX đi kèm: [docs/THIRD_PARTY_BINARIES.md](docs/THIRD_PARTY_BINARIES.md).
 * **Không đụng** copyright Xiaomi trong `com.k2fsa.sherpa.onnx`. File của nhóm dùng header `SPDX-License-Identifier: Apache-2.0`.

@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/AI-Llama.cpp%20Qwen3%20GGUF-FF6F00?style=for-the-badge" alt="AI Engine"/>
   <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD"/>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License: Apache 2.0"/></a>
-  <a href="https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6"><img src="https://img.shields.io/badge/HuggingFace-Qwen3%200.6B%20NLU-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black" alt="Hugging Face NLU model"/></a>
+  <a href="models/README.md"><img src="https://img.shields.io/badge/GGUF-models%2F%20Git%20LFS-2088FF?style=for-the-badge&logo=gitlfs&logoColor=white" alt="NLU GGUF in repo (Git LFS)"/></a>
 </p>
 
 ---
@@ -173,12 +173,12 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ### Nạp Qwen3 GGUF
 
-[tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6) — `qwen3-nlu-run-006-Q4_K_M.gguf` (~397 MB). File nằm trong repo tại `models/` (**Git LFS**). Cần `git lfs pull` khi clone.
+Trọng số nằm trong repo: [`models/qwen3-nlu-run-Q4_K_M.gguf`](models/qwen3-nlu-run-Q4_K_M.gguf) (~397 MB, **Git LFS**). Chi tiết: [`models/README.md`](models/README.md). Cần `git lfs pull` khi clone.
 
 Ứng dụng đọc GGUF từ thư mục **Download trên điện thoại**, không đọc từ thư mục clone:
 
 ```bash
-adb push models/qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
+adb push models/qwen3-nlu-run-Q4_K_M.gguf /sdcard/Download/
 ```
 
 Cấp quyền tệp nếu hệ thống hỏi. Huy hiệu xanh → micro bắt đầu nghe.
@@ -209,5 +209,5 @@ http://www.apache.org/licenses/LICENSE-2.0
 * [LICENSE](LICENSE) · [NOTICE](NOTICE) (có attribution Qwen3 / Alibaba)
 * Bên thứ ba: [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md)
 * `.so` / Zipformer không sửa: [docs/THIRD_PARTY_BINARIES.md](docs/THIRD_PARTY_BINARIES.md)
-* GGUF: [Hugging Face Qwen3 0.6B run-006](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
+* GGUF: [`models/`](models/README.md) (Git LFS)
 * Repo: [tuanhdevvn/ViDroidCall-Studio](https://github.com/tuanhdevvn/ViDroidCall-Studio)

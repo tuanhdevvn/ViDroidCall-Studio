@@ -8,7 +8,7 @@ package com.example.ViDroidCall_Studio.data.nlu
  */
 object NluConstants {
 
-    const val MODEL_FILE_NAME = "qwen3-nlu-run-006-Q4_K_M.gguf"
+    const val MODEL_FILE_NAME = "qwen3-nlu-run-Q4_K_M.gguf"
 
     /**
      * System prompt bắt buộc của mô hình Qwen3-0.6B-NLU
