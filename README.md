@@ -152,7 +152,7 @@ Chi tiết file: xem cây trong IDE. `SpeechTextFormatter.kt` — casing STT. `T
 
 ## 🚀 Cài đặt & nạp GGUF
 
-[docs/BUILD.md](docs/BUILD.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues) · [CHANGELOG.md](CHANGELOG.md)
+[docs/BUILD.md](docs/BUILD.md) · [docs/SCHEMA.md](docs/SCHEMA.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues) · [CHANGELOG.md](CHANGELOG.md)
 
 **Micro chỉ nghe** khi huy hiệu **Trợ lý AI đã sẵn sàng** (đã nạp `.gguf` trong Download). Chưa có file: bấm mic được nhưng **không ghi âm** — **Fast-Path cũng không chạy** (không có câu STT).
 

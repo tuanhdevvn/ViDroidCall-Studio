@@ -77,3 +77,6 @@ Llama.cpp runs only when Fast-Path does not match.
 Prebuilt `.so` files and ONNX models are unmodified upstream artifacts.
 How they were obtained and how to replace them:
 [THIRD_PARTY_BINARIES.md](THIRD_PARTY_BINARIES.md).
+
+NLU JSON, SQLite, DataStore, and navigation:
+[SCHEMA.md](SCHEMA.md).

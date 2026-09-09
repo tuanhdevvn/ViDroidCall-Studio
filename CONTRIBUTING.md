@@ -72,6 +72,7 @@ PR nhắm vào nhánh `main`. GitHub Actions sẽ biên dịch Kotlin và chạy
 | :--- | :--- |
 | [README.md](README.md) | Tổng quan, kiến trúc, cài đặt |
 | [docs/BUILD.md](docs/BUILD.md) | JDK, Gradle, GGUF |
+| [docs/SCHEMA.md](docs/SCHEMA.md) | JSON NLU, SQLite, DataStore, điều hướng |
 | [CHANGELOG.md](CHANGELOG.md) | Lịch sử phiên bản |
 | [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) | Thư viện bên thứ ba |
 | [LICENSE](LICENSE) / [NOTICE](NOTICE) | Apache-2.0 |
