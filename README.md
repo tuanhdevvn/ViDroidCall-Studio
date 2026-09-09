@@ -173,10 +173,12 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ### Nạp Qwen3 GGUF
 
-[tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6) — `qwen3-nlu-run-006-Q4_K_M.gguf` (~397 MB). **Không** nằm trong Git.
+[tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6) — `qwen3-nlu-run-006-Q4_K_M.gguf` (~397 MB). File nằm trong repo tại `models/` (**Git LFS**). Cần `git lfs pull` khi clone.
+
+Ứng dụng đọc GGUF từ thư mục **Download trên điện thoại**, không đọc từ thư mục clone:
 
 ```bash
-adb push ~/Downloads/qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
+adb push models/qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
 ```
 
 Cấp quyền tệp nếu hệ thống hỏi. Huy hiệu xanh → micro bắt đầu nghe.

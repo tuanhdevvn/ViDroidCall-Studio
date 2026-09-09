@@ -44,15 +44,16 @@ Upstream package:
 Replace by downloading the Hugging Face repo and copying those files into
 `app/src/main/assets/sherpa-onnx-vi/`.
 
-## GGUF NLU models (not in this repo)
+## GGUF NLU models (Git LFS)
 
-Qwen3 0.6B NLU weights (GGUF `Q4_K_M`) are loaded at runtime from the device
-Download folder. Official weights:
+Qwen3 0.6B NLU weights (GGUF `Q4_K_M`) are stored in `models/` via Git LFS
+and loaded at runtime from the device Download folder (not from the APK).
 
-[tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
+Repo path: `models/qwen3-nlu-run-006-Q4_K_M.gguf`
 
-File: `qwen3-nlu-run-006-Q4_K_M.gguf`. Place it in the device Download folder
-(`adb push` as in the [README](../README.md)).
+Upstream: [tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6)
+
+After `git lfs pull`, copy onto the device (`adb push` as in the [README](../README.md)).
 
 - Engine: llama.cpp via `io.github.ljcamargo:llamacpp-kotlin:0.4.0` (MIT)
 - Base model family: [Qwen3](https://github.com/QwenLM/Qwen3) (Apache-2.0)

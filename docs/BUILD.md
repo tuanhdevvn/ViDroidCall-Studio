@@ -57,10 +57,17 @@ assistant screen **does not start the microphone** until a `.gguf` model is
 loaded (`NluModelState.Ready`). Tapping the mic without a model shows a toast
 and does not record.
 
-Place `qwen3-nlu-run-006-Q4_K_M.gguf` in the device **Download** folder.
+The weights file is stored in this Git repo under `models/` via Git LFS
+(`qwen3-nlu-run-006-Q4_K_M.gguf`). Run `git lfs pull` after clone.
 
-Weights: [Hugging Face Qwen3 0.6B NLU](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6).
-See [README](../README.md) for `adb push` into `/sdcard/Download/`.
+The app still loads the file from the device **Download** folder (not from
+the source tree). Copy it onto the phone:
+
+```bash
+adb push models/qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
+```
+
+Upstream copy: [Hugging Face Qwen3 0.6B NLU](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6).
 
 After the model is ready, short commands still use Fast-Path (no Llama.cpp).
 Llama.cpp runs only when Fast-Path does not match.

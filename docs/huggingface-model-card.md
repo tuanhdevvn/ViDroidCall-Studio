@@ -25,7 +25,7 @@ Fine-tune of [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B), exported as G
 ## Install on Android
 
 ```bash
-adb push qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
+adb push models/qwen3-nlu-run-006-Q4_K_M.gguf /sdcard/Download/
 ```
 
 The app scans `.gguf` in the device Download folder. The microphone (and therefore Fast-Path from speech) does not run until this file is loaded.

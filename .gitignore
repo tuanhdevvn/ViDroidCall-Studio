@@ -15,6 +15,7 @@
 .cxx
 local.properties
 *.gguf
+!models/*.gguf
 *.bin
 .kotlin/
 .vscode/

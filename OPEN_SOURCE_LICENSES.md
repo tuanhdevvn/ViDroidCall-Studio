@@ -21,7 +21,7 @@ Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở đ
 | 7 | **Material Components for Android 3** | Google LLC | Hệ thống thiết kế giao diện chuẩn Material You (M3) | **Apache-2.0** | [GitHub Repo](https://github.com/material-components/material-components-android) |
 | 8 | **JSON in Java (org.json)** | JSON.org | Phân tích và xử lý cấu trúc dữ liệu JSON NLU | **Apache-2.0 / JSON** | [GitHub Repo](https://github.com/stleary/JSON-java) |
 | 9 | **llama.cpp / llamacpp-kotlin 0.4.0** | Georgi Gerganov / Luis Camargo | Engine suy luận GGUF on-device (NLU) | **MIT License** | [llama.cpp](https://github.com/ggerganov/llama.cpp) · [Maven](https://central.sonatype.com/artifact/io.github.ljcamargo/llamacpp-kotlin) |
-| 10 | **Qwen3 0.6B NLU (GGUF run-006)** | Fine-tune trên Qwen3 (Alibaba) / ViDroidCall | Mô hình NLU on-device (tải riêng, không đính kèm Git) | **Apache-2.0** | [Hugging Face](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6) · [Qwen3](https://github.com/QwenLM/Qwen3) |
+| 10 | **Qwen3 0.6B NLU (GGUF run-006)** | Fine-tune trên Qwen3 (Alibaba) / ViDroidCall | Mô hình NLU on-device (`models/`, Git LFS) | **Apache-2.0** | [Hugging Face](https://huggingface.co/tuanhdev/vidroidcall-qwen3-0.6B-nlu-gguf-v6) · [Qwen3](https://github.com/QwenLM/Qwen3) |
 
 ---
 

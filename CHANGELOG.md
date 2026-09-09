@@ -5,6 +5,12 @@ All notable changes to ViDroidCall Studio are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- NLU GGUF weights in `models/` via Git LFS (`qwen3-nlu-run-006-Q4_K_M.gguf`)
+
 ## [1.0.1] - 2026-09-08
 
 ### Changed
