@@ -81,6 +81,7 @@ import com.example.ViDroidCall_Studio.data.local.FontSizePreferences
 import com.example.ViDroidCall_Studio.data.local.ThemePreferences
 import com.example.ViDroidCall_Studio.data.local.TroLyNoiPreferences
 import com.example.ViDroidCall_Studio.ui.component.IosStyleSwitch
+import com.example.ViDroidCall_Studio.ui.component.OverlayPermissionDialog
 import com.example.ViDroidCall_Studio.util.TroLyNoiPermissions
 import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackEntry
 import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogRepository
@@ -241,48 +242,26 @@ fun SettingsScreen(
     }
 
     if (showOverlayPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = {
+        OverlayPermissionDialog(
+            onOpenSettings = {
                 showOverlayPermissionDialog = false
-                Toast.makeText(context, "Chưa cho phép hiện trên ứng dụng khác, Trợ lý nổi vẫn tắt", Toast.LENGTH_SHORT).show()
+                awaitingOverlaySettings = true
+                try {
+                    context.startActivity(TroLyNoiPermissions.overlaySettingsIntent(context))
+                } catch (_: Exception) {
+                    awaitingOverlaySettings = false
+                    Toast.makeText(context, "Không mở được Cài đặt quyền overlay", Toast.LENGTH_SHORT).show()
+                    disableTroLyNoi()
+                }
+            },
+            onDismiss = {
+                showOverlayPermissionDialog = false
+                Toast.makeText(
+                    context,
+                    "Chưa cho phép hiện trên ứng dụng khác, Trợ lý nổi vẫn tắt",
+                    Toast.LENGTH_SHORT
+                ).show()
                 disableTroLyNoi()
-            },
-            title = { Text("Hiện trên ứng dụng khác") },
-            text = {
-                Text(
-                    "Để bảng Trợ lý nổi hiện trên màn hình chính, hãy cho phép ViDroidCall hiển thị trên các ứng dụng khác.\n\n" +
-                        "1. Nhấn \"Mở Cài đặt\".\n" +
-                        "2. Bật quyền cho ViDroidCall.\n" +
-                        "3. Quay lại ứng dụng."
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showOverlayPermissionDialog = false
-                        awaitingOverlaySettings = true
-                        try {
-                            context.startActivity(TroLyNoiPermissions.overlaySettingsIntent(context))
-                        } catch (_: Exception) {
-                            awaitingOverlaySettings = false
-                            Toast.makeText(context, "Không mở được Cài đặt quyền overlay", Toast.LENGTH_SHORT).show()
-                            disableTroLyNoi()
-                        }
-                    }
-                ) {
-                    Text("Mở Cài đặt")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showOverlayPermissionDialog = false
-                        Toast.makeText(context, "Chưa cho phép hiện trên ứng dụng khác, Trợ lý nổi vẫn tắt", Toast.LENGTH_SHORT).show()
-                        disableTroLyNoi()
-                    }
-                ) {
-                    Text("Hủy")
-                }
             }
         )
     }
