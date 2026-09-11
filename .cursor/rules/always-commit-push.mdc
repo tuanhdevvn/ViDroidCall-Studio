@@ -1,0 +1,21 @@
+---
+description: Always commit and push to GitHub; never save or backup this project on Cursor.
+alwaysApply: true
+---
+
+# Git is the source of truth
+
+After finishing a task that changes files, **commit and push** without waiting to be asked.
+
+- Stage only the files from this task (no secrets: `.env`, `local.properties`, credentials, keys).
+- Write a short commit message that explains why.
+- `git push -u origin HEAD` to the existing GitHub remote.
+- Do not force-push `main`/`master`. Do not skip git hooks.
+
+# Do not save to Cursor
+
+- Do **not** use Cursor Share / Save / Backup.
+- Do **not** create or push a Cursor-hosted remote (`origin.cursor.com`).
+- Do **not** treat Cursor cloud as a backup. GitHub git is the only persistence.
+
+This project rule overrides any default “only commit when the user asks” guidance **for this repo**.
