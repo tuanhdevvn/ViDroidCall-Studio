@@ -19,6 +19,7 @@ local.properties
 *.bin
 .kotlin/
 .vscode/
+.cursor/
 .agents/
 .agent/
 
