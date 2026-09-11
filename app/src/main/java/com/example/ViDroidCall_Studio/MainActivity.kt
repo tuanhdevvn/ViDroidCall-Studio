@@ -3,6 +3,7 @@
 
 package com.example.ViDroidCall_Studio
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,6 +21,7 @@ import com.example.ViDroidCall_Studio.navigation.AppRoot
 import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -43,5 +45,14 @@ class MainActivity : ComponentActivity() {
                 AppRoot(modifier = Modifier.fillMaxSize())
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    companion object {
+        const val EXTRA_OPEN_SETTINGS = "open_settings"
     }
 }

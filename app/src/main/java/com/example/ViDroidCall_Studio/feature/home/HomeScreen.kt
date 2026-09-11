@@ -33,6 +33,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.ViDroidCall_Studio.MainActivity
 import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogRepository
 import com.example.ViDroidCall_Studio.data.local.history.CommandHistoryRepository
 import com.example.ViDroidCall_Studio.data.nlu.NluActionDispatcher
@@ -64,6 +65,21 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     var selectedTab by remember { mutableStateOf(NavTab.ASSISTANT) }
+
+    fun consumeOpenSettingsTab(): Boolean {
+        val activity = context as? Activity ?: return false
+        val open = activity.intent?.getBooleanExtra(MainActivity.EXTRA_OPEN_SETTINGS, false) == true
+        if (open) {
+            activity.intent?.removeExtra(MainActivity.EXTRA_OPEN_SETTINGS)
+        }
+        return open
+    }
+
+    LaunchedEffect(Unit) {
+        if (consumeOpenSettingsTab()) {
+            selectedTab = NavTab.SETTINGS
+        }
+    }
 
     // Quản lý phản hồi giọng nói TTS (Text-To-Speech)
     val textToSpeech = rememberTextToSpeech()
@@ -129,6 +145,9 @@ fun HomeScreen(
                 hasStoragePermission = granted
                 if (granted && !nluEngineManager.isModelReady()) {
                     nluEngineManager.autoDetectAndLoadModel()
+                }
+                if (consumeOpenSettingsTab()) {
+                    selectedTab = NavTab.SETTINGS
                 }
             }
         }

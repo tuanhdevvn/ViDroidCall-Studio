@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -15,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.example.ViDroidCall_Studio.data.local.OnboardingPreferences
+import com.example.ViDroidCall_Studio.data.local.TroLyNoiPreferences
+import com.example.ViDroidCall_Studio.feature.overlay.TroLyNoiForegroundController
 
 @Composable
 fun AppRoot(
@@ -22,8 +25,15 @@ fun AppRoot(
 ) {
     val context = LocalContext.current
     val onboardingPreferences = remember { OnboardingPreferences(context) }
+    val troLyNoiPreferences = remember { TroLyNoiPreferences(context) }
     val hasCompletedOnboarding by onboardingPreferences.hasCompletedOnboarding
         .collectAsState(initial = null)
+    val troLyNoiEnabled by troLyNoiPreferences.enabledFlow.collectAsState(initial = null)
+
+    LaunchedEffect(troLyNoiEnabled) {
+        val enabled = troLyNoiEnabled ?: return@LaunchedEffect
+        TroLyNoiForegroundController.sync(context, enabled)
+    }
 
     when (hasCompletedOnboarding) {
         null -> {
