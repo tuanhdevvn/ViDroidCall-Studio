@@ -30,7 +30,7 @@ Package Kotlin của nhóm:
 | :--- | :--- |
 | `data/model` | `NluResult`, enum intent / status / risk, parser JSON |
 | `data/nlu` | Fast-Path, Llama.cpp, `NluEngineManager`, dispatcher |
-| `data/local` | DataStore (theme, font, onboarding) |
+| `data/local` | DataStore (theme, font, onboarding, Trợ lý nổi) |
 | `data/local/history` | SQLite lịch sử lệnh |
 | `data/local/feedback` | JSONL phản hồi NLU (nếu bật) |
 | `domain/model` | `NativeAction` (thao tác Android) |
@@ -171,6 +171,7 @@ UI: `CommandHistoryItem(id, commandText, time, status, category, timestamp)`.
 | `theme_preferences` | `theme_mode` | string | `light` \| `dark` \| `system` (mặc định `light`) |
 | `font_size_preferences` | `font_scale` | float | mặc định `1.0`, khoảng `0.85`–`1.35` |
 | `onboarding_preferences` | `onboarding_completed` | boolean | mặc định `false` |
+| `tro_ly_noi_preferences` | `tro_ly_noi_enabled` | boolean | mặc định `false`; chỉ `true` khi đủ mic, thông báo (API 33+), `SYSTEM_ALERT_WINDOW` |
 
 ### JSONL (tùy chọn)
 

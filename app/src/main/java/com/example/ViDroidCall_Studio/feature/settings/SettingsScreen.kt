@@ -3,8 +3,11 @@
 
 package com.example.ViDroidCall_Studio.feature.settings
 
-import android.content.Intent
+import android.Manifest
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -37,6 +40,7 @@ import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +51,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,6 +67,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,6 +79,9 @@ import androidx.core.content.FileProvider
 import com.example.ViDroidCall_Studio.data.local.AppTheme
 import com.example.ViDroidCall_Studio.data.local.FontSizePreferences
 import com.example.ViDroidCall_Studio.data.local.ThemePreferences
+import com.example.ViDroidCall_Studio.data.local.TroLyNoiPreferences
+import com.example.ViDroidCall_Studio.ui.component.IosStyleSwitch
+import com.example.ViDroidCall_Studio.util.TroLyNoiPermissions
 import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackEntry
 import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogRepository
 import com.example.ViDroidCall_Studio.data.nlu.NluModelState
@@ -93,9 +104,91 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val themePreferences = remember { ThemePreferences(context) }
     val fontSizePreferences = remember { FontSizePreferences(context) }
+    val troLyNoiPreferences = remember { TroLyNoiPreferences(context) }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     val currentTheme by themePreferences.themeFlow.collectAsState(initial = AppTheme.LIGHT)
     val currentFontScale by fontSizePreferences.fontScaleFlow.collectAsState(initial = FontSizePreferences.DEFAULT_FONT_SCALE)
+    val troLyNoiEnabled by troLyNoiPreferences.enabledFlow.collectAsState(initial = false)
+
+    var awaitingOverlaySettings by remember { mutableStateOf(false) }
+    var showOverlayPermissionDialog by remember { mutableStateOf(false) }
+    val continueEnableHolder = remember { object { var invoke: () -> Unit = {} } }
+
+    fun disableTroLyNoi() {
+        awaitingOverlaySettings = false
+        showOverlayPermissionDialog = false
+        scope.launch { troLyNoiPreferences.setEnabled(false) }
+    }
+
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) continueEnableHolder.invoke() else {
+            Toast.makeText(context, "Chưa cấp micro, Trợ lý nổi vẫn tắt", Toast.LENGTH_SHORT).show()
+            disableTroLyNoi()
+        }
+    }
+    val notificationsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) continueEnableHolder.invoke() else {
+            Toast.makeText(context, "Chưa cấp thông báo, Trợ lý nổi vẫn tắt", Toast.LENGTH_SHORT).show()
+            disableTroLyNoi()
+        }
+    }
+
+    continueEnableHolder.invoke = {
+        when (
+            TroLyNoiPermissions.nextMissingPermission(
+                hasRecordAudio = TroLyNoiPermissions.hasRecordAudio(context),
+                notificationsRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
+                hasNotifications = TroLyNoiPermissions.hasNotifications(context),
+                canDrawOverlays = TroLyNoiPermissions.canDrawOverlays(context),
+            )
+        ) {
+            TroLyNoiPermissions.Gate.RECORD_AUDIO ->
+                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            TroLyNoiPermissions.Gate.POST_NOTIFICATIONS -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+            TroLyNoiPermissions.Gate.SYSTEM_ALERT_WINDOW -> {
+                showOverlayPermissionDialog = true
+            }
+            TroLyNoiPermissions.Gate.NONE -> {
+                awaitingOverlaySettings = false
+                showOverlayPermissionDialog = false
+                scope.launch { troLyNoiPreferences.setEnabled(true) }
+            }
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, troLyNoiEnabled, awaitingOverlaySettings) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+            val hasAll = TroLyNoiPermissions.hasAllRequired(context)
+            if (troLyNoiEnabled && !hasAll) {
+                disableTroLyNoi()
+                return@LifecycleEventObserver
+            }
+            if (awaitingOverlaySettings) {
+                if (TroLyNoiPermissions.canDrawOverlays(context)) {
+                    continueEnableHolder.invoke()
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Chưa cho phép hiện trên ứng dụng khác, Trợ lý nổi vẫn tắt",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    disableTroLyNoi()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     var sliderValue by remember(currentFontScale) { mutableFloatStateOf(currentFontScale) }
 
@@ -147,6 +240,53 @@ fun SettingsScreen(
         )
     }
 
+    if (showOverlayPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showOverlayPermissionDialog = false
+                Toast.makeText(context, "Chưa cho phép hiện trên ứng dụng khác, Trợ lý nổi vẫn tắt", Toast.LENGTH_SHORT).show()
+                disableTroLyNoi()
+            },
+            title = { Text("Hiện trên ứng dụng khác") },
+            text = {
+                Text(
+                    "Để bảng Trợ lý nổi hiện trên màn hình chính, hãy cho phép ViDroidCall hiển thị trên các ứng dụng khác.\n\n" +
+                        "1. Nhấn \"Mở Cài đặt\".\n" +
+                        "2. Bật quyền cho ViDroidCall.\n" +
+                        "3. Quay lại ứng dụng."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showOverlayPermissionDialog = false
+                        awaitingOverlaySettings = true
+                        try {
+                            context.startActivity(TroLyNoiPermissions.overlaySettingsIntent(context))
+                        } catch (_: Exception) {
+                            awaitingOverlaySettings = false
+                            Toast.makeText(context, "Không mở được Cài đặt quyền overlay", Toast.LENGTH_SHORT).show()
+                            disableTroLyNoi()
+                        }
+                    }
+                ) {
+                    Text("Mở Cài đặt")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showOverlayPermissionDialog = false
+                        Toast.makeText(context, "Chưa cho phép hiện trên ứng dụng khác, Trợ lý nổi vẫn tắt", Toast.LENGTH_SHORT).show()
+                        disableTroLyNoi()
+                    }
+                ) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -189,7 +329,7 @@ fun SettingsScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(3.dp, RoundedCornerShape(24.dp)),
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -347,7 +487,7 @@ fun SettingsScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(3.dp, RoundedCornerShape(24.dp)),
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -602,6 +742,70 @@ fun SettingsScreen(
             }
         }
 
+        item {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.GraphicEq,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Trợ lý nổi",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Nói “Trợ lý ơi” khi chưa mở app",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IosStyleSwitch(
+                        checked = troLyNoiEnabled,
+                        onCheckedChange = { turnOn ->
+                            if (turnOn) {
+                                continueEnableHolder.invoke()
+                            } else {
+                                disableTroLyNoi()
+                            }
+                        },
+                        contentDescription = if (troLyNoiEnabled) {
+                            "Tắt Trợ lý nổi"
+                        } else {
+                            "Bật Trợ lý nổi"
+                        }
+                    )
+                }
+            }
+        }
+
         // 4. Thẻ Mô Hình AI (Tách riêng hàng Tiêu đề & Hộp hiển thị đầy đủ tên Model)
         item {
             val modelName = when (modelState) {
@@ -618,8 +822,10 @@ fun SettingsScreen(
             }
 
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
             ) {
@@ -700,8 +906,10 @@ fun SettingsScreen(
         // 6. Thông tin phiên bản (App Info Footer)
         item {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.10f))
             ) {
@@ -787,3 +995,11 @@ private fun FeedbackEntryRow(
         }
     }
 }
+
+private fun Modifier.settingsCardShadow(shape: RoundedCornerShape): Modifier = shadow(
+    elevation = 6.dp,
+    shape = shape,
+    clip = false,
+    ambientColor = Color.Black.copy(alpha = 0.08f),
+    spotColor = Color.Black.copy(alpha = 0.10f),
+)
