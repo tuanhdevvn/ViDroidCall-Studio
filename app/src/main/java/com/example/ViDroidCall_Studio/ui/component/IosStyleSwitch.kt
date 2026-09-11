@@ -7,20 +7,19 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -30,10 +29,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 private val TrackOn = Color(0xFF34C759)
-private val TrackOff = Color(0xFFE5E5EA)
+private val TrackOff = Color(0xFFE9E9EB)
+
+private val TrackWidth = 51.dp
+private val TrackHeight = 31.dp
+private val ThumbSize = 27.dp
+private val ThumbInset = 2.dp
 
 /**
- * Công tắc viên tròn trượt kiểu iOS (bật xanh), tap target lớn cho người già.
+ * Công tắc kiểu iOS: viên trắng trượt trong thanh pill, bật xanh lá, không scale khi chạm.
  */
 @Composable
 fun IosStyleSwitch(
@@ -45,45 +49,49 @@ fun IosStyleSwitch(
 ) {
     val trackColor by animateColorAsState(
         targetValue = if (checked) TrackOn else TrackOff,
-        animationSpec = tween(180),
+        animationSpec = tween(200),
         label = "iosSwitchTrack",
     )
+    val thumbTravel = TrackWidth - ThumbInset * 2 - ThumbSize
     val thumbOffset by animateDpAsState(
-        targetValue = if (checked) 32.dp else 0.dp,
-        animationSpec = tween(180),
+        targetValue = if (checked) thumbTravel else 0.dp,
+        animationSpec = tween(200),
         label = "iosSwitchThumb",
     )
+    val interactionSource = remember { MutableInteractionSource() }
 
     Box(
         modifier = modifier
+            .size(width = 51.dp, height = 44.dp)
             .semantics {
                 this.role = Role.Switch
                 if (contentDescription != null) {
                     this.contentDescription = contentDescription
                 }
             }
-            .size(width = 72.dp, height = 44.dp)
-            .bounceClick(scaleDown = 0.94f, onClick = {
-                if (enabled) onCheckedChange(!checked)
-            }),
+            .clickable(
+                enabled = enabled,
+                role = Role.Switch,
+                indication = null,
+                interactionSource = interactionSource,
+            ) {
+                onCheckedChange(!checked)
+            },
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
-                .width(64.dp)
-                .height(38.dp)
-                .clip(RoundedCornerShape(19.dp))
-                .background(trackColor)
-                .padding(3.dp),
+                .size(TrackWidth, TrackHeight)
+                .background(trackColor, RoundedCornerShape(percent = 50)),
         ) {
-            Surface(
+            Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .padding(start = ThumbInset, top = ThumbInset)
                     .offset(x = thumbOffset)
-                    .shadow(3.dp, CircleShape),
-                shape = CircleShape,
-                color = Color.White,
-            ) {}
+                    .size(ThumbSize)
+                    .shadow(elevation = 2.dp, shape = CircleShape, clip = false)
+                    .background(Color.White, CircleShape),
+            )
         }
     }
 }
