@@ -64,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
@@ -326,7 +327,9 @@ fun SettingsScreen(
         // 2. Thẻ Chọn Chủ Đề (Theme Segmented 3 Cards)
         item {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -482,7 +485,9 @@ fun SettingsScreen(
         // 3. Thẻ Điều Chỉnh Cỡ Chữ (Thanh trượt nút tròn thân thiện & 4 nấc chọn nhanh)
         item {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -739,7 +744,9 @@ fun SettingsScreen(
 
         item {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -815,8 +822,10 @@ fun SettingsScreen(
             }
 
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
             ) {
@@ -897,8 +906,10 @@ fun SettingsScreen(
         // 6. Thông tin phiên bản (App Info Footer)
         item {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.10f))
             ) {
@@ -984,3 +995,11 @@ private fun FeedbackEntryRow(
         }
     }
 }
+
+private fun Modifier.settingsCardShadow(shape: RoundedCornerShape): Modifier = shadow(
+    elevation = 6.dp,
+    shape = shape,
+    clip = false,
+    ambientColor = Color.Black.copy(alpha = 0.08f),
+    spotColor = Color.Black.copy(alpha = 0.10f),
+)
