@@ -65,6 +65,14 @@
             android:foregroundServiceType="microphone" />
 
         <activity
+            android:name=".feature.overlay.TroLyNoiOverlayActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ViDroidCall.Translucent"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"

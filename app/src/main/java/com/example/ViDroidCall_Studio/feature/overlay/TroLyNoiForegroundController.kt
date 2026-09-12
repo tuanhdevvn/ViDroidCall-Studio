@@ -31,4 +31,21 @@ object TroLyNoiForegroundController {
         val app = context.applicationContext
         app.stopService(Intent(app, TroLyNoiForegroundService::class.java))
     }
+
+    /**
+     * Mở giao diện Trợ lý nổi (Overlay Bottom Sheet) nếu thiết bị đã mở khóa.
+     */
+    fun openOverlay(context: Context) {
+        if (isDeviceLocked(context)) return
+        val intent = TroLyNoiOverlayActivity.createIntent(context)
+        context.startActivity(intent)
+    }
+
+    /**
+     * Kiểm tra xem màn hình thiết bị có đang bị khóa bởi Keyguard hay không.
+     */
+    fun isDeviceLocked(context: Context): Boolean {
+        val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
+        return keyguardManager?.isKeyguardLocked == true
+    }
 }
