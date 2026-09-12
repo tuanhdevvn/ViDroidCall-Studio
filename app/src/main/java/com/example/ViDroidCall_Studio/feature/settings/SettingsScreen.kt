@@ -39,13 +39,17 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import com.example.ViDroidCall_Studio.feature.overlay.TroLyNoiForegroundController
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -730,57 +734,95 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 18.dp, vertical = 16.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.GraphicEq,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Trợ lý nổi",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Nói “Trợ lý ơi” khi chưa mở app",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IosStyleSwitch(
-                        checked = troLyNoiEnabled,
-                        onCheckedChange = { turnOn ->
-                            if (turnOn) {
-                                continueEnableHolder.invoke()
-                            } else {
-                                disableTroLyNoi()
-                            }
-                        },
-                        contentDescription = if (troLyNoiEnabled) {
-                            "Tắt Trợ lý nổi"
-                        } else {
-                            "Bật Trợ lý nổi"
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.GraphicEq,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
-                    )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Trợ lý nổi",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Nói “Trợ lý ơi” khi chưa mở app",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IosStyleSwitch(
+                            checked = troLyNoiEnabled,
+                            onCheckedChange = { turnOn ->
+                                if (turnOn) {
+                                    continueEnableHolder.invoke()
+                                } else {
+                                    disableTroLyNoi()
+                                }
+                            },
+                            contentDescription = if (troLyNoiEnabled) {
+                                "Tắt Trợ lý nổi"
+                            } else {
+                                "Bật Trợ lý nổi"
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            TroLyNoiForegroundController.openOverlay(context)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.07f),
+                            contentColor = MaterialTheme.colorScheme.primary
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Thử nghiệm",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
         }
