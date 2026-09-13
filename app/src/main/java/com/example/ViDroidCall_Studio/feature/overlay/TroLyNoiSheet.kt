@@ -82,7 +82,7 @@ fun TroLyNoiSheet(
                     spotColor = Color(0x40000000)
                 ),
             shape = RoundedCornerShape(28.dp),
-            color = Color(0xFFFFFFFF).copy(alpha = 0.88f),
+            color = Color(0xFFFFFFFF).copy(alpha = 0.96f),
             border = BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.6f))
         ) {
             Column(

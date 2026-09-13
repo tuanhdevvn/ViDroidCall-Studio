@@ -216,6 +216,10 @@ class TroLyNoiOverlayManager(
                 flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                 format = PixelFormat.TRANSLUCENT
                 gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                    blurBehindRadius = 24
+                }
             }
 
             windowManager.addView(rootLayout, layoutParams)
@@ -409,16 +413,17 @@ class TroLyNoiOverlayManager(
                     overlayDataFlow.value = AssistantOverlayData(
                         state = AssistantOverlayState.FAST_PATH,
                         recognizedText = trimmed,
-                        intentName = fastResult.intent
+                        intentName = fastResult.intent,
+                        sourceLabel = "⚡ Fast-Path"
                     )
                     scope.launch {
                         val speech = nativeAction.getSpeechFeedbackText()
                         if (speech.isNotBlank()) {
                             textToSpeechManager?.speak(speech)
                         }
-                        delay(1000)
+                        delay(1500)
                         actionDispatcher?.executeNativeAction(nativeAction)
-                        delay(500)
+                        delay(800)
                         dismiss()
                     }
                 }
@@ -456,7 +461,7 @@ class TroLyNoiOverlayManager(
                             recognizedText = trimmed,
                             intentName = "call_contact",
                             targetName = target,
-                            sourceLabel = "🧠 On-Device AI",
+                            sourceLabel = "🧠 On-Device AI (GGUF)",
                             onConfirm = {
                                 actionDispatcher?.executeNativeAction(nativeAction)
                                 dismiss()
@@ -486,13 +491,19 @@ class TroLyNoiOverlayManager(
                     }
 
                     else -> {
+                        overlayDataFlow.value = AssistantOverlayData(
+                            state = AssistantOverlayState.FAST_PATH,
+                            recognizedText = trimmed,
+                            intentName = result.intent,
+                            sourceLabel = "🧠 On-Device AI (GGUF)"
+                        )
                         val speech = nativeAction.getSpeechFeedbackText()
                         if (speech.isNotBlank()) {
                             textToSpeechManager?.speak(speech)
                         }
-                        delay(1000)
+                        delay(1500)
                         actionDispatcher?.executeNativeAction(nativeAction)
-                        delay(500)
+                        delay(800)
                         dismiss()
                     }
                 }
