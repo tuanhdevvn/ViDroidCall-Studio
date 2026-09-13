@@ -92,6 +92,17 @@
             android:permission="android.permission.BIND_VOICE_INTERACTION"
             android:exported="true" />
 
+        <service
+            android:name=".feature.assistant.ViDroidRecognitionService"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_RECOGNITION_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.speech.RecognitionService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".feature.assistant.ViDroidAssistActivity"
             android:theme="@android:style/Theme.NoDisplay"
