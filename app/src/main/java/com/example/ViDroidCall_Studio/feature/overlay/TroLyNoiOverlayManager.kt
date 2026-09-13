@@ -58,7 +58,7 @@ class TroLyNoiOverlayManager(
     private val context: Context
 ) {
     companion object {
-        private const val TAG = "TroLyNoiOverlayManager"
+        private const val TAG = "ViDroidAssistant"
     }
 
     private val appContext = context.applicationContext
@@ -70,6 +70,7 @@ class TroLyNoiOverlayManager(
     private var overlayView: android.view.View? = null
     private var lifecycleOwner: OverlayLifecycleOwner? = null
     private var screenOffReceiver: BroadcastReceiver? = null
+    var onDismissListener: (() -> Unit)? = null
 
     // Quản lý trạng thái hiển thị
     private val overlayDataFlow = MutableStateFlow(AssistantOverlayData())
@@ -87,10 +88,25 @@ class TroLyNoiOverlayManager(
 
     /**
      * Mở Trợ lý nổi ở chế độ lắng nghe giọng nói thật (End-to-End).
+     * Nếu có initialCommand (từ Wake Word "Trợ lý ơi [câu lệnh]"), xử lý trực tiếp không cần thu âm lại.
      */
-    fun showAssistant() {
-        show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
-        startSpeechRecognition()
+    fun showAssistant(initialCommand: String? = null) {
+        if (initialCommand.isNullOrBlank()) {
+            show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
+            startSpeechRecognition()
+        } else {
+            // Khi mở trợ lý, luôn hiển thị giao diện LISTENING ("Hãy nói gì đó..." + sóng âm)
+            // trong 600ms để người dùng thấy rõ Trợ lý lắng nghe trước khi chuyển sang STT
+            show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
+            scope.launch {
+                delay(600)
+                overlayDataFlow.value = AssistantOverlayData(
+                    state = AssistantOverlayState.STT,
+                    recognizedText = initialCommand
+                )
+                handleFinalSpeechResult(initialCommand)
+            }
+        }
     }
 
     /**
@@ -185,6 +201,9 @@ class TroLyNoiOverlayManager(
             }.apply {
                 isFocusable = true
                 isFocusableInTouchMode = true
+                setViewTreeLifecycleOwner(owner)
+                setViewTreeViewModelStoreOwner(owner)
+                setViewTreeSavedStateRegistryOwner(owner)
                 addView(
                     composeView,
                     android.widget.FrameLayout.LayoutParams(
@@ -206,6 +225,10 @@ class TroLyNoiOverlayManager(
                 flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                 format = PixelFormat.TRANSLUCENT
                 gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                    blurBehindRadius = 24
+                }
             }
 
             windowManager.addView(rootLayout, layoutParams)
@@ -213,7 +236,7 @@ class TroLyNoiOverlayManager(
             rootLayout.requestFocus()
 
             registerScreenOffReceiver()
-            Log.i(TAG, "Đã gắn thành công cửa sổ Trợ lý nổi trong suốt vào WindowManager.")
+            Log.i(TAG, "[ASSISTANT_OPEN] Đã gắn thành công cửa sổ Trợ lý nổi trong suốt vào WindowManager.")
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi hiển thị Trợ lý nổi: ${e.message}", e)
             dismiss()
@@ -225,19 +248,22 @@ class TroLyNoiOverlayManager(
      */
     @Synchronized
     fun dismiss() {
+        if (overlayView == null) return
         try {
             stopSpeechRecognition()
 
             unregisterScreenOffReceiver()
 
-            overlayView?.let { view ->
+            val viewToRemove = overlayView
+            overlayView = null
+
+            viewToRemove?.let { view ->
                 try {
                     windowManager.removeView(view)
                 } catch (e: Exception) {
                     Log.w(TAG, "Lỗi khi removeView: ${e.message}")
                 }
             }
-            overlayView = null
 
             lifecycleOwner?.let { owner ->
                 owner.onPause()
@@ -246,13 +272,53 @@ class TroLyNoiOverlayManager(
             }
             lifecycleOwner = null
 
-            Log.i(TAG, "Đã đóng và dọn dẹp cửa sổ Trợ lý nổi thành công.")
+            Log.i(TAG, "[ASSISTANT_CLOSE] Đã đóng và dọn dẹp cửa sổ Trợ lý nổi thành công.")
+            onDismissListener?.invoke()
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi trong quá trình dismiss: ${e.message}", e)
         }
     }
 
-    private fun ensureComponentsInitialized() {
+    fun ensureComponentsInitialized() {
+        if (speechToTextManager == null) {
+            speechToTextManager = SpeechToTextManager(
+                context = appContext,
+                callbacks = object : SpeechToTextManager.Callbacks {
+                    override fun onListeningChanged(isListening: Boolean) {
+                        if (!isListening && overlayDataFlow.value.state == AssistantOverlayState.LISTENING) {
+                            // Người dùng dừng nói hoặc kết thúc phiên nghe
+                        }
+                    }
+
+                    override fun onTextChanged(text: String) {
+                        val trimmed = text.trim()
+                        if (trimmed.isBlank() || 
+                            trimmed == SpeechToTextManager.WAITING_PLACEHOLDER || 
+                            trimmed == SpeechToTextManager.LISTENING_PLACEHOLDER ||
+                            trimmed == "Đang lắng nghe câu lệnh..." ||
+                            trimmed == "Hãy nói gì đó..."
+                        ) {
+                            if (overlayDataFlow.value.state != AssistantOverlayState.LISTENING) {
+                                overlayDataFlow.value = overlayDataFlow.value.copy(
+                                    state = AssistantOverlayState.LISTENING
+                                )
+                            }
+                            return
+                        }
+
+                        // Chỉ khi nhận diện được câu chữ thực tế của người dùng mới chuyển sang STT
+                        overlayDataFlow.value = overlayDataFlow.value.copy(
+                            state = AssistantOverlayState.STT,
+                            recognizedText = trimmed
+                        )
+                    }
+
+                    override fun onFinalResult(text: String) {
+                        handleFinalSpeechResult(text)
+                    }
+                }
+            )
+        }
         if (textToSpeechManager == null) {
             textToSpeechManager = TextToSpeechManager(appContext)
         }
@@ -281,29 +347,6 @@ class TroLyNoiOverlayManager(
         ensureComponentsInitialized()
         try {
             speechToTextManager?.cancelListening()
-            speechToTextManager = SpeechToTextManager(
-                context = appContext,
-                callbacks = object : SpeechToTextManager.Callbacks {
-                    override fun onListeningChanged(isListening: Boolean) {
-                        if (!isListening && overlayDataFlow.value.state == AssistantOverlayState.LISTENING) {
-                            // Người dùng dừng nói hoặc kết thúc phiên nghe
-                        }
-                    }
-
-                    override fun onTextChanged(text: String) {
-                        if (text.isNotBlank()) {
-                            overlayDataFlow.value = overlayDataFlow.value.copy(
-                                state = AssistantOverlayState.STT,
-                                recognizedText = text
-                            )
-                        }
-                    }
-
-                    override fun onFinalResult(text: String) {
-                        handleFinalSpeechResult(text)
-                    }
-                }
-            )
             speechToTextManager?.startListening()
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khởi chạy thu âm: ${e.message}", e)
@@ -312,8 +355,17 @@ class TroLyNoiOverlayManager(
 
     private fun stopSpeechRecognition() {
         speechToTextManager?.cancelListening()
-        speechToTextManager = null
+        // Không gán null để giữ mô hình Sherpa-ONNX đã nạp sẵn trong bộ nhớ (Warm State)
+        // Nhờ vậy lần mở popup kế tiếp micro sẽ bắt đầu ngay lập tức (<15ms) thay vì phải đợi nạp lại
         textToSpeechManager?.stop()
+    }
+
+    fun destroy() {
+        dismiss()
+        speechToTextManager?.destroy()
+        speechToTextManager = null
+        textToSpeechManager?.shutdown()
+        textToSpeechManager = null
     }
 
     /**
@@ -384,16 +436,17 @@ class TroLyNoiOverlayManager(
                     overlayDataFlow.value = AssistantOverlayData(
                         state = AssistantOverlayState.FAST_PATH,
                         recognizedText = trimmed,
-                        intentName = fastResult.intent
+                        intentName = fastResult.intent,
+                        sourceLabel = "⚡ Fast-Path"
                     )
                     scope.launch {
                         val speech = nativeAction.getSpeechFeedbackText()
                         if (speech.isNotBlank()) {
                             textToSpeechManager?.speak(speech)
                         }
-                        delay(1000)
+                        delay(1500)
                         actionDispatcher?.executeNativeAction(nativeAction)
-                        delay(500)
+                        delay(800)
                         dismiss()
                     }
                 }
@@ -431,7 +484,7 @@ class TroLyNoiOverlayManager(
                             recognizedText = trimmed,
                             intentName = "call_contact",
                             targetName = target,
-                            sourceLabel = "🧠 On-Device AI",
+                            sourceLabel = "🧠 On-Device AI (GGUF)",
                             onConfirm = {
                                 actionDispatcher?.executeNativeAction(nativeAction)
                                 dismiss()
@@ -461,13 +514,19 @@ class TroLyNoiOverlayManager(
                     }
 
                     else -> {
+                        overlayDataFlow.value = AssistantOverlayData(
+                            state = AssistantOverlayState.FAST_PATH,
+                            recognizedText = trimmed,
+                            intentName = result.intent,
+                            sourceLabel = "🧠 On-Device AI (GGUF)"
+                        )
                         val speech = nativeAction.getSpeechFeedbackText()
                         if (speech.isNotBlank()) {
                             textToSpeechManager?.speak(speech)
                         }
-                        delay(1000)
+                        delay(1500)
                         actionDispatcher?.executeNativeAction(nativeAction)
-                        delay(500)
+                        delay(800)
                         dismiss()
                     }
                 }
