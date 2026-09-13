@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class TroLyNoiWakeWordManager(
     private val context: Context,
+    private val canListen: () -> Boolean = { true },
     private val onWakeWordDetected: (extractedCommand: String?) -> Unit,
 ) {
     private val isRunning = AtomicBoolean(false)
@@ -53,7 +54,14 @@ class TroLyNoiWakeWordManager(
         ) == PackageManager.PERMISSION_GRANTED
 
         if (!hasPermission) {
-            Log.w(TAG, "Không thể chạy Wake Word vì chưa có quyền RECORD_AUDIO")
+            Log.w(TAG, "[WAKE_WORD_STOP] Không thể chạy Wake Word vì chưa có quyền RECORD_AUDIO")
+            return
+        }
+
+        if (!TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(context) || !canListen()) {
+            Log.i(TAG, "[DEVICE_LOCKED] Thiết bị đang tắt màn hình, bị khóa hoặc Overlay đang mở, tạm hoãn lắng nghe Wake Word.")
+            isRunning.set(true)
+            isPaused.set(true)
             return
         }
 
@@ -69,22 +77,28 @@ class TroLyNoiWakeWordManager(
     fun stop() {
         isRunning.set(false)
         isPaused.set(false)
+        Log.i(TAG, "[WAKE_WORD_STOP] Đã dừng lắng nghe Wake Word.")
         stopAudioRecord()
     }
 
     fun pause() {
         isPaused.set(true)
+        Log.i(TAG, "[WAKE_WORD_STOP] Tạm dừng lắng nghe Wake Word.")
         stopAudioRecord()
     }
 
     fun resume() {
-        if (!isRunning.get()) return
-        if (!TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(context)) {
-            Log.d(TAG, "Màn hình đang tắt hoặc khóa, không resume Wake Word.")
+        if (!isRunning.get()) {
+            start()
+            return
+        }
+        if (!TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(context) || !canListen()) {
+            Log.i(TAG, "[DEVICE_LOCKED] Màn hình đang tắt, khóa hoặc Overlay đang mở, không resume Wake Word.")
             return
         }
 
         if (isPaused.compareAndSet(true, false)) {
+            Log.i(TAG, "[WAKE_WORD_START] Tiếp tục lắng nghe Wake Word...")
             executor.execute {
                 startListeningLoop()
             }
@@ -138,7 +152,17 @@ class TroLyNoiWakeWordManager(
     }
 
     private fun startListeningLoop() {
-        if (!isRunning.get() || isPaused.get()) return
+        if (!isRunning.get() || isPaused.get() || !canListen()) return
+
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!hasPermission) {
+            Log.w(TAG, "[WAKE_WORD_STOP] Quyền RECORD_AUDIO không còn khả dụng, dừng lắng nghe.")
+            stop()
+            return
+        }
 
         val minBufferSize = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
@@ -148,7 +172,7 @@ class TroLyNoiWakeWordManager(
         val bufferSize = maxOf(minBufferSize, 2048)
 
         try {
-            audioRecord = AudioRecord(
+            var record = AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
@@ -156,20 +180,35 @@ class TroLyNoiWakeWordManager(
                 bufferSize
             )
 
-            if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "Khởi tạo AudioRecord cho Wake Word thất bại")
+            // Thử lại 1 lần nếu phần cứng micro vừa được ứng dụng khác hoặc Overlay giải phóng
+            if (record.state != AudioRecord.STATE_INITIALIZED) {
+                record.release()
+                Thread.sleep(100)
+                record = AudioRecord(
+                    MediaRecorder.AudioSource.MIC,
+                    SAMPLE_RATE,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    bufferSize
+                )
+            }
+
+            if (record.state != AudioRecord.STATE_INITIALIZED) {
+                Log.e(TAG, "[WAKE_WORD_STOP] Khởi tạo AudioRecord cho Wake Word thất bại (hardware mic busy)")
+                record.release()
                 return
             }
 
+            audioRecord = record
             audioRecord?.startRecording()
             vad?.reset()
 
             val audioBuffer = ShortArray(512)
             val floatBuffer = FloatArray(512)
 
-            Log.i(TAG, "Bắt đầu lắng nghe từ khóa 'Trợ lý ơi' ngầm...")
+            Log.i(TAG, "[WAKE_WORD_START] Bắt đầu lắng nghe từ khóa 'Trợ lý ơi' ngầm...")
 
-            while (isRunning.get() && !isPaused.get()) {
+            while (isRunning.get() && !isPaused.get() && canListen()) {
                 val readCount = audioRecord?.read(audioBuffer, 0, audioBuffer.size) ?: 0
                 if (readCount <= 0) continue
 
@@ -193,11 +232,10 @@ class TroLyNoiWakeWordManager(
                     stream.release()
 
                     if (recognizedText.isNotBlank()) {
-                        Log.d(TAG, "WakeWord audio decoded: \"$recognizedText\"")
                         val match = parseWakeWordCommand(recognizedText)
                         if (match != null) {
-                            Log.i(TAG, "🎉 Phát hiện từ khóa 'Trợ lý ơi'! Lệnh kèm theo: '${match.remainingCommand}'")
-                            // Tạm dừng mic ngầm ngay để nhường mic cho Overlay STT
+                            Log.i(TAG, "[WAKE_WORD_DETECTED] keyword='${match.matchedKeyword}', hasTrailingCommand=${match.remainingCommand.isNotBlank()}")
+                            // Tạm dừng mic ngầm ngay lập tức để nhường mic hoàn toàn cho Overlay STT
                             pause()
 
                             mainHandler.post {
@@ -211,6 +249,9 @@ class TroLyNoiWakeWordManager(
                     }
                 }
             }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "[WAKE_WORD_STOP] Quyền ghi âm bị thu hồi trong runtime: ${e.message}")
+            stop()
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi trong luồng lắng nghe Wake Word: ${e.message}", e)
         } finally {

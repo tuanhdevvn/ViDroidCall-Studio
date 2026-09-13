@@ -45,19 +45,25 @@ class TroLyNoiForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Log.i(TAG, "[SERVICE_RESTART] Khởi tạo TroLyNoiForegroundService")
         createChannel()
 
         overlayManager = TroLyNoiOverlayManager(this).apply {
             onDismissListener = {
+                Log.i(TAG, "[ASSISTANT_CLOSE] Overlay đã đóng, kiểm tra tiếp tục Wake Word")
                 if (isWakeWordActive) {
                     wakeWordManager?.resume()
                 }
             }
         }
 
-        wakeWordManager = TroLyNoiWakeWordManager(this) { extractedCommand ->
-            overlayManager?.showAssistant(extractedCommand)
-        }
+        wakeWordManager = TroLyNoiWakeWordManager(
+            context = this,
+            canListen = { overlayManager?.isShowing != true },
+            onWakeWordDetected = { extractedCommand ->
+                overlayManager?.showAssistant(extractedCommand)
+            }
+        )
 
         registerScreenReceiver()
 
@@ -82,6 +88,7 @@ class TroLyNoiForegroundService : Service() {
 
         when (intent?.action) {
             ACTION_SHOW_OVERLAY -> {
+                Log.i(TAG, "[ASSISTANT_OPEN] Nhận yêu cầu mở trợ lý từ intent action")
                 wakeWordManager?.pause()
 
                 val stateName = intent.getStringExtra(EXTRA_STATE)
@@ -135,6 +142,7 @@ class TroLyNoiForegroundService : Service() {
             }
 
             ACTION_DISMISS_OVERLAY -> {
+                Log.i(TAG, "[ASSISTANT_CLOSE] Nhận yêu cầu đóng trợ lý từ intent action")
                 overlayManager?.dismiss()
             }
         }
@@ -143,6 +151,7 @@ class TroLyNoiForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        Log.i(TAG, "[SERVICE_RESTART] TroLyNoiForegroundService onDestroy")
         serviceScope.cancel()
         unregisterScreenReceiverSafely()
 
@@ -165,9 +174,22 @@ class TroLyNoiForegroundService : Service() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
                     Intent.ACTION_SCREEN_OFF -> {
+                        Log.i(TAG, "[SCREEN_OFF] Màn hình tắt, tạm dừng Wake Word")
                         wakeWordManager?.pause()
                     }
-                    Intent.ACTION_USER_PRESENT, Intent.ACTION_SCREEN_ON -> {
+                    Intent.ACTION_SCREEN_ON -> {
+                        val isUnlocked = TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService)
+                        if (isUnlocked) {
+                            Log.i(TAG, "[SCREEN_ON] Màn hình sáng và đã mở khóa")
+                            if (isWakeWordActive) {
+                                wakeWordManager?.resume()
+                            }
+                        } else {
+                            Log.i(TAG, "[DEVICE_LOCKED] Màn hình sáng nhưng thiết bị đang khóa")
+                        }
+                    }
+                    Intent.ACTION_USER_PRESENT -> {
+                        Log.i(TAG, "[DEVICE_UNLOCKED] Người dùng đã mở khóa thiết bị")
                         if (isWakeWordActive && TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService)) {
                             wakeWordManager?.resume()
                         }

@@ -57,10 +57,17 @@ class SpeechToTextManager(
         initModelAsync()
     }
 
+    private val pendingInitCallbacks = mutableListOf<() -> Unit>()
+
     private fun initModelAsync(onComplete: (() -> Unit)? = null) {
         if (isModelInitialized) {
             onComplete?.invoke()
             return
+        }
+        if (onComplete != null) {
+            synchronized(pendingInitCallbacks) {
+                pendingInitCallbacks.add(onComplete)
+            }
         }
         if (isInitializingModel) return
         isInitializingModel = true
@@ -113,7 +120,14 @@ class SpeechToTextManager(
             } finally {
                 isInitializingModel = false
                 mainHandler.post {
-                    onComplete?.invoke()
+                    val callbacksToRun = synchronized(pendingInitCallbacks) {
+                        val list = pendingInitCallbacks.toList()
+                        pendingInitCallbacks.clear()
+                        list
+                    }
+                    for (cb in callbacksToRun) {
+                        cb.invoke()
+                    }
                 }
             }
         }
@@ -195,7 +209,7 @@ class SpeechToTextManager(
             val floatBuffer = FloatArray(512)
             var speechDetected = false
 
-            Log.d(TAG, "Bắt đầu thu âm PCM 16kHz & phát hiện giọng nói On-Device...")
+            Log.i(TAG, "[ASSISTANT_MIC_START] Bắt đầu thu âm PCM 16kHz & phát hiện giọng nói On-Device...")
 
             while (isListeningActive.get() && !isCancelled.get()) {
                 val readCount = audioRecord?.read(audioBuffer, 0, audioBuffer.size) ?: 0
@@ -303,12 +317,10 @@ class SpeechToTextManager(
         }
         isCancelled.set(true)
         isListeningActive.set(false)
-        executor.execute {
-            handleStopListeningInternal()
-            mainHandler.post {
-                callbacks.onListeningChanged(false)
-                callbacks.onTextChanged("")
-            }
+        handleStopListeningInternal()
+        mainHandler.post {
+            callbacks.onListeningChanged(false)
+            callbacks.onTextChanged("")
         }
     }
 
@@ -319,6 +331,7 @@ class SpeechToTextManager(
                 audioRecord?.stop()
             }
             audioRecord?.release()
+            Log.i(TAG, "[ASSISTANT_MIC_STOP] Đã dừng và giải phóng AudioRecord microphone")
         } catch (e: Exception) {
             Log.w(TAG, "Lỗi giải phóng AudioRecord: ${e.message}")
         } finally {

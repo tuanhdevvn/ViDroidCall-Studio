@@ -58,7 +58,7 @@ class TroLyNoiOverlayManager(
     private val context: Context
 ) {
     companion object {
-        private const val TAG = "TroLyNoiOverlayManager"
+        private const val TAG = "ViDroidAssistant"
     }
 
     private val appContext = context.applicationContext
@@ -223,7 +223,7 @@ class TroLyNoiOverlayManager(
             rootLayout.requestFocus()
 
             registerScreenOffReceiver()
-            Log.i(TAG, "Đã gắn thành công cửa sổ Trợ lý nổi trong suốt vào WindowManager.")
+            Log.i(TAG, "[ASSISTANT_OPEN] Đã gắn thành công cửa sổ Trợ lý nổi trong suốt vào WindowManager.")
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi hiển thị Trợ lý nổi: ${e.message}", e)
             dismiss()
@@ -256,7 +256,7 @@ class TroLyNoiOverlayManager(
             }
             lifecycleOwner = null
 
-            Log.i(TAG, "Đã đóng và dọn dẹp cửa sổ Trợ lý nổi thành công.")
+            Log.i(TAG, "[ASSISTANT_CLOSE] Đã đóng và dọn dẹp cửa sổ Trợ lý nổi thành công.")
             onDismissListener?.invoke()
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi trong quá trình dismiss: ${e.message}", e)
