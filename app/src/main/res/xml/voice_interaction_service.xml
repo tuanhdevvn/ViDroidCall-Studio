@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="com.example.ViDroidCall_Studio.feature.assistant.ViDroidVoiceInteractionSessionService"
+    android:supportsAssist="true" />

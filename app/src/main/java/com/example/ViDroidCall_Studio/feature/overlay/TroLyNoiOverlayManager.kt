@@ -70,6 +70,7 @@ class TroLyNoiOverlayManager(
     private var overlayView: android.view.View? = null
     private var lifecycleOwner: OverlayLifecycleOwner? = null
     private var screenOffReceiver: BroadcastReceiver? = null
+    var onDismissListener: (() -> Unit)? = null
 
     // Quản lý trạng thái hiển thị
     private val overlayDataFlow = MutableStateFlow(AssistantOverlayData())
@@ -87,10 +88,16 @@ class TroLyNoiOverlayManager(
 
     /**
      * Mở Trợ lý nổi ở chế độ lắng nghe giọng nói thật (End-to-End).
+     * Nếu có initialCommand (từ Wake Word "Trợ lý ơi [câu lệnh]"), xử lý trực tiếp không cần thu âm lại.
      */
-    fun showAssistant() {
-        show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
-        startSpeechRecognition()
+    fun showAssistant(initialCommand: String? = null) {
+        if (initialCommand.isNullOrBlank()) {
+            show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
+            startSpeechRecognition()
+        } else {
+            show(AssistantOverlayData(state = AssistantOverlayState.STT, recognizedText = initialCommand))
+            handleFinalSpeechResult(initialCommand)
+        }
     }
 
     /**
@@ -185,6 +192,9 @@ class TroLyNoiOverlayManager(
             }.apply {
                 isFocusable = true
                 isFocusableInTouchMode = true
+                setViewTreeLifecycleOwner(owner)
+                setViewTreeViewModelStoreOwner(owner)
+                setViewTreeSavedStateRegistryOwner(owner)
                 addView(
                     composeView,
                     android.widget.FrameLayout.LayoutParams(
@@ -247,6 +257,7 @@ class TroLyNoiOverlayManager(
             lifecycleOwner = null
 
             Log.i(TAG, "Đã đóng và dọn dẹp cửa sổ Trợ lý nổi thành công.")
+            onDismissListener?.invoke()
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi trong quá trình dismiss: ${e.message}", e)
         }
