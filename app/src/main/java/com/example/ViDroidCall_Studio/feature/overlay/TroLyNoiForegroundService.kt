@@ -55,6 +55,8 @@ class TroLyNoiForegroundService : Service() {
                     wakeWordManager?.resume()
                 }
             }
+            // Khởi tạo trước (Warm-up) mô hình nhận diện giọng nói ngầm để khi mở popup là nói được ngay tức thì (<15ms)
+            ensureComponentsInitialized()
         }
 
         wakeWordManager = TroLyNoiWakeWordManager(
@@ -158,7 +160,7 @@ class TroLyNoiForegroundService : Service() {
         wakeWordManager?.release()
         wakeWordManager = null
 
-        overlayManager?.dismiss()
+        overlayManager?.destroy()
         overlayManager = null
 
         super.onDestroy()

@@ -263,7 +263,32 @@ class TroLyNoiOverlayManager(
         }
     }
 
-    private fun ensureComponentsInitialized() {
+    fun ensureComponentsInitialized() {
+        if (speechToTextManager == null) {
+            speechToTextManager = SpeechToTextManager(
+                context = appContext,
+                callbacks = object : SpeechToTextManager.Callbacks {
+                    override fun onListeningChanged(isListening: Boolean) {
+                        if (!isListening && overlayDataFlow.value.state == AssistantOverlayState.LISTENING) {
+                            // Người dùng dừng nói hoặc kết thúc phiên nghe
+                        }
+                    }
+
+                    override fun onTextChanged(text: String) {
+                        if (text.isNotBlank()) {
+                            overlayDataFlow.value = overlayDataFlow.value.copy(
+                                state = AssistantOverlayState.STT,
+                                recognizedText = text
+                            )
+                        }
+                    }
+
+                    override fun onFinalResult(text: String) {
+                        handleFinalSpeechResult(text)
+                    }
+                }
+            )
+        }
         if (textToSpeechManager == null) {
             textToSpeechManager = TextToSpeechManager(appContext)
         }
@@ -292,29 +317,6 @@ class TroLyNoiOverlayManager(
         ensureComponentsInitialized()
         try {
             speechToTextManager?.cancelListening()
-            speechToTextManager = SpeechToTextManager(
-                context = appContext,
-                callbacks = object : SpeechToTextManager.Callbacks {
-                    override fun onListeningChanged(isListening: Boolean) {
-                        if (!isListening && overlayDataFlow.value.state == AssistantOverlayState.LISTENING) {
-                            // Người dùng dừng nói hoặc kết thúc phiên nghe
-                        }
-                    }
-
-                    override fun onTextChanged(text: String) {
-                        if (text.isNotBlank()) {
-                            overlayDataFlow.value = overlayDataFlow.value.copy(
-                                state = AssistantOverlayState.STT,
-                                recognizedText = text
-                            )
-                        }
-                    }
-
-                    override fun onFinalResult(text: String) {
-                        handleFinalSpeechResult(text)
-                    }
-                }
-            )
             speechToTextManager?.startListening()
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khởi chạy thu âm: ${e.message}", e)
@@ -323,8 +325,17 @@ class TroLyNoiOverlayManager(
 
     private fun stopSpeechRecognition() {
         speechToTextManager?.cancelListening()
-        speechToTextManager = null
+        // Không gán null để giữ mô hình Sherpa-ONNX đã nạp sẵn trong bộ nhớ (Warm State)
+        // Nhờ vậy lần mở popup kế tiếp micro sẽ bắt đầu ngay lập tức (<15ms) thay vì phải đợi nạp lại
         textToSpeechManager?.stop()
+    }
+
+    fun destroy() {
+        dismiss()
+        speechToTextManager?.destroy()
+        speechToTextManager = null
+        textToSpeechManager?.shutdown()
+        textToSpeechManager = null
     }
 
     /**
