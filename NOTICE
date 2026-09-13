@@ -12,6 +12,13 @@ Native binaries and speech models shipped in this repository
 are unmodified upstream artifacts. See docs/THIRD_PARTY_BINARIES.md for sources
 and how to replace them. GGUF NLU weights are stored in models/ (Git LFS).
 
+Zipformer Vietnamese 30M weights: Copyright hynt
+https://huggingface.co/hynt/Zipformer-30M-RNNT-6000h
+Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International
+https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode
+Sherpa-ONNX Int8 package (no separate LICENSE file):
+https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09
+
 Qwen3-0.6B: Copyright Alibaba Cloud, Apache License 2.0
 https://github.com/QwenLM/Qwen3
 NLU fine-tune (GGUF): models/qwen3-nlu-run-Q4_K_M.gguf

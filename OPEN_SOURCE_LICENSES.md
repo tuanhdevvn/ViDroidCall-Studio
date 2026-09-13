@@ -2,7 +2,9 @@
 
 Mã nguồn **ViDroidCall Studio** được cấp phép theo **Apache License 2.0** (OSI-approved). Xem [LICENSE](LICENSE) và [NOTICE](NOTICE).
 
-Dự án còn sử dụng các thư viện, mô hình trí tuệ nhân tạo (AI) và công cụ mã nguồn mở của bên thứ ba (Third-Party Open Source Software). Chúng tôi xin chân thành cảm ơn cộng đồng các nhà phát triển và các tổ chức đã đóng góp vào các dự án mã nguồn mở này.
+Dự án còn sử dụng thư viện, mô hình AI và công cụ bên thứ ba. Hầu hết là mã nguồn mở OSI; **trọng số Zipformer tiếng Việt** dùng [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode) (không phải OSI).
+
+Chúng tôi xin chân thành cảm ơn cộng đồng các nhà phát triển và các tổ chức đã đóng góp vào các dự án này.
 
 Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở được tích hợp trong dự án:
 
@@ -15,7 +17,7 @@ Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở đ
 | 1 | **Sherpa-ONNX** | Next-gen Kaldi / k2-fsa Team | Nhận diện giọng nói (Speech-to-Text) & VAD On-Device 100% Offline | **Apache-2.0** | [GitHub Repo](https://github.com/k2-fsa/sherpa-onnx) |
 | 2 | **ONNX Runtime** | Microsoft Corporation | Engine tăng tốc suy luận mô hình nơ-ron cục bộ trên thiết bị | **MIT License** | [GitHub Repo](https://github.com/microsoft/onnxruntime) |
 | 3 | **Silero VAD** | Silero Team | Mô hình phát hiện điểm ngắt / khoảng lặng giọng nói chính xác cao | **MIT License** | [GitHub Repo](https://github.com/snakers4/silero-vad) |
-| 4 | **Zipformer Vietnamese Model (30M Int8)** | Fangjun Kuang / k2-fsa | Mô hình mạng nơ-ron nhận dạng tiếng Việt nén Int8 tối ưu di động | **Apache-2.0** | [HuggingFace Repo](https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09) |
+| 4 | **Zipformer Vietnamese Model (30M Int8)** | hynt (trọng số) / đóng gói k2-fsa | Mô hình ASR tiếng Việt 30M, bản Int8 dùng với Sherpa-ONNX | **CC BY-NC-ND 4.0** | [Model gốc](https://huggingface.co/hynt/Zipformer-30M-RNNT-6000h) · [Gói Sherpa](https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09) · [Giấy phép](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode) |
 | 5 | **Android Jetpack & Jetpack Compose** | Google LLC | Bộ công cụ phát triển giao diện hiện đại & Quản lý vòng đời ứng dụng | **Apache-2.0** | [Android Open Source](https://android.googlesource.com) |
 | 6 | **Kotlin & Kotlinx Coroutines** | JetBrains s.r.o. | Ngôn ngữ lập trình chính & Quản lý luồng bất đồng bộ (Asynchronous) | **Apache-2.0** | [GitHub Repo](https://github.com/JetBrains/kotlin) |
 | 7 | **Material Components for Android 3** | Google LLC | Hệ thống thiết kế giao diện chuẩn Material You (M3) | **Apache-2.0** | [GitHub Repo](https://github.com/material-components/material-components-android) |
@@ -28,7 +30,7 @@ Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở đ
 ## 📑 Chi Tiết Các Giấy Phép Mã Nguồn Mở
 
 ### 1. Apache License, Version 2.0
-Áp dụng cho: **Sherpa-ONNX**, **Zipformer Vietnamese Model**, **Android Jetpack / Compose**, **Kotlin / Coroutines**, **Material Design Components**, **Qwen3**.
+Áp dụng cho: **Sherpa-ONNX** (runtime, không gồm trọng số Zipformer tiếng Việt), **Android Jetpack / Compose**, **Kotlin / Coroutines**, **Material Design Components**, **Qwen3**.
 
 ```text
                                  Apache License
@@ -76,6 +78,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+---
+
+### 3. Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 (CC BY-NC-ND 4.0)
+Áp dụng cho: **trọng số Zipformer Vietnamese 30M** (`hynt/Zipformer-30M-RNNT-6000h`). Gói [csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09](https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09) **không có file LICENSE**; README chỉ ghi lấy file từ repo `hynt`. Apache-2.0 của Sherpa-ONNX / icefall **không** áp dụng cho checkpoint này.
+
+Đây **không** phải giấy phép OSI open source. Tóm tắt (không thay thế bản đầy đủ):
+
+- **BY** — ghi nhận tác giả (hynt).
+- **NC** — không dùng cho mục đích thương mại.
+- **ND** — không phân phối bản phái sinh (kể cả bản sửa trọng số).
+
+Văn bản đầy đủ: [CC BY-NC-ND 4.0 Legal Code](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode).  
+Metadata Hugging Face: `license: cc-by-nc-nd-4.0` trên [hynt/Zipformer-30M-RNNT-6000h](https://huggingface.co/hynt/Zipformer-30M-RNNT-6000h).
 
 ---
 
