@@ -26,6 +26,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -52,7 +54,7 @@ class TroLyNoiForegroundService : Service() {
             onDismissListener = {
                 Log.i(TAG, "[ASSISTANT_CLOSE] Overlay đã đóng, kiểm tra tiếp tục Wake Word")
                 if (isWakeWordActive) {
-                    wakeWordManager?.resume()
+                    wakeWordManager?.resume(retryCount = 3)
                 }
             }
             // Khởi tạo trước (Warm-up) mô hình nhận diện giọng nói ngầm để khi mở popup là nói được ngay tức thì (<15ms)
@@ -81,6 +83,21 @@ class TroLyNoiForegroundService : Service() {
                     wakeWordManager?.stop()
                 }
                 updateNotification()
+            }
+        }
+
+        // Watchdog định kỳ tự động kiểm tra và phục hồi Wake Word listener nếu bị ngắt bất thường
+        serviceScope.launch {
+            while (isActive) {
+                delay(8_000)
+                if (isWakeWordActive &&
+                    overlayManager?.isShowing != true &&
+                    TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService) &&
+                    wakeWordManager?.isLoopActive != true
+                ) {
+                    Log.i(TAG, "[WATCHDOG_HEAL] Phát hiện Wake Word listener ngưng hoạt động bất thường, đang tự khôi phục...")
+                    wakeWordManager?.resume(retryCount = 2)
+                }
             }
         }
     }
@@ -184,7 +201,7 @@ class TroLyNoiForegroundService : Service() {
                         if (isUnlocked) {
                             Log.i(TAG, "[SCREEN_ON] Màn hình sáng và đã mở khóa")
                             if (isWakeWordActive) {
-                                wakeWordManager?.resume()
+                                wakeWordManager?.resume(retryCount = 2)
                             }
                         } else {
                             Log.i(TAG, "[DEVICE_LOCKED] Màn hình sáng nhưng thiết bị đang khóa")
@@ -192,8 +209,8 @@ class TroLyNoiForegroundService : Service() {
                     }
                     Intent.ACTION_USER_PRESENT -> {
                         Log.i(TAG, "[DEVICE_UNLOCKED] Người dùng đã mở khóa thiết bị")
-                        if (isWakeWordActive && TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService)) {
-                            wakeWordManager?.resume()
+                        if (isWakeWordActive) {
+                            wakeWordManager?.resume(retryCount = 3)
                         }
                     }
                 }

@@ -235,19 +235,22 @@ class TroLyNoiOverlayManager(
      */
     @Synchronized
     fun dismiss() {
+        if (overlayView == null) return
         try {
             stopSpeechRecognition()
 
             unregisterScreenOffReceiver()
 
-            overlayView?.let { view ->
+            val viewToRemove = overlayView
+            overlayView = null
+
+            viewToRemove?.let { view ->
                 try {
                     windowManager.removeView(view)
                 } catch (e: Exception) {
                     Log.w(TAG, "Lỗi khi removeView: ${e.message}")
                 }
             }
-            overlayView = null
 
             lifecycleOwner?.let { owner ->
                 owner.onPause()
