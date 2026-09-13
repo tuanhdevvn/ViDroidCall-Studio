@@ -95,8 +95,17 @@ class TroLyNoiOverlayManager(
             show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
             startSpeechRecognition()
         } else {
-            show(AssistantOverlayData(state = AssistantOverlayState.STT, recognizedText = initialCommand))
-            handleFinalSpeechResult(initialCommand)
+            // Khi mở trợ lý, luôn hiển thị giao diện LISTENING ("Hãy nói gì đó..." + sóng âm)
+            // trong 600ms để người dùng thấy rõ Trợ lý lắng nghe trước khi chuyển sang STT
+            show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
+            scope.launch {
+                delay(600)
+                overlayDataFlow.value = AssistantOverlayData(
+                    state = AssistantOverlayState.STT,
+                    recognizedText = initialCommand
+                )
+                handleFinalSpeechResult(initialCommand)
+            }
         }
     }
 
@@ -282,12 +291,26 @@ class TroLyNoiOverlayManager(
                     }
 
                     override fun onTextChanged(text: String) {
-                        if (text.isNotBlank()) {
-                            overlayDataFlow.value = overlayDataFlow.value.copy(
-                                state = AssistantOverlayState.STT,
-                                recognizedText = text
-                            )
+                        val trimmed = text.trim()
+                        if (trimmed.isBlank() || 
+                            trimmed == SpeechToTextManager.WAITING_PLACEHOLDER || 
+                            trimmed == SpeechToTextManager.LISTENING_PLACEHOLDER ||
+                            trimmed == "Đang lắng nghe câu lệnh..." ||
+                            trimmed == "Hãy nói gì đó..."
+                        ) {
+                            if (overlayDataFlow.value.state != AssistantOverlayState.LISTENING) {
+                                overlayDataFlow.value = overlayDataFlow.value.copy(
+                                    state = AssistantOverlayState.LISTENING
+                                )
+                            }
+                            return
                         }
+
+                        // Chỉ khi nhận diện được câu chữ thực tế của người dùng mới chuyển sang STT
+                        overlayDataFlow.value = overlayDataFlow.value.copy(
+                            state = AssistantOverlayState.STT,
+                            recognizedText = trimmed
+                        )
                     }
 
                     override fun onFinalResult(text: String) {
