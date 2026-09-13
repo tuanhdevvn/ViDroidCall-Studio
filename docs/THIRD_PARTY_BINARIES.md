@@ -31,9 +31,11 @@ the JNI path only needs the two libraries above.
 
 ## Speech models (`app/src/main/assets/sherpa-onnx-vi`)
 
-Upstream package:
-[csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09](https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09)
-(Apache-2.0).
+Weights: [hynt/Zipformer-30M-RNNT-6000h](https://huggingface.co/hynt/Zipformer-30M-RNNT-6000h)
+([CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode)).
+
+Sherpa-ONNX package (no LICENSE file on the card; files copied from `hynt`):
+[csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09](https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09).
 
 | File | Role |
 | :--- | :--- |

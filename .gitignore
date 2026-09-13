@@ -22,4 +22,5 @@ local.properties
 .cursor/
 .agents/
 .agent/
+.githooks/
 

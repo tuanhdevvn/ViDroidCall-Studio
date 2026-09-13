@@ -206,7 +206,7 @@ Licensed under the Apache License, Version 2.0
 http://www.apache.org/licenses/LICENSE-2.0
 ```
 
-* [LICENSE](LICENSE) · [NOTICE](NOTICE) (có attribution Qwen3 / Alibaba)
+* [LICENSE](LICENSE) · [NOTICE](NOTICE) (attribution Qwen3 / Alibaba; Zipformer VI là CC BY-NC-ND 4.0)
 * Bên thứ ba: [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md)
 * `.so` / Zipformer không sửa: [docs/THIRD_PARTY_BINARIES.md](docs/THIRD_PARTY_BINARIES.md)
 * GGUF: [`models/`](models/README.md) (Git LFS)
