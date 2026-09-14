@@ -23,10 +23,12 @@ class SettingsIndependentStateTest {
 
     class DualActivationCoordinator(
         var masterSwitchEnabled: Boolean = false,
-        var wakeWordSwitchEnabled: Boolean = false,
         var isSystemDefaultAssistant: Boolean = false,
         var isScreenInteractiveAndUnlocked: Boolean = true
     ) {
+        val wakeWordSwitchEnabled: Boolean
+            get() = masterSwitchEnabled
+
         var currentState: ActivationChannelState = ActivationChannelState.IDLE
             private set
 
@@ -36,7 +38,7 @@ class SettingsIndependentStateTest {
             private set
 
         fun evaluateWakeWordState() {
-            if (masterSwitchEnabled && wakeWordSwitchEnabled && isScreenInteractiveAndUnlocked && !isAssistantMicActive) {
+            if (masterSwitchEnabled && isScreenInteractiveAndUnlocked && !isAssistantMicActive) {
                 isWakeWordMicActive = true
                 currentState = ActivationChannelState.WAKE_WORD_LISTENING
             } else {
@@ -61,7 +63,7 @@ class SettingsIndependentStateTest {
         }
 
         fun onDefaultAssistantTriggered() {
-            // Can be triggered even if wakeWordSwitchEnabled is false!
+            // Can be triggered even if masterSwitchEnabled is false!
             if (isWakeWordMicActive) {
                 isWakeWordMicActive = false
             }
@@ -83,14 +85,13 @@ class SettingsIndependentStateTest {
     @Test
     fun testTwoChannelsAreIndependent() {
         val coordinator = DualActivationCoordinator(
-            masterSwitchEnabled = true,
-            wakeWordSwitchEnabled = false,
+            masterSwitchEnabled = false,
             isSystemDefaultAssistant = true
         )
 
-        // 1. Wake word is OFF -> Wake Word mic should NOT be active
+        // 1. Master switch is OFF -> Wake Word mic should NOT be active
         coordinator.evaluateWakeWordState()
-        assertFalse("Wake Word mic không được chạy khi wakeWordSwitchEnabled=false", coordinator.isWakeWordMicActive)
+        assertFalse("Wake Word mic không được chạy khi masterSwitchEnabled=false", coordinator.isWakeWordMicActive)
         assertEquals(ActivationChannelState.IDLE, coordinator.currentState)
 
         // 2. Default Assistant can still be triggered by hardware key/gesture
@@ -110,7 +111,6 @@ class SettingsIndependentStateTest {
     fun testWakeWordStateMachineAndNoMicConflict() {
         val coordinator = DualActivationCoordinator(
             masterSwitchEnabled = true,
-            wakeWordSwitchEnabled = true,
             isSystemDefaultAssistant = false
         )
 
@@ -136,7 +136,6 @@ class SettingsIndependentStateTest {
     fun testScreenOffAndLockPausesWakeWord() {
         val coordinator = DualActivationCoordinator(
             masterSwitchEnabled = true,
-            wakeWordSwitchEnabled = true,
             isSystemDefaultAssistant = true,
             isScreenInteractiveAndUnlocked = true
         )
@@ -161,7 +160,6 @@ class SettingsIndependentStateTest {
     fun testMasterSwitchOffStopsEverything() {
         val coordinator = DualActivationCoordinator(
             masterSwitchEnabled = true,
-            wakeWordSwitchEnabled = true,
             isSystemDefaultAssistant = true
         )
 

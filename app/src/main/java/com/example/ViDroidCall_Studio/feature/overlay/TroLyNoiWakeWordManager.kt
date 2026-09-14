@@ -21,6 +21,8 @@ import com.k2fsa.sherpa.onnx.SileroVadModelConfig
 import com.k2fsa.sherpa.onnx.Vad
 import com.k2fsa.sherpa.onnx.VadModelConfig
 import java.util.concurrent.Executors
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -45,6 +47,8 @@ class TroLyNoiWakeWordManager(
     private var recognizer: OfflineRecognizer? = null
     private var vad: Vad? = null
     private var isModelLoaded = false
+    @Volatile private var loopFinishedLatch: CountDownLatch? = null
+    private val isReleased = AtomicBoolean(false)
 
     fun start() {
         if (isRunning.get()) {
@@ -81,13 +85,13 @@ class TroLyNoiWakeWordManager(
         isRunning.set(false)
         isPaused.set(false)
         Log.i(TAG, "[WAKE_WORD_STOP] Đã dừng lắng nghe Wake Word.")
-        stopAudioRecord()
+        // Không gọi stopAudioRecord() ở đây — để luồng loop thoát tự nhiên và tự dọn trong finally
     }
 
     fun pause() {
         isPaused.set(true)
         Log.i(TAG, "[WAKE_WORD_STOP] Tạm dừng lắng nghe Wake Word.")
-        stopAudioRecord()
+        // Không gọi stopAudioRecord() ở đây — để luồng loop thoát tự nhiên
     }
 
     fun resume(retryCount: Int = 3) {
@@ -170,6 +174,9 @@ class TroLyNoiWakeWordManager(
             Log.d(TAG, "Luồng lắng nghe Wake Word đã đang chạy, bỏ qua lần gọi này.")
             return
         }
+
+        val latch = CountDownLatch(1)
+        loopFinishedLatch = latch
 
         val hasPermission = ContextCompat.checkSelfPermission(
             context,
@@ -292,6 +299,7 @@ class TroLyNoiWakeWordManager(
         } finally {
             isLoopRunning.set(false)
             stopAudioRecord()
+            latch.countDown()
             // Tự phục hồi: Nếu trạng thái vẫn là đang chạy, không chủ động pause, và đủ điều kiện nghe nhưng vòng lặp bị ngắt
             if (isRunning.get() && !isPaused.get() && canListen() && TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(context)) {
                 Log.i(TAG, "[WAKE_WORD_RECOVERY] Tự động kích hoạt lại Wake Word listener sau 1s...")
@@ -316,18 +324,37 @@ class TroLyNoiWakeWordManager(
     }
 
     fun release() {
-        stop()
-        executor.execute {
+        if (!isReleased.compareAndSet(false, true)) return
+        isRunning.set(false)
+        isPaused.set(false)
+
+        // Chờ vòng lặp kết thúc tự nhiên (tối đa 2 giây) trước khi giải phóng con trỏ C++ native
+        val latch = loopFinishedLatch
+        if (latch != null && isLoopRunning.get()) {
             try {
-                recognizer?.release()
-                vad?.release()
-            } catch (e: Exception) {
-                Log.w(TAG, "Lỗi giải phóng tài nguyên WakeWord: ${e.message}")
-            } finally {
-                recognizer = null
-                vad = null
-                isModelLoaded = false
+                latch.await(2, TimeUnit.SECONDS)
+            } catch (_: InterruptedException) { }
+        }
+
+        try {
+            if (!executor.isShutdown) {
+                executor.execute {
+                    try {
+                        // An toàn: vòng lặp đã kết thúc, không ai đang dùng recognizer/vad
+                        recognizer?.release()
+                        vad?.release()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Lỗi giải phóng tài nguyên WakeWord: ${e.message}")
+                    } finally {
+                        recognizer = null
+                        vad = null
+                        isModelLoaded = false
+                    }
+                }
+                executor.shutdown()
             }
+        } catch (e: Exception) {
+            Log.w(TAG, "Lỗi shutdown executor WakeWord: ${e.message}")
         }
     }
 

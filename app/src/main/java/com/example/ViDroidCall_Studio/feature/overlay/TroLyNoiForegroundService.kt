@@ -42,6 +42,7 @@ class TroLyNoiForegroundService : Service() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var isWakeWordActive = false
+    @Volatile private var isBeingDestroyed = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -49,6 +50,8 @@ class TroLyNoiForegroundService : Service() {
         super.onCreate()
         Log.i(TAG, "[SERVICE_RESTART] Khởi tạo TroLyNoiForegroundService")
         createChannel()
+        // Gọi promoteToForeground ngay đầu onCreate để tránh ForegroundServiceDidNotStartInTimeException
+        promoteToForeground()
 
         overlayManager = TroLyNoiOverlayManager(this).apply {
             onDismissListener = {
@@ -57,8 +60,7 @@ class TroLyNoiForegroundService : Service() {
                     wakeWordManager?.resume(retryCount = 3)
                 }
             }
-            // Khởi tạo trước (Warm-up) mô hình nhận diện giọng nói ngầm để khi mở popup là nói được ngay tức thì (<15ms)
-            ensureComponentsInitialized()
+            // Không warm-up trước: STT/TTS/NLU chỉ nạp khi Overlay thực sự hiển thị (Lazy Init)
         }
 
         wakeWordManager = TroLyNoiWakeWordManager(
@@ -71,14 +73,23 @@ class TroLyNoiForegroundService : Service() {
 
         registerScreenReceiver()
 
-        // Lắng nghe cài đặt bật/tắt Wake Word từ Preferences
+        // Bật master = bật Wake Word; Service lắng nghe trực tiếp enabledFlow (1 công tắc duy nhất)
         val prefs = TroLyNoiPreferences(this)
         serviceScope.launch {
-            prefs.wakeWordEnabledFlow.collect { enabled ->
+            prefs.enabledFlow.collect { enabled ->
                 isWakeWordActive = enabled
-                Log.d(TAG, "Cập nhật trạng thái Wake Word từ preferences: $enabled")
+                Log.d(TAG, "Master switch → Wake Word: $enabled")
                 if (enabled) {
                     wakeWordManager?.start()
+                    // Warm-up so le (Staggered Warm-up): Đợi 2s để WakeWord nạp xong và giải tỏa CPU,
+                    // sau đó nạp trước mô hình STT ngầm để khi người dùng nói "Trợ lý ơi" là mic bật tức thì (<100ms)
+                    serviceScope.launch(Dispatchers.Default) {
+                        delay(2000)
+                        if (!isBeingDestroyed && isWakeWordActive) {
+                            Log.d(TAG, "Bắt đầu warm-up trước mô hình STT trong nền...")
+                            overlayManager?.ensureComponentsInitialized()
+                        }
+                    }
                 } else {
                     wakeWordManager?.stop()
                 }
@@ -90,7 +101,8 @@ class TroLyNoiForegroundService : Service() {
         serviceScope.launch {
             while (isActive) {
                 delay(8_000)
-                if (isWakeWordActive &&
+                if (!isBeingDestroyed &&
+                    isWakeWordActive &&
                     overlayManager?.isShowing != true &&
                     TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService) &&
                     wakeWordManager?.isLoopActive != true
@@ -170,6 +182,7 @@ class TroLyNoiForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        isBeingDestroyed = true
         Log.i(TAG, "[SERVICE_RESTART] TroLyNoiForegroundService onDestroy")
         serviceScope.cancel()
         unregisterScreenReceiverSafely()

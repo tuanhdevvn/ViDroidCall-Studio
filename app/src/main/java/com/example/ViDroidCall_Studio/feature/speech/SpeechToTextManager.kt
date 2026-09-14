@@ -23,6 +23,7 @@ import com.example.ViDroidCall_Studio.util.SystemSoundHelper
 import com.k2fsa.sherpa.onnx.Vad
 import com.k2fsa.sherpa.onnx.VadModelConfig
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -48,6 +49,7 @@ class SpeechToTextManager(
 
     private val isListeningActive = AtomicBoolean(false)
     private val isCancelled = AtomicBoolean(false)
+    private val isDestroyed = AtomicBoolean(false)
     private var isModelInitialized = false
     private var isInitializingModel = false
     private var lastActionTimestamp = 0L
@@ -60,6 +62,7 @@ class SpeechToTextManager(
     private val pendingInitCallbacks = mutableListOf<() -> Unit>()
 
     private fun initModelAsync(onComplete: (() -> Unit)? = null) {
+        if (isDestroyed.get() || executor.isShutdown) return
         if (isModelInitialized) {
             onComplete?.invoke()
             return
@@ -72,7 +75,8 @@ class SpeechToTextManager(
         if (isInitializingModel) return
         isInitializingModel = true
 
-        executor.execute {
+        try {
+            executor.execute {
             try {
                 Log.d(TAG, "Đang nạp mô hình Sherpa-ONNX Zipformer tiếng Việt & Silero VAD...")
                 val assetManager = context.assets
@@ -120,20 +124,31 @@ class SpeechToTextManager(
             } finally {
                 isInitializingModel = false
                 mainHandler.post {
+                    if (isDestroyed.get()) {
+                        synchronized(pendingInitCallbacks) { pendingInitCallbacks.clear() }
+                        return@post
+                    }
                     val callbacksToRun = synchronized(pendingInitCallbacks) {
                         val list = pendingInitCallbacks.toList()
                         pendingInitCallbacks.clear()
                         list
                     }
                     for (cb in callbacksToRun) {
-                        cb.invoke()
+                        if (!isDestroyed.get()) {
+                            cb.invoke()
+                        }
                     }
                 }
             }
+            }
+        } catch (e: RejectedExecutionException) {
+            Log.w(TAG, "Bỏ qua initModelAsync do executor đang đóng: ${e.message}")
+            isInitializingModel = false
         }
     }
 
     fun startListening() {
+        if (isDestroyed.get() || executor.isShutdown) return
         val now = System.currentTimeMillis()
         if (now - lastActionTimestamp < 300L) {
             Log.d(TAG, "Bỏ qua yêu cầu startListening do thao tác quá nhanh (< 300ms)")
@@ -165,6 +180,9 @@ class SpeechToTextManager(
         callbacks.onTextChanged(WAITING_PLACEHOLDER)
 
         initModelAsync {
+            if (isDestroyed.get() || !isListeningActive.get() || executor.isShutdown) {
+                return@initModelAsync
+            }
             if (!isModelInitialized || recognizer == null || vad == null) {
                 Log.e(TAG, "Không thể khởi động STT vì mô hình chưa nạp thành công.")
                 isListeningActive.set(false)
@@ -173,8 +191,14 @@ class SpeechToTextManager(
                 return@initModelAsync
             }
 
-            executor.execute {
-                startAudioRecordingLoop()
+            try {
+                executor.execute {
+                    startAudioRecordingLoop()
+                }
+            } catch (e: RejectedExecutionException) {
+                Log.w(TAG, "Bỏ qua startAudioRecordingLoop do executor đã đóng: ${e.message}")
+                isListeningActive.set(false)
+                callbacks.onListeningChanged(false)
             }
         }
     }
@@ -343,20 +367,30 @@ class SpeechToTextManager(
     }
 
     fun destroy() {
-        cancelListening()
-        executor.execute {
-            try {
-                recognizer?.release()
-                vad?.release()
-            } catch (e: Exception) {
-                Log.w(TAG, "Lỗi giải phóng Sherpa-ONNX: ${e.message}")
-            } finally {
-                recognizer = null
-                vad = null
-                isModelInitialized = false
-            }
+        if (!isDestroyed.compareAndSet(false, true)) return
+        synchronized(pendingInitCallbacks) {
+            pendingInitCallbacks.clear()
         }
-        executor.shutdown()
+        cancelListening()
+        try {
+            if (!executor.isShutdown) {
+                executor.execute {
+                    try {
+                        recognizer?.release()
+                        vad?.release()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Lỗi giải phóng Sherpa-ONNX: ${e.message}")
+                    } finally {
+                        recognizer = null
+                        vad = null
+                        isModelInitialized = false
+                    }
+                }
+                executor.shutdown()
+            }
+        } catch (e: RejectedExecutionException) {
+            Log.w(TAG, "Executor đã đóng trước đó: ${e.message}")
+        }
     }
 
     companion object {
