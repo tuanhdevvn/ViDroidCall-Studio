@@ -108,7 +108,7 @@ class TroLyNoiOverlayManager(
             show(
                 AssistantOverlayData(
                     state = AssistantOverlayState.LISTENING,
-                    statusMessage = SpeechToTextManager.WAITING_PLACEHOLDER
+                    statusMessage = "Đang lắng nghe..."
                 )
             )
             scope.launch {

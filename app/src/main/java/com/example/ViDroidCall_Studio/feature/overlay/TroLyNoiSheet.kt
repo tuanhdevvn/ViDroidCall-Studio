@@ -4,6 +4,7 @@
 package com.example.ViDroidCall_Studio.feature.overlay
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -265,6 +266,7 @@ private fun ListeningContent(
     }
 
     val isWaiting = displayText == "Hãy nói gì đó..."
+    val isSpeaking = !isWaiting
 
     Row(
         modifier = Modifier
@@ -304,16 +306,70 @@ private fun ListeningContent(
 
         Spacer(modifier = Modifier.width(10.dp))
 
-        // Sóng âm nhỏ hơn 1 tí, mỏng hơn 1 tí, đặt ở bên tay phải
-        AnimatedWaveformVisualizer()
+        // Sóng âm nhỏ mỏng bên tay phải:
+        // - Khi ở "Hãy nói gì đó...": Sóng âm tĩnh (đứng yên hoàn toàn)
+        // - Khi cất giọng nói ("Đang lắng nghe..."): Sóng âm động (nhảy nhót sống động)
+        AnimatedWaveformVisualizer(isSpeaking = isSpeaking)
     }
 }
 
 /**
- * Hiệu ứng sóng âm động 7 cột thanh mảnh, nhỏ gọn đặt ở bên tay phải.
+ * Hiệu ứng sóng âm thanh mảnh, nhỏ gọn đặt ở bên tay phải.
+ * - isSpeaking = false ("Hãy nói gì đó..."): Sóng âm tĩnh, đứng yên thư thái
+ * - isSpeaking = true ("Đang lắng nghe..."): Sóng âm 7 cột nhảy nhót sống động
  */
 @Composable
-private fun AnimatedWaveformVisualizer() {
+private fun AnimatedWaveformVisualizer(isSpeaking: Boolean = true) {
+    Crossfade(
+        targetState = isSpeaking,
+        animationSpec = tween(220),
+        label = "waveform_speaking_crossfade"
+    ) { speaking ->
+        if (speaking) {
+            DynamicWaveform()
+        } else {
+            StaticWaveform()
+        }
+    }
+}
+
+/**
+ * Sóng âm tĩnh (Static Waveform): Đứng yên hoàn toàn ở trạng thái chờ khi ở "Hãy nói gì đó..."
+ */
+@Composable
+private fun StaticWaveform() {
+    val staticBars = listOf(
+        Pair(5.dp, Color(0xFFBFDBFE)),
+        Pair(9.dp, Color(0xFF93C5FD)),
+        Pair(14.dp, Color(0xFF60A5FA)),
+        Pair(20.dp, Color(0xFF0866FF)),
+        Pair(14.dp, Color(0xFF60A5FA)),
+        Pair(9.dp, Color(0xFF93C5FD)),
+        Pair(5.dp, Color(0xFFBFDBFE))
+    )
+
+    Row(
+        modifier = Modifier.height(44.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        staticBars.forEach { (height, color) ->
+            Box(
+                modifier = Modifier
+                    .width(3.5.dp)
+                    .height(height)
+                    .clip(RoundedCornerShape(9999.dp))
+                    .background(color)
+            )
+        }
+    }
+}
+
+/**
+ * Sóng âm động (Dynamic Waveform): 7 cột sóng nhảy nhót theo giọng nói khi ở "Đang lắng nghe..."
+ */
+@Composable
+private fun DynamicWaveform() {
     val transition = rememberInfiniteTransition(label = "WaveformBars")
 
     val b1 by transition.animateFloat(
