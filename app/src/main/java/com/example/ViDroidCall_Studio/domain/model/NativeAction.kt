@@ -238,11 +238,23 @@ sealed class NativeAction {
     fun getActionSummary(): String {
         return when (this) {
             is CallContact -> {
-                val target = if (contact.isNotBlank()) contact else phoneNumber
+                val target = if (contact.isNotBlank()) {
+                    contact
+                } else if (phoneNumber.length >= 6) {
+                    phoneNumber.replaceRange(3, phoneNumber.length - 3, "****")
+                } else {
+                    phoneNumber
+                }
                 "Gọi tới $target"
             }
             is SendSms -> {
-                val target = if (contact.isNotBlank()) contact else phoneNumber
+                val target = if (contact.isNotBlank()) {
+                    contact
+                } else if (phoneNumber.length >= 6) {
+                    phoneNumber.replaceRange(3, phoneNumber.length - 3, "****")
+                } else {
+                    phoneNumber
+                }
                 if (message.isNotBlank()) "Gửi tin nhắn tới $target: “$message”" else "Soạn tin nhắn gửi $target"
             }
             is SetAlarm -> {

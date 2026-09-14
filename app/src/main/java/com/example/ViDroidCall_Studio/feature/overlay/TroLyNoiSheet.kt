@@ -206,13 +206,13 @@ private fun SheetHeader(isIdle: Boolean) {
                 painter = painterResource(id = R.drawable.logo_ai),
                 contentDescription = "Logo ViDroidCall",
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(36.dp)
                     .then(if (isIdle) Modifier.scale(logoScale) else Modifier)
             )
 
             Text(
                 text = "ViDroidCall",
-                fontSize = 15.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF15182A),
                 letterSpacing = (-0.2).sp
@@ -453,13 +453,13 @@ private fun AnalyzingContent(recognizedText: String) {
             ) {
                 // Vùng logo hào quang thở
                 Box(
-                    modifier = Modifier.size(68.dp),
+                    modifier = Modifier.size(90.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     // Vòng hào quang phát sáng xung quanh logo
                     Box(
                         modifier = Modifier
-                            .size(64.dp)
+                            .size(86.dp)
                             .scale(haloScale)
                             .clip(CircleShape)
                             .background(Color(0xFF0866FF).copy(alpha = haloAlpha))
@@ -468,7 +468,7 @@ private fun AnalyzingContent(recognizedText: String) {
                     Image(
                         painter = painterResource(id = R.drawable.logo_ai),
                         contentDescription = "AI analyzing",
-                        modifier = Modifier.size(38.dp)
+                        modifier = Modifier.size(54.dp)
                     )
                 }
 
