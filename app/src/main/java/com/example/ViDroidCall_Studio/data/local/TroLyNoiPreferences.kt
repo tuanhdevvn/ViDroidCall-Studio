@@ -26,13 +26,24 @@ class TroLyNoiPreferences(
         preferences[KEY_ENABLED] ?: false
     }
 
+    val wakeWordEnabledFlow: Flow<Boolean> = context.troLyNoiDataStore.data.map { preferences ->
+        preferences[KEY_WAKE_WORD_ENABLED] ?: false
+    }
+
     suspend fun setEnabled(enabled: Boolean) {
         context.troLyNoiDataStore.edit { preferences ->
             preferences[KEY_ENABLED] = enabled
         }
     }
 
+    suspend fun setWakeWordEnabled(enabled: Boolean) {
+        context.troLyNoiDataStore.edit { preferences ->
+            preferences[KEY_WAKE_WORD_ENABLED] = enabled
+        }
+    }
+
     private companion object {
         val KEY_ENABLED = booleanPreferencesKey("tro_ly_noi_enabled")
+        val KEY_WAKE_WORD_ENABLED = booleanPreferencesKey("tro_ly_noi_wake_word_enabled")
     }
 }

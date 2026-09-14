@@ -41,15 +41,22 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.TouchApp
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.example.ViDroidCall_Studio.feature.assistant.TroLyNoiAssistantHelper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -111,6 +118,8 @@ fun SettingsScreen(
     val currentTheme by themePreferences.themeFlow.collectAsState(initial = AppTheme.LIGHT)
     val currentFontScale by fontSizePreferences.fontScaleFlow.collectAsState(initial = FontSizePreferences.DEFAULT_FONT_SCALE)
     val troLyNoiEnabled by troLyNoiPreferences.enabledFlow.collectAsState(initial = false)
+    val wakeWordEnabled by troLyNoiPreferences.wakeWordEnabledFlow.collectAsState(initial = false)
+    var isDefaultAssistant by remember { mutableStateOf(TroLyNoiAssistantHelper.isDefaultAssistant(context)) }
 
     var awaitingOverlaySettings by remember { mutableStateOf(false) }
     var showOverlayPermissionDialog by remember { mutableStateOf(false) }
@@ -119,7 +128,10 @@ fun SettingsScreen(
     fun disableTroLyNoi() {
         awaitingOverlaySettings = false
         showOverlayPermissionDialog = false
-        scope.launch { troLyNoiPreferences.setEnabled(false) }
+        scope.launch {
+            troLyNoiPreferences.setEnabled(false)
+            troLyNoiPreferences.setWakeWordEnabled(false)
+        }
     }
 
     val audioPermissionLauncher = rememberLauncherForActivityResult(
@@ -161,7 +173,10 @@ fun SettingsScreen(
             TroLyNoiPermissions.Gate.NONE -> {
                 awaitingOverlaySettings = false
                 showOverlayPermissionDialog = false
-                scope.launch { troLyNoiPreferences.setEnabled(true) }
+                scope.launch {
+                    troLyNoiPreferences.setEnabled(true)
+                    troLyNoiPreferences.setWakeWordEnabled(true)
+                }
             }
         }
     }
@@ -169,6 +184,7 @@ fun SettingsScreen(
     DisposableEffect(lifecycleOwner, troLyNoiEnabled, awaitingOverlaySettings) {
         val observer = LifecycleEventObserver { _, event ->
             if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+            isDefaultAssistant = TroLyNoiAssistantHelper.isDefaultAssistant(context)
             val hasAll = TroLyNoiPermissions.hasAllRequired(context)
             if (troLyNoiEnabled && !hasAll) {
                 disableTroLyNoi()
@@ -730,57 +746,192 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 18.dp, vertical = 16.dp)
                 ) {
+                    // Hàng 1: Trợ lý nổi (Master Switch)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.GraphicEq,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Trợ lý nổi",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Cửa sổ trợ lý nổi đè lên các ứng dụng khác",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IosStyleSwitch(
+                            checked = troLyNoiEnabled,
+                            onCheckedChange = { turnOn ->
+                                if (turnOn) {
+                                    continueEnableHolder.invoke()
+                                } else {
+                                    disableTroLyNoi()
+                                }
+                            },
+                            contentDescription = if (troLyNoiEnabled) {
+                                "Tắt Trợ lý nổi"
+                            } else {
+                                "Bật Trợ lý nổi"
+                            }
+                        )
+                    }
+
+                    // Hàng 2: Nói "Trợ lý ơi" (Wake Word Switch - Chỉ khi Trợ lý nổi BẬT)
+                    if (troLyNoiEnabled) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color(0xFF10B981).copy(alpha = 0.12f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Mic,
+                                    contentDescription = null,
+                                    tint = Color(0xFF10B981),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Nói “Trợ lý ơi”",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Lắng nghe từ khóa ngầm khi màn hình sáng (Silero VAD tiết kiệm pin)",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IosStyleSwitch(
+                                checked = wakeWordEnabled,
+                                onCheckedChange = { turnOn ->
+                                    scope.launch { troLyNoiPreferences.setWakeWordEnabled(turnOn) }
+                                },
+                                contentDescription = if (wakeWordEnabled) {
+                                    "Tắt nhận diện từ khóa Trợ lý ơi"
+                                } else {
+                                    "Bật nhận diện từ khóa Trợ lý ơi"
+                                }
+                            )
+                        }
+                    }
+
+                    // Hàng 3: Gọi bằng phím Nguồn / nút Home (Default Assistant App)
+                    Spacer(modifier = Modifier.height(14.dp))
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.GraphicEq,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Trợ lý nổi",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Nói “Trợ lý ơi” khi chưa mở app",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IosStyleSwitch(
-                        checked = troLyNoiEnabled,
-                        onCheckedChange = { turnOn ->
-                            if (turnOn) {
-                                continueEnableHolder.invoke()
-                            } else {
-                                disableTroLyNoi()
-                            }
-                        },
-                        contentDescription = if (troLyNoiEnabled) {
-                            "Tắt Trợ lý nổi"
-                        } else {
-                            "Bật Trợ lý nổi"
-                        }
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
                     )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(0xFF0866FF).copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.TouchApp,
+                                contentDescription = null,
+                                tint = Color(0xFF0866FF),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Phím Nguồn / Home",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isDefaultAssistant) {
+                                    "Đã chọn làm Trợ lý mặc định của máy • Giữ nút để gọi tức thì (0% pin chờ)"
+                                } else {
+                                    "Đặt làm Trợ lý mặc định để giữ nút Nguồn / Home gọi tức thì"
+                                },
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = if (isDefaultAssistant) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        if (isDefaultAssistant) {
+                            OutlinedButton(
+                                onClick = { TroLyNoiAssistantHelper.openAssistantSettings(context) },
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                Text(text = "Đổi", fontSize = 13.sp)
+                            }
+                        } else {
+                            Button(
+                                onClick = { TroLyNoiAssistantHelper.openAssistantSettings(context) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0866FF)),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                Text(text = "Cài đặt", fontSize = 13.sp, color = Color.White)
+                            }
+                        }
+                    }
                 }
             }
         }
