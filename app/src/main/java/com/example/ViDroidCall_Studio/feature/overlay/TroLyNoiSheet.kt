@@ -3,12 +3,18 @@
 
 package com.example.ViDroidCall_Studio.feature.overlay
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -103,62 +109,78 @@ fun TroLyNoiSheet(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Nội dung động tương ứng từng trạng thái
-                when (data.state) {
-                    AssistantOverlayState.LISTENING -> {
-                        ListeningContent()
-                    }
-
-                    AssistantOverlayState.STT -> {
-                        RecognizedTextContent(
-                            recognizedText = data.recognizedText
+                // Nội dung động tương ứng từng trạng thái với hiệu ứng trượt dọc mượt mà
+                AnimatedContent(
+                    targetState = data.state,
+                    transitionSpec = {
+                        (fadeIn(animationSpec = tween(260)) + slideInVertically(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing),
+                            initialOffsetY = { fullHeight -> fullHeight / 3 }
+                        )).togetherWith(
+                            fadeOut(animationSpec = tween(180)) + slideOutVertically(
+                                animationSpec = tween(200, easing = FastOutSlowInEasing),
+                                targetOffsetY = { fullHeight -> -fullHeight / 4 }
+                            )
                         )
-                    }
+                    },
+                    label = "sheet_state_transition"
+                ) { targetState ->
+                    when (targetState) {
+                        AssistantOverlayState.LISTENING -> {
+                            ListeningContent(recognizedText = data.recognizedText)
+                        }
 
-                    AssistantOverlayState.FAST_PATH -> {
-                        RecognizedTextContent(
-                            recognizedText = data.recognizedText
-                        )
-                    }
+                        AssistantOverlayState.STT -> {
+                            RecognizedTextContent(
+                                recognizedText = data.recognizedText
+                            )
+                        }
 
-                    AssistantOverlayState.ANALYZING,
-                    AssistantOverlayState.GGUF_LOADING -> {
-                        AnalyzingContent(
-                            recognizedText = data.recognizedText
-                        )
-                    }
+                        AssistantOverlayState.FAST_PATH -> {
+                            RecognizedTextContent(
+                                recognizedText = data.recognizedText
+                            )
+                        }
 
-                    AssistantOverlayState.CONFIRM_ACTION -> {
-                        ConfirmActionContent(
-                            recognizedText = data.recognizedText,
-                            actionTitle = data.actionTitle,
-                            actionDescription = data.actionDescription,
-                            actionIconType = data.actionIconType,
-                            onConfirm = data.onConfirm,
-                            onCancel = data.onCancel
-                        )
-                    }
+                        AssistantOverlayState.ANALYZING,
+                        AssistantOverlayState.GGUF_LOADING -> {
+                            AnalyzingContent(
+                                recognizedText = data.recognizedText
+                            )
+                        }
 
-                    AssistantOverlayState.CONFIRM_CALL -> {
-                        ConfirmActionContent(
-                            recognizedText = data.recognizedText,
-                            actionTitle = "Xác nhận cuộc gọi?",
-                            actionDescription = "Gọi tới ${data.targetName.ifBlank { "liên hệ" }}",
-                            actionIconType = OverlayActionIconType.CALL,
-                            onConfirm = data.onConfirm,
-                            onCancel = data.onCancel
-                        )
-                    }
+                        AssistantOverlayState.CONFIRM_ACTION -> {
+                            ConfirmActionContent(
+                                recognizedText = data.recognizedText,
+                                actionTitle = data.actionTitle,
+                                actionDescription = data.actionDescription,
+                                actionIconType = data.actionIconType,
+                                onConfirm = data.onConfirm,
+                                onCancel = data.onCancel
+                            )
+                        }
 
-                    AssistantOverlayState.MAP_CONFIRM -> {
-                        ConfirmActionContent(
-                            recognizedText = data.recognizedText,
-                            actionTitle = "Xác nhận mở bản đồ?",
-                            actionDescription = "Mở bản đồ chỉ đường tới ${data.targetName.ifBlank { "địa điểm yêu cầu" }}",
-                            actionIconType = OverlayActionIconType.MAP,
-                            onConfirm = data.onConfirm,
-                            onCancel = data.onCancel
-                        )
+                        AssistantOverlayState.CONFIRM_CALL -> {
+                            ConfirmActionContent(
+                                recognizedText = data.recognizedText,
+                                actionTitle = "Xác nhận cuộc gọi?",
+                                actionDescription = "Gọi tới ${data.targetName.ifBlank { "liên hệ" }}",
+                                actionIconType = OverlayActionIconType.CALL,
+                                onConfirm = data.onConfirm,
+                                onCancel = data.onCancel
+                            )
+                        }
+
+                        AssistantOverlayState.MAP_CONFIRM -> {
+                            ConfirmActionContent(
+                                recognizedText = data.recognizedText,
+                                actionTitle = "Xác nhận mở bản đồ?",
+                                actionDescription = "Mở bản đồ chỉ đường tới ${data.targetName.ifBlank { "địa điểm yêu cầu" }}",
+                                actionIconType = OverlayActionIconType.MAP,
+                                onConfirm = data.onConfirm,
+                                onCancel = data.onCancel
+                            )
+                        }
                     }
                 }
             }
@@ -222,41 +244,47 @@ private fun SheetHeader(isIdle: Boolean) {
 }
 
 /**
- * Trạng thái đang lắng nghe câu lệnh (Voice Equalizer Waveform động).
- * Gộp 1 câu duy nhất sạch sẽ, bám sát màn hình app.
+ * Trạng thái đang lắng nghe câu lệnh.
+ * Dòng chữ ở bên trái, sóng âm thanh thu nhỏ, thanh mảnh đặt ở bên phải.
  */
 @Composable
-private fun ListeningContent() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+private fun ListeningContent(recognizedText: String = "") {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Đang lắng nghe...",
+            text = if (recognizedText.isNotBlank()) "“$recognizedText”" else "Đang lắng nghe...",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF15182A),
             letterSpacing = (-0.3).sp,
-            lineHeight = 26.sp
+            lineHeight = 26.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
-        // Bộ sóng âm thanh động 7 cột kéo dài, biên độ cao, nhảy nhót nhịp nhàng
+        // Sóng âm nhỏ hơn 1 tí, mỏng hơn 1 tí, đặt ở bên tay phải
         AnimatedWaveformVisualizer()
     }
 }
 
 /**
- * Hiệu ứng sóng âm động 7 cột nhảy nhót nhịp nhàng theo nhịp giọng nói (Equalizer Waveform).
+ * Hiệu ứng sóng âm động 7 cột thanh mảnh, nhỏ gọn đặt ở bên tay phải.
  */
 @Composable
 private fun AnimatedWaveformVisualizer() {
     val transition = rememberInfiniteTransition(label = "WaveformBars")
 
     val b1 by transition.animateFloat(
-        initialValue = 12f,
-        targetValue = 38f,
+        initialValue = 8f,
+        targetValue = 18f,
         animationSpec = infiniteRepeatable(
             animation = tween(420, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -264,8 +292,8 @@ private fun AnimatedWaveformVisualizer() {
         label = "b1"
     )
     val b2 by transition.animateFloat(
-        initialValue = 18f,
-        targetValue = 54f,
+        initialValue = 12f,
+        targetValue = 26f,
         animationSpec = infiniteRepeatable(
             animation = tween(560, delayMillis = 80, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -273,8 +301,8 @@ private fun AnimatedWaveformVisualizer() {
         label = "b2"
     )
     val b3 by transition.animateFloat(
-        initialValue = 26f,
-        targetValue = 68f,
+        initialValue = 16f,
+        targetValue = 34f,
         animationSpec = infiniteRepeatable(
             animation = tween(380, delayMillis = 140, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -282,8 +310,8 @@ private fun AnimatedWaveformVisualizer() {
         label = "b3"
     )
     val b4 by transition.animateFloat(
-        initialValue = 32f,
-        targetValue = 78f,
+        initialValue = 18f,
+        targetValue = 40f,
         animationSpec = infiniteRepeatable(
             animation = tween(500, delayMillis = 60, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -291,8 +319,8 @@ private fun AnimatedWaveformVisualizer() {
         label = "b4"
     )
     val b5 by transition.animateFloat(
-        initialValue = 26f,
-        targetValue = 68f,
+        initialValue = 16f,
+        targetValue = 34f,
         animationSpec = infiniteRepeatable(
             animation = tween(450, delayMillis = 110, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -300,8 +328,8 @@ private fun AnimatedWaveformVisualizer() {
         label = "b5"
     )
     val b6 by transition.animateFloat(
-        initialValue = 18f,
-        targetValue = 52f,
+        initialValue = 12f,
+        targetValue = 26f,
         animationSpec = infiniteRepeatable(
             animation = tween(580, delayMillis = 70, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -309,8 +337,8 @@ private fun AnimatedWaveformVisualizer() {
         label = "b6"
     )
     val b7 by transition.animateFloat(
-        initialValue = 12f,
-        targetValue = 36f,
+        initialValue = 8f,
+        targetValue = 18f,
         animationSpec = infiniteRepeatable(
             animation = tween(400, delayMillis = 130, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -329,48 +357,83 @@ private fun AnimatedWaveformVisualizer() {
     )
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.height(44.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.height(84.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            bars.forEach { (height, color) ->
-                Box(
-                    modifier = Modifier
-                        .width(6.5.dp)
-                        .height(height.dp)
-                        .clip(RoundedCornerShape(9999.dp))
-                        .background(color)
-                )
-            }
+        bars.forEach { (height, color) ->
+            Box(
+                modifier = Modifier
+                    .width(3.5.dp)
+                    .height(height.dp)
+                    .clip(RoundedCornerShape(9999.dp))
+                    .background(color)
+            )
         }
     }
 }
 
 /**
- * Trạng thái nhận diện giọng nói STT dở dang hoặc vừa hoàn tất.
- * Hiển thị trực tiếp câu nói của người dùng, không nhãn kỹ thuật.
+ * Trạng thái nhận diện giọng nói STT vừa nói xong.
+ * Hiển thị câu nói của người dùng với animation trượt dọc,
+ * chấm phát sáng thở nhẹ báo hiệu chuẩn bị chuyển sang xác nhận.
  */
 @Composable
 private fun RecognizedTextContent(recognizedText: String) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse_stt_dot")
+    val dotAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(450, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot_alpha"
+    )
+    val dotScale by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(450, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot_scale"
+    )
+
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            text = if (recognizedText.isNotBlank()) "“$recognizedText”" else "“...”",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color(0xFF0F172A),
-            letterSpacing = (-0.3).sp,
-            lineHeight = 26.sp
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = if (recognizedText.isNotBlank()) "“$recognizedText”" else "“...”",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF0F172A),
+                letterSpacing = (-0.3).sp,
+                lineHeight = 26.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Chấm xanh động nhỏ nhịp nháy xác nhận đang chuyển tiếp
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .scale(dotScale)
+                    .clip(CircleShape)
+                    .background(Color(0xFF0866FF).copy(alpha = dotAlpha))
+            )
+        }
     }
 }
 

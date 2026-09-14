@@ -388,31 +388,32 @@ class TroLyNoiOverlayManager(
             return
         }
 
-        // Cập nhật câu lệnh nhận diện
+        // 1. Hiển thị ngay trạng thái STT: đoạn text có animation chạy dọc câu vừa nói
         overlayDataFlow.value = overlayDataFlow.value.copy(
             state = AssistantOverlayState.STT,
             recognizedText = trimmed
         )
 
-        // 1. Kiểm tra Fast-Path trước (<5ms, hoàn toàn chưa nạp GGUF)
-        val fastResult = fastPathMatcher?.match(trimmed)
-        if (fastResult != null) {
-            val nativeAction = NativeAction.fromNluResult(fastResult)
-            scope.launch {
-                historyRepository?.addFromNluResult(trimmed, fastResult)
-            }
-            // Hiển thị ngay hộp xác nhận cho MỌI intent (kể cả mở app, gọi điện, báo thức...)
-            showConfirmationForAction(trimmed, nativeAction)
-            return
-        }
-
-        // 2. Không khớp Fast-Path -> Chuyển sang "AI đang phân tích..." (logo thở hào quang, không lộ thông số kỹ thuật)
-        overlayDataFlow.value = AssistantOverlayData(
-            state = AssistantOverlayState.ANALYZING,
-            recognizedText = trimmed
-        )
-
         scope.launch {
+            // Dành khoảng 900ms để người dùng thấy rõ câu nói vừa nhận diện xong trượt dọc mượt mà
+            delay(900)
+
+            // Kiểm tra Fast-Path trước (<5ms, hoàn toàn chưa nạp GGUF)
+            val fastResult = fastPathMatcher?.match(trimmed)
+            if (fastResult != null) {
+                val nativeAction = NativeAction.fromNluResult(fastResult)
+                historyRepository?.addFromNluResult(trimmed, fastResult)
+                // Chuyển tiếp sang màn hình xác nhận hành động
+                showConfirmationForAction(trimmed, nativeAction)
+                return@launch
+            }
+
+            // 2. Không khớp Fast-Path -> Chuyển sang "AI đang phân tích..." (logo thở hào quang, không lộ thông số kỹ thuật)
+            overlayDataFlow.value = AssistantOverlayData(
+                state = AssistantOverlayState.ANALYZING,
+                recognizedText = trimmed
+            )
+
             try {
                 if (nluEngineManager == null) {
                     nluEngineManager = NluEngineManager(appContext)
