@@ -223,7 +223,7 @@ private fun SheetHeader(isIdle: Boolean) {
 
 /**
  * Trạng thái đang lắng nghe câu lệnh (Voice Equalizer Waveform động).
- * Cải tiến sóng âm 7 cột cao và dài hơn, nhịp nhảy nhót mượt mà.
+ * Gộp 1 câu duy nhất sạch sẽ, bám sát màn hình app.
  */
 @Composable
 private fun ListeningContent() {
@@ -232,19 +232,12 @@ private fun ListeningContent() {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = "Đang lắng nghe câu lệnh...",
+            text = "Đang lắng nghe...",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF15182A),
             letterSpacing = (-0.3).sp,
             lineHeight = 26.sp
-        )
-
-        Text(
-            text = "Hãy nói gì đó...",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF64748B)
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -301,50 +294,50 @@ private fun AnimatedWaveformVisualizer() {
         initialValue = 26f,
         targetValue = 68f,
         animationSpec = infiniteRepeatable(
-            animation = tween(440, delayMillis = 180, easing = FastOutSlowInEasing),
+            animation = tween(450, delayMillis = 110, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "b5"
     )
     val b6 by transition.animateFloat(
         initialValue = 18f,
-        targetValue = 54f,
+        targetValue = 52f,
         animationSpec = infiniteRepeatable(
-            animation = tween(520, delayMillis = 100, easing = FastOutSlowInEasing),
+            animation = tween(580, delayMillis = 70, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "b6"
     )
     val b7 by transition.animateFloat(
         initialValue = 12f,
-        targetValue = 38f,
+        targetValue = 36f,
         animationSpec = infiniteRepeatable(
-            animation = tween(460, delayMillis = 220, easing = FastOutSlowInEasing),
+            animation = tween(400, delayMillis = 130, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "b7"
     )
 
     val bars = listOf(
-        Pair(b1, Color(0xFF93C5FD)),
-        Pair(b2, Color(0xFF60A5FA)),
-        Pair(b3, Color(0xFF3B82F6)),
+        Pair(b1, Color(0xFFBFDBFE)),
+        Pair(b2, Color(0xFF93C5FD)),
+        Pair(b3, Color(0xFF60A5FA)),
         Pair(b4, Color(0xFF0866FF)),
-        Pair(b5, Color(0xFF3B82F6)),
-        Pair(b6, Color(0xFF60A5FA)),
-        Pair(b7, Color(0xFF93C5FD))
+        Pair(b5, Color(0xFF60A5FA)),
+        Pair(b6, Color(0xFF93C5FD)),
+        Pair(b7, Color(0xFFBFDBFE))
     )
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(84.dp)
-            .padding(vertical = 4.dp),
+            .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            modifier = Modifier.height(84.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             bars.forEach { (height, color) ->
@@ -362,6 +355,7 @@ private fun AnimatedWaveformVisualizer() {
 
 /**
  * Trạng thái nhận diện giọng nói STT dở dang hoặc vừa hoàn tất.
+ * Hiển thị trực tiếp câu nói của người dùng, không nhãn kỹ thuật.
  */
 @Composable
 private fun RecognizedTextContent(recognizedText: String) {
@@ -369,14 +363,6 @@ private fun RecognizedTextContent(recognizedText: String) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(
-            text = "ĐÃ NHẬN DIỆN",
-            fontSize = 11.5.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF64748B),
-            letterSpacing = 1.sp
-        )
-
         Text(
             text = if (recognizedText.isNotBlank()) "“$recognizedText”" else "“...”",
             fontSize = 20.sp,
@@ -390,16 +376,17 @@ private fun RecognizedTextContent(recognizedText: String) {
 
 /**
  * Trạng thái "AI đang phân tích..." khi Fast-Path không khớp.
- * Logo phát sáng hào quang nhẹ quanh logo, tuyệt đối không hiện tên file model/GGUF/progress bar.
+ * Bám sát phong cách trong app: hiển thị trực tiếp câu nói người dùng,
+ * box phân tích gọn gàng với logo thở nhẹ và chữ xanh thương hiệu.
  */
 @Composable
 private fun AnalyzingContent(recognizedText: String) {
     val infiniteTransition = rememberInfiniteTransition(label = "halo_anim")
     val haloScale by infiniteTransition.animateFloat(
         initialValue = 0.95f,
-        targetValue = 1.35f,
+        targetValue = 1.28f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "halo_scale"
@@ -408,7 +395,7 @@ private fun AnalyzingContent(recognizedText: String) {
         initialValue = 0.35f,
         targetValue = 0.08f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "halo_alpha"
@@ -416,50 +403,44 @@ private fun AnalyzingContent(recognizedText: String) {
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            text = "ĐÃ NHẬN DIỆN",
-            fontSize = 11.5.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF64748B),
-            letterSpacing = 1.sp
-        )
+        if (recognizedText.isNotBlank()) {
+            Text(
+                text = "“$recognizedText”",
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A),
+                letterSpacing = (-0.2).sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
 
-        Text(
-            text = if (recognizedText.isNotBlank()) "“$recognizedText”" else "“...”",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF0F172A),
-            letterSpacing = (-0.2).sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
+        Spacer(modifier = Modifier.height(2.dp))
 
-        Spacer(modifier = Modifier.height(10.dp))
-
+        // Box phân tích gọn gàng bám sát UI màn hình trong app
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = Color(0xFFF8FAFC),
-            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF0866FF).copy(alpha = 0.08f),
+            border = BorderStroke(1.dp, Color(0xFF0866FF).copy(alpha = 0.25f))
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 18.dp, horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Vùng logo hào quang thở
+                // Vùng logo hào quang thở gọn gàng
                 Box(
-                    modifier = Modifier.size(90.dp),
+                    modifier = Modifier.size(36.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Vòng hào quang phát sáng xung quanh logo
                     Box(
                         modifier = Modifier
-                            .size(86.dp)
+                            .size(34.dp)
                             .scale(haloScale)
                             .clip(CircleShape)
                             .background(Color(0xFF0866FF).copy(alpha = haloAlpha))
@@ -468,17 +449,15 @@ private fun AnalyzingContent(recognizedText: String) {
                     Image(
                         painter = painterResource(id = R.drawable.logo_ai),
                         contentDescription = "AI analyzing",
-                        modifier = Modifier.size(54.dp)
+                        modifier = Modifier.size(26.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
                 Text(
-                    text = "AI đang phân tích...",
+                    text = "AI đang phân tích câu lệnh...",
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1E293B),
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0866FF),
                     letterSpacing = (-0.2).sp
                 )
             }
@@ -488,7 +467,7 @@ private fun AnalyzingContent(recognizedText: String) {
 
 /**
  * Khung xác nhận hành động trực quan áp dụng cho MỌI intent.
- * Gồm: Câu nhận diện + Thẻ tóm tắt việc (Icon, Tiêu đề, Mô tả) + 2 nút [Hủy] và [Xác nhận].
+ * Hiển thị trực tiếp câu nói người dùng + Thẻ tóm tắt việc (Icon, Tiêu đề, Mô tả) + 2 nút [Hủy] và [Xác nhận].
  */
 @Composable
 private fun ConfirmActionContent(
@@ -501,27 +480,21 @@ private fun ConfirmActionContent(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            text = "ĐÃ NHẬN DIỆN",
-            fontSize = 11.5.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF64748B),
-            letterSpacing = 1.sp
-        )
+        if (recognizedText.isNotBlank()) {
+            Text(
+                text = "“$recognizedText”",
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A),
+                letterSpacing = (-0.2).sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
 
-        Text(
-            text = if (recognizedText.isNotBlank()) "“$recognizedText”" else "“...”",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF0F172A),
-            letterSpacing = (-0.2).sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         // Thẻ tóm tắt việc trực quan
         Surface(
