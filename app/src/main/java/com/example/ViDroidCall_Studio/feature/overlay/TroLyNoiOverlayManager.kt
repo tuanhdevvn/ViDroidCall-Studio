@@ -50,6 +50,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -94,12 +95,22 @@ class TroLyNoiOverlayManager(
      */
     fun showAssistant(initialCommand: String? = null) {
         if (initialCommand.isNullOrBlank()) {
-            show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
+            show(
+                AssistantOverlayData(
+                    state = AssistantOverlayState.LISTENING,
+                    statusMessage = SpeechToTextManager.WAITING_PLACEHOLDER
+                )
+            )
             startSpeechRecognition()
         } else {
             // Khi mở trợ lý, luôn hiển thị giao diện LISTENING ("Hãy nói gì đó..." + sóng âm)
             // trong 600ms để người dùng thấy rõ Trợ lý lắng nghe trước khi chuyển sang STT
-            show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
+            show(
+                AssistantOverlayData(
+                    state = AssistantOverlayState.LISTENING,
+                    statusMessage = "Đang lắng nghe..."
+                )
+            )
             scope.launch {
                 delay(600)
                 overlayDataFlow.value = AssistantOverlayData(
@@ -294,23 +305,34 @@ class TroLyNoiOverlayManager(
 
                     override fun onTextChanged(text: String) {
                         val trimmed = text.trim()
-                        if (trimmed.isBlank() || 
-                            trimmed == SpeechToTextManager.WAITING_PLACEHOLDER || 
-                            trimmed == SpeechToTextManager.LISTENING_PLACEHOLDER ||
-                            trimmed == "Đang lắng nghe câu lệnh..." ||
-                            trimmed == "Hãy nói gì đó..."
-                        ) {
-                            if (overlayDataFlow.value.state != AssistantOverlayState.LISTENING) {
-                                overlayDataFlow.value = overlayDataFlow.value.copy(
-                                    state = AssistantOverlayState.LISTENING
-                                )
-                            }
+                        if (trimmed.isBlank()) return
+
+                        if (trimmed == SpeechToTextManager.WAITING_PLACEHOLDER || trimmed == "Hãy nói gì đó...") {
+                            overlayDataFlow.value = overlayDataFlow.value.copy(
+                                state = AssistantOverlayState.LISTENING,
+                                statusMessage = "Hãy nói gì đó...",
+                                recognizedText = ""
+                            )
                             return
                         }
 
-                        // Chỉ khi nhận diện được câu chữ thực tế của người dùng mới chuyển sang STT
+                        if (trimmed == SpeechToTextManager.LISTENING_PLACEHOLDER || 
+                            trimmed == "Đang lắng nghe câu lệnh..." || 
+                            trimmed == "Đang lắng nghe..."
+                        ) {
+                            // Khi người dùng cất tiếng nói: VAD phát hiện âm thanh
+                            overlayDataFlow.value = overlayDataFlow.value.copy(
+                                state = AssistantOverlayState.LISTENING,
+                                statusMessage = "Đang lắng nghe...",
+                                recognizedText = ""
+                            )
+                            return
+                        }
+
+                        // Khi người dùng đang nói dở câu: hiển thị câu chữ thực tế
                         overlayDataFlow.value = overlayDataFlow.value.copy(
-                            state = AssistantOverlayState.STT,
+                            state = AssistantOverlayState.LISTENING,
+                            statusMessage = "Đang lắng nghe...",
                             recognizedText = trimmed
                         )
                     }
@@ -327,9 +349,8 @@ class TroLyNoiOverlayManager(
         if (fastPathMatcher == null) {
             fastPathMatcher = FastPathMatcher(appContext)
         }
-        if (nluEngineManager == null) {
-            nluEngineManager = NluEngineManager(appContext)
-        }
+        // Lưu ý: Không khởi tạo nluEngineManager tại đây để không nạp trước mô hình GGUF
+        // GGUF chỉ được nạp khi Fast-Path không khớp (Miss)
         if (historyRepository == null) {
             historyRepository = CommandHistoryRepository(appContext)
         }
@@ -377,6 +398,9 @@ class TroLyNoiOverlayManager(
 
     /**
      * Xử lý câu nói sau khi bộ nhận diện giọng nói STT cho kết quả cuối cùng.
+     * Quy tắc:
+     * - Fast-Path chạy trước (chưa nạp GGUF). Khớp -> hiển thị ngay câu nói + xác nhận hành động cho MỌI intent.
+     * - Fast-Path không khớp -> Hiển thị "AI đang phân tích...", lúc này mới nạp GGUF và suy luận, xong hiện xác nhận.
      */
     private fun handleFinalSpeechResult(query: String) {
         val trimmed = query.trim()
@@ -385,158 +409,149 @@ class TroLyNoiOverlayManager(
             return
         }
 
-        // Cập nhật câu lệnh nhận diện
+        // 1. Hiển thị ngay trạng thái STT: đoạn text có animation chạy dọc câu vừa nói
         overlayDataFlow.value = overlayDataFlow.value.copy(
             state = AssistantOverlayState.STT,
             recognizedText = trimmed
         )
 
-        // 1. Kiểm tra Fast-Path trước (<5ms)
-        val fastResult = fastPathMatcher?.match(trimmed)
-        if (fastResult != null) {
-            val nativeAction = NativeAction.fromNluResult(fastResult)
-            scope.launch {
+        scope.launch {
+            // Dành khoảng 900ms để người dùng thấy rõ câu nói vừa nhận diện xong trượt dọc mượt mà
+            delay(900)
+
+            // Kiểm tra Fast-Path trước (<5ms, hoàn toàn chưa nạp GGUF)
+            val fastResult = fastPathMatcher?.match(trimmed)
+            if (fastResult != null) {
+                val nativeAction = NativeAction.fromNluResult(fastResult)
                 historyRepository?.addFromNluResult(trimmed, fastResult)
+                // Chuyển tiếp sang màn hình xác nhận hành động
+                showConfirmationForAction(trimmed, nativeAction)
+                return@launch
             }
 
-            when {
-                // Xác nhận cuộc gọi (call_contact)
-                nativeAction is NativeAction.CallContact -> {
-                    val target = if (nativeAction.phoneNumber.isNotBlank()) nativeAction.phoneNumber else nativeAction.contact
-                    overlayDataFlow.value = AssistantOverlayData(
-                        state = AssistantOverlayState.CONFIRM_CALL,
-                        recognizedText = trimmed,
-                        intentName = "call_contact",
-                        targetName = target,
-                        sourceLabel = "⚡ Fast-Path",
-                        onConfirm = {
-                            actionDispatcher?.executeNativeAction(nativeAction)
-                            dismiss()
-                        },
-                        onCancel = {
-                            dismiss()
-                        }
-                    )
-                }
-
-                // Xác nhận mở bản đồ (open_map)
-                fastResult.intent == "open_map" -> {
-                    val dest = fastResult.slots["destination"]?.toString() ?: "địa điểm yêu cầu"
-                    overlayDataFlow.value = AssistantOverlayData(
-                        state = AssistantOverlayState.MAP_CONFIRM,
-                        recognizedText = trimmed,
-                        intentName = "open_map",
-                        targetName = dest,
-                        sourceLabel = "⚡ Fast-Path",
-                        onConfirm = {
-                            actionDispatcher?.executeNativeAction(nativeAction)
-                            dismiss()
-                        },
-                        onCancel = {
-                            dismiss()
-                        }
-                    )
-                }
-
-                // Khớp nhanh không cần xác nhận
-                else -> {
-                    overlayDataFlow.value = AssistantOverlayData(
-                        state = AssistantOverlayState.FAST_PATH,
-                        recognizedText = trimmed,
-                        intentName = fastResult.intent,
-                        sourceLabel = "⚡ Fast-Path"
-                    )
-                    scope.launch {
-                        val speech = nativeAction.getSpeechFeedbackText()
-                        if (speech.isNotBlank()) {
-                            textToSpeechManager?.speak(speech)
-                        }
-                        delay(1500)
-                        actionDispatcher?.executeNativeAction(nativeAction)
-                        delay(800)
-                        dismiss()
-                    }
-                }
-            }
-            return
-        }
-
-        // 2. Không khớp Fast-Path -> Chuyển sang mô hình AI GGUF
-        val nlu = nluEngineManager ?: return
-        val isReady = nlu.isModelReady()
-
-        if (!isReady) {
-            overlayDataFlow.value = AssistantOverlayData(
-                state = AssistantOverlayState.GGUF_LOADING,
-                recognizedText = trimmed
-            )
-        } else {
+            // 2. Không khớp Fast-Path -> Chuyển sang "AI đang phân tích..." (logo thở hào quang, không lộ thông số kỹ thuật)
             overlayDataFlow.value = AssistantOverlayData(
                 state = AssistantOverlayState.ANALYZING,
                 recognizedText = trimmed
             )
+
+            try {
+                if (nluEngineManager == null) {
+                    nluEngineManager = NluEngineManager(appContext)
+                }
+                val nlu = nluEngineManager ?: run {
+                    dismiss()
+                    return@launch
+                }
+
+                // Lúc này mới bắt đầu nạp model GGUF (nếu chưa nạp) và chạy suy luận
+                if (!nlu.isModelReady()) {
+                    val state = nlu.modelState.first { it !is NluModelState.Loading && it !is NluModelState.Uninitialized }
+                    if (state !is NluModelState.Ready) {
+                        textToSpeechManager?.speak("Không tìm thấy mô hình AI để xử lý câu lệnh này.")
+                        delay(2000)
+                        dismiss()
+                        return@launch
+                    }
+                }
+
+                // Lắng nghe kết quả kế tiếp từ nluEvents
+                val listenerJob = launch {
+                    nlu.nluEvents.collect { result ->
+                        val nativeAction = NativeAction.fromNluResult(result)
+                        historyRepository?.addFromNluResult(trimmed, result)
+                        showConfirmationForAction(trimmed, nativeAction)
+                        cancel()
+                    }
+                }
+
+                nlu.processQuery(trimmed)
+            } catch (e: Exception) {
+                Log.e(TAG, "Lỗi khi chạy GGUF NLU: ${e.message}", e)
+                dismiss()
+            }
         }
+    }
 
-        scope.launch {
-            nlu.processQuery(trimmed)
-            nlu.nluEvents.collect { result ->
-                val nativeAction = NativeAction.fromNluResult(result)
-                historyRepository?.addFromNluResult(trimmed, result)
+    /**
+     * Hiển thị màn hình xác nhận hành động trực quan cho MỌI intent.
+     * Người dùng bấm [Xác nhận] mới thực thi hành động; bấm [Hủy] thì đóng box.
+     */
+    private fun showConfirmationForAction(recognizedText: String, action: NativeAction) {
+        when (action) {
+            is NativeAction.Informational -> {
+                val speech = action.getSpeechFeedbackText()
+                if (speech.isNotBlank()) {
+                    textToSpeechManager?.speak(speech)
+                }
+                overlayDataFlow.value = AssistantOverlayData(
+                    state = AssistantOverlayState.CONFIRM_ACTION,
+                    recognizedText = recognizedText,
+                    actionTitle = "Trợ lý phản hồi",
+                    actionDescription = action.message,
+                    actionIconType = OverlayActionIconType.GENERIC,
+                    onConfirm = { dismiss() },
+                    onCancel = { dismiss() }
+                )
+                scope.launch {
+                    delay(2500)
+                    dismiss()
+                }
+            }
 
-                when {
-                    nativeAction is NativeAction.CallContact -> {
-                        val target = if (nativeAction.phoneNumber.isNotBlank()) nativeAction.phoneNumber else nativeAction.contact
-                        overlayDataFlow.value = AssistantOverlayData(
-                            state = AssistantOverlayState.CONFIRM_CALL,
-                            recognizedText = trimmed,
-                            intentName = "call_contact",
-                            targetName = target,
-                            sourceLabel = "🧠 On-Device AI (GGUF)",
-                            onConfirm = {
-                                actionDispatcher?.executeNativeAction(nativeAction)
-                                dismiss()
-                            },
-                            onCancel = {
-                                dismiss()
-                            }
-                        )
-                    }
+            is NativeAction.Unsupported -> {
+                val speech = action.getSpeechFeedbackText()
+                if (speech.isNotBlank()) {
+                    textToSpeechManager?.speak(speech)
+                }
+                overlayDataFlow.value = AssistantOverlayData(
+                    state = AssistantOverlayState.CONFIRM_ACTION,
+                    recognizedText = recognizedText,
+                    actionTitle = "Chưa hỗ trợ",
+                    actionDescription = action.message,
+                    actionIconType = OverlayActionIconType.GENERIC,
+                    onConfirm = { dismiss() },
+                    onCancel = { dismiss() }
+                )
+                scope.launch {
+                    delay(2500)
+                    dismiss()
+                }
+            }
 
-                    result.intent == "open_map" -> {
-                        val dest = result.slots["destination"]?.toString() ?: "địa điểm yêu cầu"
-                        overlayDataFlow.value = AssistantOverlayData(
-                            state = AssistantOverlayState.MAP_CONFIRM,
-                            recognizedText = trimmed,
-                            intentName = "open_map",
-                            targetName = dest,
-                            sourceLabel = "🧠 On-Device AI (GGUF)",
-                            onConfirm = {
-                                actionDispatcher?.executeNativeAction(nativeAction)
-                                dismiss()
-                            },
-                            onCancel = {
-                                dismiss()
-                            }
-                        )
-                    }
+            else -> {
+                val iconType = when (action.getActionIconType()) {
+                    "CALL" -> OverlayActionIconType.CALL
+                    "SMS" -> OverlayActionIconType.SMS
+                    "OPEN_APP" -> OverlayActionIconType.OPEN_APP
+                    "ALARM" -> OverlayActionIconType.ALARM
+                    "TIMER" -> OverlayActionIconType.TIMER
+                    "MAP" -> OverlayActionIconType.MAP
+                    "SEARCH" -> OverlayActionIconType.SEARCH
+                    "YOUTUBE" -> OverlayActionIconType.YOUTUBE
+                    "MUSIC" -> OverlayActionIconType.MUSIC
+                    else -> OverlayActionIconType.GENERIC
+                }
 
-                    else -> {
-                        overlayDataFlow.value = AssistantOverlayData(
-                            state = AssistantOverlayState.FAST_PATH,
-                            recognizedText = trimmed,
-                            intentName = result.intent,
-                            sourceLabel = "🧠 On-Device AI (GGUF)"
-                        )
-                        val speech = nativeAction.getSpeechFeedbackText()
+                overlayDataFlow.value = AssistantOverlayData(
+                    state = AssistantOverlayState.CONFIRM_ACTION,
+                    recognizedText = recognizedText,
+                    intentName = action.intentName,
+                    actionTitle = action.getActionTitle(),
+                    actionDescription = action.getActionSummary(),
+                    actionIconType = iconType,
+                    onConfirm = {
+                        val speech = action.getSpeechFeedbackText()
                         if (speech.isNotBlank()) {
                             textToSpeechManager?.speak(speech)
                         }
-                        delay(1500)
-                        actionDispatcher?.executeNativeAction(nativeAction)
-                        delay(800)
+                        actionDispatcher?.executeNativeAction(action)
+                        dismiss()
+                    },
+                    onCancel = {
                         dismiss()
                     }
-                }
+                )
             }
         }
     }

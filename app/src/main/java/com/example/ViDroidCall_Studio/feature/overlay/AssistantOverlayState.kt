@@ -13,7 +13,24 @@ enum class AssistantOverlayState {
     ANALYZING,
     CONFIRM_CALL,
     MAP_CONFIRM,
+    CONFIRM_ACTION,
     GGUF_LOADING
+}
+
+/**
+ * Loại biểu tượng hành động hiển thị trên nút/thẻ xác nhận
+ */
+enum class OverlayActionIconType {
+    CALL,
+    SMS,
+    OPEN_APP,
+    ALARM,
+    TIMER,
+    MAP,
+    SEARCH,
+    YOUTUBE,
+    MUSIC,
+    GENERIC
 }
 
 /**
@@ -24,7 +41,10 @@ data class AssistantOverlayData(
     val recognizedText: String = "",
     val intentName: String = "",
     val targetName: String = "",
-    val sourceLabel: String = "⚡ Fast-Path",
+    val actionTitle: String = "",
+    val actionDescription: String = "",
+    val actionIconType: OverlayActionIconType = OverlayActionIconType.GENERIC,
+    val sourceLabel: String = "",
     val statusMessage: String = "",
     val isTtsSpeaking: Boolean = false,
     val onConfirm: (() -> Unit)? = null,
