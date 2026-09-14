@@ -31,4 +31,42 @@ object TroLyNoiForegroundController {
         val app = context.applicationContext
         app.stopService(Intent(app, TroLyNoiForegroundService::class.java))
     }
+
+    fun showOverlay(
+        context: Context,
+        state: AssistantOverlayState? = null,
+        query: String? = null,
+        intentName: String? = null,
+        target: String? = null,
+        source: String? = null
+    ) {
+        val app = context.applicationContext
+        val intent = Intent(app, TroLyNoiForegroundService::class.java).apply {
+            action = TroLyNoiForegroundService.ACTION_SHOW_OVERLAY
+            if (state != null) {
+                putExtra(TroLyNoiForegroundService.EXTRA_STATE, state.name)
+            }
+            if (query != null) {
+                putExtra(TroLyNoiForegroundService.EXTRA_QUERY, query)
+            }
+            if (intentName != null) {
+                putExtra(TroLyNoiForegroundService.EXTRA_INTENT, intentName)
+            }
+            if (target != null) {
+                putExtra(TroLyNoiForegroundService.EXTRA_TARGET, target)
+            }
+            if (source != null) {
+                putExtra(TroLyNoiForegroundService.EXTRA_SOURCE, source)
+            }
+        }
+        ContextCompat.startForegroundService(app, intent)
+    }
+
+    fun dismissOverlay(context: Context) {
+        val app = context.applicationContext
+        val intent = Intent(app, TroLyNoiForegroundService::class.java).apply {
+            action = TroLyNoiForegroundService.ACTION_DISMISS_OVERLAY
+        }
+        ContextCompat.startForegroundService(app, intent)
+    }
 }

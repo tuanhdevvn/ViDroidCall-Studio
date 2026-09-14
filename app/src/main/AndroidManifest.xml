@@ -61,8 +61,17 @@
 
         <service
             android:name=".feature.overlay.TroLyNoiForegroundService"
-            android:exported="false"
+            android:exported="true"
             android:foregroundServiceType="microphone" />
+
+        <receiver
+            android:name=".feature.overlay.TroLyNoiOverlayReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.ViDroidCall_Studio.ACTION_SHOW_OVERLAY" />
+                <action android:name="com.example.ViDroidCall_Studio.ACTION_DISMISS_OVERLAY" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"
