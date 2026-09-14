@@ -148,11 +148,23 @@ class TroLyNoiForegroundService : Service() {
                             else -> "⚡ Fast-Path"
                         }
 
+                        val actionTitle = intent.getStringExtra("extra_action_title") ?: "Xác nhận thực hiện?"
+                        val actionDesc = intent.getStringExtra("extra_action_desc") ?: target.ifBlank { "Thực hiện hành động" }
+                        val actionIconStr = intent.getStringExtra("extra_action_icon") ?: "GENERIC"
+                        val actionIcon = try {
+                            OverlayActionIconType.valueOf(actionIconStr)
+                        } catch (e: Exception) {
+                            OverlayActionIconType.GENERIC
+                        }
+
                         val data = AssistantOverlayData(
                             state = state,
                             recognizedText = query,
                             intentName = intentName,
                             targetName = target,
+                            actionTitle = actionTitle,
+                            actionDescription = actionDesc,
+                            actionIconType = actionIcon,
                             sourceLabel = sourceLabel,
                             onConfirm = {
                                 overlayManager?.dismiss()

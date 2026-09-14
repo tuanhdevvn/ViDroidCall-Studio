@@ -204,7 +204,90 @@ sealed class NativeAction {
             is SearchWeb -> {
                 "Bạn có muốn tìm kiếm '$query' trên Google không?"
             }
+            is SearchVideo -> {
+                "Bạn có muốn tìm kiếm video '$query' trên YouTube không?"
+            }
+            is PlayMusic -> {
+                if (musicQuery.isNotBlank()) "Bạn có muốn phát '$musicQuery' không?" else "Bạn có muốn mở trình phát nhạc không?"
+            }
             else -> "Bạn có chắc chắn muốn thực hiện hành động này?"
+        }
+    }
+
+    /**
+     * Tiêu đề ngắn gọn dùng cho hộp thoại xác nhận
+     */
+    fun getActionTitle(): String {
+        return when (this) {
+            is CallContact -> "Xác nhận cuộc gọi?"
+            is SendSms -> "Xác nhận gửi tin nhắn?"
+            is SetAlarm -> "Xác nhận đặt báo thức?"
+            is SetTimer -> "Xác nhận hẹn giờ?"
+            is OpenApp -> "Xác nhận mở ứng dụng?"
+            is OpenMap -> "Xác nhận mở bản đồ?"
+            is SearchVideo -> "Xác nhận tìm video?"
+            is SearchWeb -> "Xác nhận tìm kiếm?"
+            is PlayMusic -> "Xác nhận phát nhạc?"
+            else -> "Xác nhận thực hiện?"
+        }
+    }
+
+    /**
+     * Tóm tắt hành động cụ thể để hiển thị trên UI xác nhận
+     */
+    fun getActionSummary(): String {
+        return when (this) {
+            is CallContact -> {
+                val target = if (contact.isNotBlank()) contact else phoneNumber
+                "Gọi tới $target"
+            }
+            is SendSms -> {
+                val target = if (contact.isNotBlank()) contact else phoneNumber
+                if (message.isNotBlank()) "Gửi tin nhắn tới $target: “$message”" else "Soạn tin nhắn gửi $target"
+            }
+            is SetAlarm -> {
+                val timeStr = if (minute > 0) "$hour giờ $minute phút" else "$hour giờ"
+                "Đặt báo thức lúc $timeStr"
+            }
+            is SetTimer -> {
+                "Hẹn giờ $displayDuration $unitText"
+            }
+            is OpenApp -> {
+                val displayName = com.example.ViDroidCall_Studio.util.AppResolver.getDisplayAppName(appName)
+                "Mở ứng dụng $displayName"
+            }
+            is OpenMap -> {
+                "Mở bản đồ tới $destination"
+            }
+            is SearchVideo -> {
+                "Tìm kiếm video “$query” trên YouTube"
+            }
+            is SearchWeb -> {
+                "Tìm kiếm “$query” trên Google"
+            }
+            is PlayMusic -> {
+                if (musicQuery.isNotBlank()) "Phát “$musicQuery”" else "Mở trình phát nhạc"
+            }
+            is Informational -> message
+            is Unsupported -> message
+        }
+    }
+
+    /**
+     * Định danh loại icon đại diện cho hành động
+     */
+    fun getActionIconType(): String {
+        return when (this) {
+            is CallContact -> "CALL"
+            is SendSms -> "SMS"
+            is SetAlarm -> "ALARM"
+            is SetTimer -> "TIMER"
+            is OpenApp -> "OPEN_APP"
+            is OpenMap -> "MAP"
+            is SearchVideo -> "YOUTUBE"
+            is SearchWeb -> "SEARCH"
+            is PlayMusic -> "MUSIC"
+            else -> "GENERIC"
         }
     }
 
