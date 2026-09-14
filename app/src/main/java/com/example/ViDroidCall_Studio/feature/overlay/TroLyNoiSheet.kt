@@ -127,7 +127,10 @@ fun TroLyNoiSheet(
                 ) { targetState ->
                     when (targetState) {
                         AssistantOverlayState.LISTENING -> {
-                            ListeningContent(recognizedText = data.recognizedText)
+                            ListeningContent(
+                                statusMessage = data.statusMessage,
+                                recognizedText = data.recognizedText
+                            )
                         }
 
                         AssistantOverlayState.STT -> {
@@ -245,10 +248,24 @@ private fun SheetHeader(isIdle: Boolean) {
 
 /**
  * Trạng thái đang lắng nghe câu lệnh.
- * Dòng chữ ở bên trái, sóng âm thanh thu nhỏ, thanh mảnh đặt ở bên phải.
+ * - Khi vừa mở lên: hiện "Hãy nói gì đó..."
+ * - Khi người dùng bắt đầu nói: chuyển thành "Đang lắng nghe..."
+ * Dòng chữ ở bên trái, sóng âm thanh thu nhỏ thanh mảnh đặt ở bên phải.
  */
 @Composable
-private fun ListeningContent(recognizedText: String = "") {
+private fun ListeningContent(
+    statusMessage: String = "",
+    recognizedText: String = ""
+) {
+    val displayText = when {
+        recognizedText.isNotBlank() -> "“$recognizedText”"
+        statusMessage == "Đang lắng nghe..." || statusMessage == "Đang lắng nghe câu lệnh..." -> "Đang lắng nghe..."
+        statusMessage == "Hãy nói gì đó..." -> "Hãy nói gì đó..."
+        else -> "Hãy nói gì đó..."
+    }
+
+    val isWaiting = displayText == "Hãy nói gì đó..."
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -256,17 +273,34 @@ private fun ListeningContent(recognizedText: String = "") {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = if (recognizedText.isNotBlank()) "“$recognizedText”" else "Đang lắng nghe...",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF15182A),
-            letterSpacing = (-0.3).sp,
-            lineHeight = 26.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+        AnimatedContent(
+            targetState = displayText,
+            transitionSpec = {
+                (fadeIn(animationSpec = tween(220)) + slideInVertically(
+                    animationSpec = tween(260, easing = FastOutSlowInEasing),
+                    initialOffsetY = { fullHeight -> fullHeight / 3 }
+                )).togetherWith(
+                    fadeOut(animationSpec = tween(160)) + slideOutVertically(
+                        animationSpec = tween(180, easing = FastOutSlowInEasing),
+                        targetOffsetY = { fullHeight -> -fullHeight / 3 }
+                    )
+                )
+            },
+            label = "listening_text_anim",
             modifier = Modifier.weight(1f, fill = false)
-        )
+        ) { text ->
+            val isItemWaiting = text == "Hãy nói gì đó..."
+            Text(
+                text = text,
+                fontSize = 20.sp,
+                fontWeight = if (isItemWaiting) FontWeight.SemiBold else FontWeight.Bold,
+                color = if (isItemWaiting) Color(0xFF64748B) else Color(0xFF15182A),
+                letterSpacing = (-0.3).sp,
+                lineHeight = 26.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
 
         Spacer(modifier = Modifier.width(10.dp))
 

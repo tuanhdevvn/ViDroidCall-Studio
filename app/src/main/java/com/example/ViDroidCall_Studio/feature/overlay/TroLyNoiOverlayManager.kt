@@ -95,12 +95,22 @@ class TroLyNoiOverlayManager(
      */
     fun showAssistant(initialCommand: String? = null) {
         if (initialCommand.isNullOrBlank()) {
-            show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
+            show(
+                AssistantOverlayData(
+                    state = AssistantOverlayState.LISTENING,
+                    statusMessage = SpeechToTextManager.WAITING_PLACEHOLDER
+                )
+            )
             startSpeechRecognition()
         } else {
             // Khi mở trợ lý, luôn hiển thị giao diện LISTENING ("Hãy nói gì đó..." + sóng âm)
             // trong 600ms để người dùng thấy rõ Trợ lý lắng nghe trước khi chuyển sang STT
-            show(AssistantOverlayData(state = AssistantOverlayState.LISTENING))
+            show(
+                AssistantOverlayData(
+                    state = AssistantOverlayState.LISTENING,
+                    statusMessage = SpeechToTextManager.WAITING_PLACEHOLDER
+                )
+            )
             scope.launch {
                 delay(600)
                 overlayDataFlow.value = AssistantOverlayData(
@@ -295,23 +305,34 @@ class TroLyNoiOverlayManager(
 
                     override fun onTextChanged(text: String) {
                         val trimmed = text.trim()
-                        if (trimmed.isBlank() || 
-                            trimmed == SpeechToTextManager.WAITING_PLACEHOLDER || 
-                            trimmed == SpeechToTextManager.LISTENING_PLACEHOLDER ||
-                            trimmed == "Đang lắng nghe câu lệnh..." ||
-                            trimmed == "Hãy nói gì đó..."
-                        ) {
-                            if (overlayDataFlow.value.state != AssistantOverlayState.LISTENING) {
-                                overlayDataFlow.value = overlayDataFlow.value.copy(
-                                    state = AssistantOverlayState.LISTENING
-                                )
-                            }
+                        if (trimmed.isBlank()) return
+
+                        if (trimmed == SpeechToTextManager.WAITING_PLACEHOLDER || trimmed == "Hãy nói gì đó...") {
+                            overlayDataFlow.value = overlayDataFlow.value.copy(
+                                state = AssistantOverlayState.LISTENING,
+                                statusMessage = "Hãy nói gì đó...",
+                                recognizedText = ""
+                            )
                             return
                         }
 
-                        // Chỉ khi nhận diện được câu chữ thực tế của người dùng mới chuyển sang STT
+                        if (trimmed == SpeechToTextManager.LISTENING_PLACEHOLDER || 
+                            trimmed == "Đang lắng nghe câu lệnh..." || 
+                            trimmed == "Đang lắng nghe..."
+                        ) {
+                            // Khi người dùng cất tiếng nói: VAD phát hiện âm thanh
+                            overlayDataFlow.value = overlayDataFlow.value.copy(
+                                state = AssistantOverlayState.LISTENING,
+                                statusMessage = "Đang lắng nghe...",
+                                recognizedText = ""
+                            )
+                            return
+                        }
+
+                        // Khi người dùng đang nói dở câu: hiển thị câu chữ thực tế
                         overlayDataFlow.value = overlayDataFlow.value.copy(
-                            state = AssistantOverlayState.STT,
+                            state = AssistantOverlayState.LISTENING,
+                            statusMessage = "Đang lắng nghe...",
                             recognizedText = trimmed
                         )
                     }

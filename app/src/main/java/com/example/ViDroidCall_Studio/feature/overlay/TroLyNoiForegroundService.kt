@@ -156,6 +156,10 @@ class TroLyNoiForegroundService : Service() {
                         } catch (e: Exception) {
                             OverlayActionIconType.GENERIC
                         }
+                        val statusMsg = intent.getStringExtra("extra_status") ?: when (state) {
+                            AssistantOverlayState.LISTENING -> "Hãy nói gì đó..."
+                            else -> ""
+                        }
 
                         val data = AssistantOverlayData(
                             state = state,
@@ -166,6 +170,7 @@ class TroLyNoiForegroundService : Service() {
                             actionDescription = actionDesc,
                             actionIconType = actionIcon,
                             sourceLabel = sourceLabel,
+                            statusMessage = statusMsg,
                             onConfirm = {
                                 overlayManager?.dismiss()
                             },
