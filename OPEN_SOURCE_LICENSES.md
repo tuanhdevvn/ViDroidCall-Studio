@@ -21,7 +21,7 @@ Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở đ
 | 5 | **Android Jetpack & Jetpack Compose** | Google LLC | Bộ công cụ phát triển giao diện hiện đại & Quản lý vòng đời ứng dụng | **Apache-2.0** | [androidx](https://github.com/androidx/androidx) · [Compose](https://github.com/androidx/androidx/tree/androidx-main/compose) |
 | 6 | **Kotlin & Kotlinx Coroutines** | JetBrains s.r.o. | Ngôn ngữ lập trình chính & thư viện bất đồng bộ | **Apache-2.0** | [Kotlin LICENSE](https://github.com/JetBrains/kotlin/blob/master/license/LICENSE.txt) · [Coroutines](https://github.com/Kotlin/kotlinx.coroutines) |
 | 7 | **Material Components for Android 3** | Google LLC | Hệ thống thiết kế giao diện chuẩn Material You (M3) | **Apache-2.0** | [GitHub Repo](https://github.com/material-components/material-components-android) |
-| 8 | **JSON in Java (org.json)** | JSON.org | Phân tích và xử lý cấu trúc dữ liệu JSON NLU | **Apache-2.0 / JSON** | [GitHub Repo](https://github.com/stleary/JSON-java) |
+| 8 | **org.json (`JSONObject` / `JSONArray`)** | AOSP (Android SDK, chạy trên máy) · stleary / JSON.org (chỉ unit test `org.json:json:20240303`) | Phân tích JSON NLU | **Apache-2.0** (app) · **Public Domain** (unit test) | [AOSP org.json](https://android.googlesource.com/platform/libcore/+/master/json/src/main/java/org/json/) · [JSON-java LICENSE](https://github.com/stleary/JSON-java/blob/20240303/LICENSE) |
 | 9 | **llama.cpp / llamacpp-kotlin 0.4.0** | Georgi Gerganov / Luis Camargo | Engine suy luận GGUF on-device (NLU) | **MIT License** | [llama.cpp](https://github.com/ggerganov/llama.cpp) · [Maven](https://central.sonatype.com/artifact/io.github.ljcamargo/llamacpp-kotlin) |
 | 10 | **Qwen3 0.6B NLU (GGUF)** | Fine-tune trên Qwen3 (Alibaba) / ViDroidCall | Mô hình NLU on-device (`models/`, Git LFS) | **Apache-2.0** | [models/](models/README.md) · [Qwen3](https://github.com/QwenLM/Qwen3) |
 
@@ -30,7 +30,7 @@ Dưới đây là danh sách đầy đủ các thành phần mã nguồn mở đ
 ## 📑 Chi Tiết Các Giấy Phép Mã Nguồn Mở
 
 ### 1. Apache License, Version 2.0
-Áp dụng cho: **Sherpa-ONNX** (runtime, không gồm trọng số Zipformer tiếng Việt), **Android Jetpack / Compose**, **Kotlin / Coroutines**, **Material Design Components**, **Qwen3**.
+Áp dụng cho: **Sherpa-ONNX** (runtime, không gồm trọng số Zipformer tiếng Việt), **Android Jetpack / Compose**, **Kotlin / Coroutines**, **Material Design Components**, **Qwen3**, **`org.json` trên Android SDK (AOSP)** — không phải gói Maven `org.json:json`.
 
 ```text
                                  Apache License
@@ -92,6 +92,19 @@ SOFTWARE.
 
 Văn bản đầy đủ: [CC BY-NC-ND 4.0 Legal Code](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode).  
 Metadata Hugging Face: `license: cc-by-nc-nd-4.0` trên [hynt/Zipformer-30M-RNNT-6000h](https://huggingface.co/hynt/Zipformer-30M-RNNT-6000h).
+
+---
+
+### 4. Public Domain
+Áp dụng cho: **JSON-java** (`org.json:json:20240303`) — **chỉ** `testImplementation` trong `app/build.gradle.kts`, không đóng gói vào APK.
+
+Maven POM và [LICENSE tag 20240303](https://github.com/stleary/JSON-java/blob/20240303/LICENSE) ghi **Public Domain** (không còn “JSON License / Good not Evil” của bản cũ).
+
+```text
+Public Domain.
+```
+
+APK dùng `org.json` có sẵn trong Android (Apache-2.0, mục 1). Không nhầm hai bản này.
 
 ---
 
