@@ -26,6 +26,7 @@ class TroLyNoiPreferences(
         preferences[KEY_ENABLED] ?: false
     }
 
+    @Deprecated("Từ phiên bản 1 công tắc, wake word luôn đồng bộ với enabledFlow. Giữ lại để tương thích DataStore.")
     val wakeWordEnabledFlow: Flow<Boolean> = context.troLyNoiDataStore.data.map { preferences ->
         preferences[KEY_WAKE_WORD_ENABLED] ?: false
     }
@@ -36,6 +37,7 @@ class TroLyNoiPreferences(
         }
     }
 
+    @Deprecated("Từ phiên bản 1 công tắc, wake word luôn đồng bộ với enabledFlow. Giữ lại để tương thích DataStore.")
     suspend fun setWakeWordEnabled(enabled: Boolean) {
         context.troLyNoiDataStore.edit { preferences ->
             preferences[KEY_WAKE_WORD_ENABLED] = enabled

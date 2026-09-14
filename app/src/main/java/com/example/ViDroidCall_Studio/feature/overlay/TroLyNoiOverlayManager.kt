@@ -46,6 +46,8 @@ import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -65,7 +67,7 @@ class TroLyNoiOverlayManager(
     private val windowManager = appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val keyguardManager = appContext.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var overlayView: android.view.View? = null
     private var lifecycleOwner: OverlayLifecycleOwner? = null
@@ -362,10 +364,15 @@ class TroLyNoiOverlayManager(
 
     fun destroy() {
         dismiss()
+        scope.cancel()
         speechToTextManager?.destroy()
         speechToTextManager = null
         textToSpeechManager?.shutdown()
         textToSpeechManager = null
+        nluEngineManager = null
+        fastPathMatcher = null
+        actionDispatcher = null
+        historyRepository = null
     }
 
     /**
