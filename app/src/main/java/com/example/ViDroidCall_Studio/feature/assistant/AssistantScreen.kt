@@ -26,6 +26,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -123,54 +124,64 @@ fun AssistantScreen(
     onCancelAction: () -> Unit = {},
     onSaveFeedback: () -> Unit = {}
 ) {
-    Column(
+    // Màn chính (badge + micro) chiếm 1 viewport; thẻ JSON/mẫu sai nằm dưới, kéo xuống mới thấy.
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. Trạng thái Mô hình NLU AI & Quản lý Quyền
-        ModelEngineStatusBadge(
-            modelState = modelState,
-            hasStoragePermission = hasStoragePermission,
-            onRequestStoragePermission = onRequestStoragePermission,
-            onRescanModel = onRescanModel
-        )
-
-        // 2. Khu vực Trung tâm Ra lệnh giọng nói AI (Căn giữa hoàn hảo giữa màn hình như cũ)
-        Box(
+        val viewportHeight = maxHeight
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            VoiceAssistantSection(
-                isListening = isListening,
-                speechText = speechText,
-                currentCommand = currentCommand,
-                isNluProcessing = isNluProcessing,
-                modelState = modelState,
-                isTtsSpeaking = isTtsSpeaking,
-                onToggleListening = onToggleListening,
-                onCancelListening = onCancelListening
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(viewportHeight)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ModelEngineStatusBadge(
+                    modelState = modelState,
+                    hasStoragePermission = hasStoragePermission,
+                    onRequestStoragePermission = onRequestStoragePermission,
+                    onRescanModel = onRescanModel
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    VoiceAssistantSection(
+                        isListening = isListening,
+                        speechText = speechText,
+                        currentCommand = currentCommand,
+                        isNluProcessing = isNluProcessing,
+                        modelState = modelState,
+                        isTtsSpeaking = isTtsSpeaking,
+                        onToggleListening = onToggleListening,
+                        onCancelListening = onCancelListening
+                    )
+                }
+            }
+
+            if (isNluProcessing || nluResult != null) {
+                NluJsonResultCard(
+                    nluResult = nluResult,
+                    isProcessing = isNluProcessing,
+                    onSaveFeedback = onSaveFeedback,
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 4.dp, bottom = 20.dp)
+                )
+            }
         }
 
-        AnimatedVisibility(
-            visible = isNluProcessing || nluResult != null,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            NluJsonResultCard(
-                nluResult = nluResult,
-                isProcessing = isNluProcessing,
-                onSaveFeedback = onSaveFeedback,
-                modifier = Modifier.padding(top = 12.dp)
-            )
-        }
-
-        // 3. Hộp thoại Xác nhận thực thi hành động nhạy cảm
         if (showConfirmationDialog && pendingAction != null) {
             ActionConfirmationDialog(
                 title = pendingAction.getConfirmationTitle(),
