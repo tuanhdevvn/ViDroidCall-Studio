@@ -3,7 +3,7 @@
 Mô tả cấu trúc repo, JSON NLU, hành động native, lưu trữ local và điều hướng.
 Mã nguồn: `com.example.ViDroidCall_Studio`.
 
-Build: [BUILD.md](BUILD.md). Binary bên thứ ba: [THIRD_PARTY_BINARIES.md](THIRD_PARTY_BINARIES.md). GGUF: [models/README.md](../models/README.md).
+Build: [BUILD.md](BUILD.md). Binary bên thứ ba: [THIRD_PARTY_BINARIES.md](THIRD_PARTY_BINARIES.md). GGUF: [models/README.md](../models/README.md). Trợ lý nổi: §8.
 
 ---
 
@@ -34,26 +34,39 @@ Package Kotlin của nhóm:
 | `data/local/history` | SQLite lịch sử lệnh |
 | `data/local/feedback` | JSONL phản hồi NLU (nếu bật) |
 | `domain/model` | `NativeAction` (thao tác Android) |
-| `feature/*` | Màn hình Compose |
+| `feature/assistant` | Màn Home, VoiceInteraction, RecognitionService, ACTION_ASSIST |
+| `feature/overlay` | Hộp thoại nổi, wake word, foreground service |
+| `feature/*` | `home`, `history`, `settings`, `onboarding`, `speech` |
 | `navigation` | `AppRoute` |
-| `ui/component`, `ui/theme` | UI dùng chung |
-| `util` | Contact, app, quyền lưu trữ |
+| `ui/component`, `ui/theme` | UI dùng chung, dialog quyền overlay |
+| `util` | Contact, app, `TroLyNoiPermissions`, quyền lưu trữ |
 
 ---
 
 ## 2. Luồng dữ liệu
 
 ```
+Vào lệnh:
+  Home mic (chỉ khi NLU Ready)
+  hoặc Trợ lý nổi: “Trợ lý ơi” / thông báo / trợ lý hệ thống
+        ↓
 STT (Sherpa, assets) → text
         ↓
 Fast-Path (fast_path_rules.json + regex) ──khớp──► NluResult (isFastPath=true)
         ↓ không khớp
 LLM GGUF (ChatML, Qwen3) ──────────────────────► NluResult (isFastPath=false)
         ↓
-NativeAction.fromNluResult ──► xác nhận nếu cần ──► Intent Android
+NativeAction.fromNluResult
+        ↓
+Home: xác nhận nếu requiresConfirmation
+Overlay: xác nhận mọi thao tác native (ẩn số điện thoại)
+        ↓
+NluActionDispatcher → Intent Android
 ```
 
-Micro / STT chỉ chạy khi `NluModelState.Ready` (đã nạp `.gguf` trên máy). File GGUF chuẩn: `qwen3-nlu-run-Q4_K_M.gguf` trong thư mục Download.
+Micro **trên tab Home** chỉ chạy khi `NluModelState.Ready` (đã nạp `.gguf` trên máy). File GGUF chuẩn: `qwen3-nlu-run-Q4_K_M.gguf` trong thư mục Download.
+
+Wake word Trợ lý nổi dùng Sherpa (không cần GGUF). Câu sau wake word: Fast-Path không gọi LLM; không khớp Fast-Path thì **cần** GGUF Ready.
 
 **GGUF không** đọc từ thư mục clone. **STT ONNX** nằm trong APK (`assets` + `jniLibs`).
 
@@ -171,7 +184,7 @@ UI: `CommandHistoryItem(id, commandText, time, status, category, timestamp)`.
 | `theme_preferences` | `theme_mode` | string | `light` \| `dark` \| `system` (mặc định `light`) |
 | `font_size_preferences` | `font_scale` | float | mặc định `1.0`, khoảng `0.85`–`1.35` |
 | `onboarding_preferences` | `onboarding_completed` | boolean | mặc định `false` |
-| `tro_ly_noi_preferences` | `tro_ly_noi_enabled` | boolean | mặc định `false`; chỉ `true` khi đủ mic, thông báo (API 33+), `SYSTEM_ALERT_WINDOW` |
+| `tro_ly_noi_preferences` | `tro_ly_noi_enabled` | boolean | mặc định `false`; UI chỉ persist `true` khi đủ mic, thông báo (API 33+), `SYSTEM_ALERT_WINDOW`. Wake word **đồng bộ** với công tắc này (không còn công tắc riêng). |
 
 ### JSONL (tùy chọn)
 
@@ -198,9 +211,33 @@ Tab trong Home (`NavTab`, không phải NavController):
 | `ASSISTANT` | Hỏi đáp | `AssistantScreen` (mặc định) |
 | `SETTINGS` | Cài đặt | `SettingsScreen` |
 
+Trợ lý nổi **không** phải `AppRoute`. `TroLyNoiOverlayManager` gắn `ComposeView` vào `WindowManager` (`TYPE_APPLICATION_OVERLAY`).
+
 ---
 
-## 8. Artifact trên thiết bị / APK
+## 8. Trợ lý nổi
+
+| Thành phần | Vai trò |
+| :--- | :--- |
+| `TroLyNoiPreferences` | Công tắc master; mặc định tắt |
+| `TroLyNoiPermissions` | Thứ tự quyền: mic → thông báo (API 33+) → `SYSTEM_ALERT_WINDOW` |
+| `TroLyNoiForegroundService` | `foregroundServiceType=microphone`; thông báo đang chờ; pre-warm STT |
+| `TroLyNoiWakeWordManager` | Lắng nghe từ khóa khi màn hình sáng, đã mở khóa, overlay không đang hiện |
+| `TroLyNoiOverlayManager` | STT + Fast-Path / GGUF + hộp xác nhận trên overlay |
+| `TroLyNoiSheet` | UI hộp thoại; không hiện huy hiệu Fast-Path / GGUF |
+| `ViDroidVoiceInteractionService` | Ứng cử viên trợ lý mặc định Android |
+| `ViDroidRecognitionService` | Bắt buộc khi khai báo VoiceInteraction |
+| `ViDroidAssistActivity` | `ACTION_ASSIST` → mở overlay rồi `finish()` |
+
+Từ khóa wake word (chuỗi đã lowercase): `trợ lý ơi`, `trợ lí ơi`, `alo trợ lý`, `vidroidcall ơi`, `vidroidcall`, `trợ lý`, … — xem `WAKE_KEYWORDS` trong `TroLyNoiWakeWordManager`. Có thể nói liền lệnh sau từ khóa.
+
+`AssistantOverlayState` (UI gộp một số giá trị): `LISTENING`, `STT`, `FAST_PATH`, `ANALYZING` / `GGUF_LOADING`, `CONFIRM_CALL`, `MAP_CONFIRM`, `CONFIRM_ACTION`. Overlay xác nhận **mọi** `NativeAction` native; `Informational` / `Unsupported` tự đóng sau ~2,5s. Tóm tắt gọi/SMS trên overlay dùng `getActionSummary()` (ẩn số).
+
+Wake word **tạm dừng** khi: overlay đang mở, màn hình tắt, hoặc keyguard khóa.
+
+---
+
+## 9. Artifact trên thiết bị / APK
 
 | Thành phần | Vị trí |
 | :--- | :--- |

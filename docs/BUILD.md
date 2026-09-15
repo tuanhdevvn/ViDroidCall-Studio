@@ -72,6 +72,22 @@ See [models/README.md](../models/README.md).
 After the model is ready, short commands still use Fast-Path (no Llama.cpp).
 Llama.cpp runs only when Fast-Path does not match.
 
+## Floating assistant (Trợ lý nổi)
+
+The in-app Home mic and the overlay share STT + NLU. Overlay is **off by
+default**. Enable it in Settings after install:
+
+1. Push the GGUF file (needed when Fast-Path does not match).
+2. Toggle **Trợ lý nổi** and grant microphone, notifications (API 33+), and
+   “Display over other apps”.
+3. Say **“Trợ lý ơi”** with the screen on and unlocked, or tap the persistent
+   notification. Optionally set ViDroidCall as the default Android assistant.
+
+Wake-word spotting uses Sherpa-ONNX (no GGUF). The overlay pauses wake word
+while it is visible, and while the device is locked or the screen is off.
+
+Details: [SCHEMA.md](SCHEMA.md) §8, [README](../README.md).
+
 ## Third-party native binaries
 
 Prebuilt `.so` files and ONNX models are unmodified upstream artifacts.

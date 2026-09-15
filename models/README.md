@@ -21,7 +21,7 @@ cd ViDroidCall-Studio
 git lfs pull
 ```
 
-Ứng dụng **không** đọc file từ thư mục này khi Run trên điện thoại. Sau khi clone, đẩy file vào Download trên máy:
+Ứng dụng **không** đọc file từ thư mục này khi Run trên điện thoại. Sau khi clone, đẩy file vào Download trên máy. Micro trên Home **và** câu phức tạp của Trợ lý nổi đều cần file này (wake word “Trợ lý ơi” dùng Sherpa, không cần GGUF):
 
 ```bash
 adb push models/qwen3-nlu-run-Q4_K_M.gguf /sdcard/Download/

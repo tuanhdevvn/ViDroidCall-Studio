@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>ViDroidCall giúp người lớn tuổi thao tác điện thoại bằng giọng nói tiếng Việt: gọi điện, nhắn tin, mở ứng dụng, hẹn giờ / báo thức, chỉ đường, tìm video, phát nhạc và tra cứu thông tin trên web. Giao diện nút lớn, hướng dẫn bằng giọng nói, xác nhận trước thao tác có rủi ro. Nghe lệnh và hiểu ý định chạy trên máy; bản đồ, video và tìm web mở ứng dụng hệ thống (có thể cần mạng).</b>
+  <b>ViDroidCall giúp người lớn tuổi thao tác điện thoại bằng giọng nói tiếng Việt: gọi điện, nhắn tin, mở ứng dụng, hẹn giờ / báo thức, chỉ đường, tìm video, phát nhạc và tra cứu thông tin trên web. Giao diện nút lớn, hướng dẫn bằng giọng nói, xác nhận trước thao tác có rủi ro. Có thể ra lệnh trong app hoặc bật <i>Trợ lý nổi</i> để nói “Trợ lý ơi” khi đang dùng ứng dụng khác. Nghe lệnh và hiểu ý định chạy trên máy; bản đồ, video và tìm web mở ứng dụng hệ thống (có thể cần mạng).</b>
 </p>
 
 <p align="center">
@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"/>
   <img src="https://img.shields.io/badge/UI-Jetpack%20Compose%20(M3)-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Compose"/>
   <img src="https://img.shields.io/badge/STT-Sherpa--ONNX%20(Offline)-00C853?style=for-the-badge" alt="STT Engine"/>
+  <img src="https://img.shields.io/badge/Wake--word-Trợ%20lý%20ơi-00ACC1?style=for-the-badge" alt="Wake word"/>
   <img src="https://img.shields.io/badge/Fast--Path-Zero--LLM-8A2BE2?style=for-the-badge" alt="Fast-Path"/>
   <img src="https://img.shields.io/badge/AI-Llama.cpp%20Qwen3%20GGUF-FF6F00?style=for-the-badge" alt="AI Engine"/>
   <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD"/>
@@ -27,10 +28,11 @@
 
 **ViDroidCall Studio** (sản phẩm **ViDroidCall**) là ứng dụng Android trợ lý giọng nói tiếng Việt, kiến trúc **Hybrid NLU**:
 
-1. **Nạp GGUF** — chưa có file `.gguf` thì **không ghi âm**, Fast-Path cũng không chạy từ giọng nói.
+1. **Nạp GGUF** — chưa có file `.gguf` thì **nút micro trên màn trợ lý không ghi âm**. Fast-Path từ giọng nói trong app cũng không chạy.
 2. **Sherpa-ONNX ASR & Silero-VAD** — nhận diện tiếng Việt trên máy (Zipformer 30M Int8), ngắt câu theo VAD, chuẩn hóa số (ITN).
 3. **Fast-Path** — sau khi AI Ready: câu ngắn khớp quy tắc/regex **không gọi LLM**.
 4. **On-device LLM (Llama.cpp, Qwen3 0.6B GGUF)** — khi Fast-Path không khớp.
+5. **Trợ lý nổi** (mặc định tắt) — hộp thoại đè lên app khác; nói **“Trợ lý ơi”**, chạm thông báo, hoặc đặt làm trợ lý mặc định Android.
 
 STT và NLU **không cần internet**. Gọi / SMS / mở app / báo thức chạy local. **Chỉ đường, YouTube, tìm web** mở app hệ thống và có thể cần mạng.
 
@@ -47,12 +49,19 @@ Phiên bản nguồn: [GitHub Release v1.1.0](https://github.com/tuanhdevvn/ViDr
 </p>
 <p align="center">
   <img src="docs/screenshots/02-history.png" width="240" alt="Lịch sử câu lệnh — chạy lại hoặc xóa"/>
-  <img src="docs/screenshots/03-settings.png" width="240" alt="Cài đặt theme, cỡ chữ và trạng thái mô hình GGUF"/>
+  <img src="docs/screenshots/03-settings.png" width="240" alt="Cài đặt theme, cỡ chữ, mô hình GGUF và công tắc Trợ lý nổi"/>
 </p>
 
 <p align="center">
-  <sub>Home · Câu lệnh · Xác nhận gọi · Lịch sử · Cài đặt</sub>
+  <sub>Home · Câu lệnh · Xác nhận gọi · Lịch sử · Cài đặt (công tắc Trợ lý nổi nằm dưới thẻ mô hình AI)</sub>
 </p>
+
+Hai cách ra lệnh:
+
+| Cách | Khi nào dùng |
+| :--- | :--- |
+| **Nút micro trên tab Home** | Đang mở ViDroidCall |
+| **Trợ lý nổi** | Đang dùng app khác: nói “Trợ lý ơi”, chạm thông báo, hoặc phím/cử chỉ trợ lý hệ thống |
 
 ---
 
@@ -64,7 +73,7 @@ Phiên bản nguồn: [GitHub Release v1.1.0](https://github.com/tuanhdevvn/ViDr
 * Chuẩn hóa số (*"không chín một hai…"* → *"0912…"*, *"sáu giờ rưỡi"* → *"6:30"*).
 * Hiển thị: Sherpa thường ra IN HOA → `SpeechTextFormatter` đưa về chữ thường, hoa đầu câu.
 
-### 2. Hộp thoại giọng nói 4 giai đoạn
+### 2. Hộp thoại giọng nói trên màn trợ lý (4 giai đoạn)
 * **Chờ nói:** `Hãy nói gì đó...`
 * **Đang nói:** VAD bắt tiếng → `Đang lắng nghe câu lệnh...`
 * **Nói xong:** in câu STT (ví dụ `Gọi cho mẹ`).
@@ -72,20 +81,41 @@ Phiên bản nguồn: [GitHub Release v1.1.0](https://github.com/tuanhdevvn/ViDr
 
 Nghe bằng **nút Micro trên màn trợ lý**. Logo giữa menu bar chỉ về tab Home / Hỏi đáp.
 
-### 3. Fast-Path (không LLM, chỉ khi đã nạp GGUF)
-* Micro / STT tắt cho đến khi huy hiệu **Trợ lý AI đã sẵn sàng**.
-* Khi Ready: quy tắc `assets/fast_path_rules.json` + regex trong `FastPathMatcher` — **không gọi Llama.cpp**.
-* Huy hiệu: `⚡ Fast-Path` hoặc `🧠 On-Device AI (GGUF)`.
+### 3. Trợ lý nổi (overlay, mặc định tắt)
 
-### 4. Quyền & an toàn
+Công tắc **một hàng** trong Cài đặt: *Nói “Trợ lý ơi” hiện hộp thoại nổi đè lên ứng dụng khác*. Chỉ lưu bật khi đã đủ quyền, theo thứ tự:
+
+1. Micro
+2. Thông báo (Android 13+)
+3. **Hiển thị trên các ứng dụng khác** (`SYSTEM_ALERT_WINDOW`)
+
+Khi bật:
+
+* Foreground service + thông báo *ViDroidCall: Trợ lý nổi sẵn sàng* (chạm để nói / mở Cài đặt).
+* Wake word chạy nền bằng cùng engine Sherpa; **tạm dừng** khi màn hình tắt, máy khóa, hoặc overlay đang mở (tránh tranh micro).
+* Hộp thoại nổi: chờ nói → câu STT → phân tích → **xác nhận mọi thao tác native** (gọi, SMS, bản đồ, app, …). Overlay **ẩn số điện thoại** (hiện tên liên hệ hoặc `****`).
+* UI overlay không hiện huy hiệu kỹ thuật Fast-Path / GGUF.
+* Có thể đặt ViDroidCall làm **trợ lý mặc định** Android (`VoiceInteractionService` + `RecognitionService` + `ACTION_ASSIST`) để phím/cử chỉ hệ thống mở cùng hộp thoại.
+
+Câu lệnh sau wake word vẫn Hybrid NLU. Fast-Path không cần LLM; câu phức tạp cần GGUF Ready — chưa có mô hình thì overlay báo không tìm thấy AI rồi đóng.
+
+Từ khóa chính: **“Trợ lý ơi”**. Cũng nhận biến thể như “alo trợ lý”, “vidroidcall ơi”. Có thể nói liền: *“Trợ lý ơi gọi cho mẹ”* (không cần thu âm lại).
+
+### 4. Fast-Path (không LLM, chỉ khi đã nạp GGUF)
+* Micro **trong app** / STT tắt cho đến khi huy hiệu **Trợ lý AI đã sẵn sàng**.
+* Khi Ready: quy tắc `assets/fast_path_rules.json` + regex trong `FastPathMatcher` — **không gọi Llama.cpp**.
+* Huy hiệu trên màn Home: `⚡ Fast-Path` hoặc `🧠 On-Device AI (GGUF)`.
+
+### 5. Quyền & an toàn
 * Hướng dẫn 3 bước (không nút “cấp quyền ngay” dễ treo): Micro, Danh bạ, Bộ nhớ.
-* Xác nhận trước gọi / SMS và thao tác rủi ro khác.
+* Trợ lý nổi xin thêm thông báo và hiện trên ứng dụng khác **chỉ khi bật công tắc**.
+* Xác nhận trước gọi / SMS (trong app) và **mọi hành động native trên overlay**.
 * Cỡ chữ hệ thống (font scale), theme sáng/tối.
 
-### 5. Debounce
+### 6. Debounce
 * Chống spam micro / hủy nghe; chạy lại cùng một câu lệnh không bị nuốt.
 
-### 6. Intent hỗ trợ
+### 7. Intent hỗ trợ
 
 | Intent | Phân loại | Mô tả | Tham số |
 | :--- | :--- | :--- | :--- |
@@ -103,7 +133,7 @@ Nghe bằng **nút Micro trên màn trợ lý**. Logo giữa menu bar chỉ về
 | `clarify` | Hybrid | Thiếu slot, hỏi lại | `missing` |
 | `unsupported` | Hybrid | Ngoài phạm vi | — |
 
-`search_web`: thời tiết, “là ai / là gì”, tin tức, phép tính đơn giản. Không nhầm với `open_map` (quán gần tôi), `search_video` (YouTube), `call_contact` (gọi cho…). Thiếu nội dung → `clarify` (`missing: ["query"]`), không mở URL rỗng. Không hộp xác nhận khi search.
+`search_web`: thời tiết, “là ai / là gì”, tin tức, phép tính đơn giản. Không nhầm với `open_map` (quán gần tôi), `search_video` (YouTube), `call_contact` (gọi cho…). Thiếu nội dung → `clarify` (`missing: ["query"]`), không mở URL rỗng. Trong app không hộp xác nhận khi search; overlay vẫn hỏi xác nhận.
 
 ---
 
@@ -112,9 +142,16 @@ Nghe bằng **nút Micro trên màn trợ lý**. Logo giữa menu bar chỉ về
 ```mermaid
 flowchart TD
     A["NluEngineManager quét .gguf"] --> H{"File .gguf Ready?"}
-    H -- "Chưa" --> K["Không ghi âm — Fast-Path cũng không chạy"]
-    H -- "Có" --> M0["Nút micro được phép nghe"]
+    H -- "Chưa" --> K["Home: không ghi âm"]
+    H -- "Có" --> M0["Nút micro Home được phép nghe"]
+    S["Cài đặt: bật Trợ lý nổi"] --> P["Quyền mic / thông báo / overlay"]
+    P --> FS["TroLyNoiForegroundService"]
+    FS --> W["Wake word Trợ lý ơi"]
+    FS --> N["Thông báo / trợ lý hệ thống"]
+    W --> OV["TroLyNoiSheet overlay"]
+    N --> OV
     M0 --> B["Silero-VAD"]
+    OV --> B
     B -->|"Dứt câu"| C["Sherpa-ONNX ASR"]
     C --> D["ITN / SpeechTextFormatter"]
     D --> E{"Fast-Path?"}
@@ -124,8 +161,10 @@ flowchart TD
     F --> L["NluResult"]
     J --> L
     L --> UI["AssistantScreen"]
-    L --> N["Lịch sử SQLite tối đa 10"]
-    L --> O["NluActionDispatcher"]
+    L --> OX["Xác nhận trên overlay"]
+    L --> HIS["Lịch sử SQLite tối đa 10"]
+    UI --> DIS["NluActionDispatcher"]
+    OX --> DIS
 ```
 
 ---
@@ -135,26 +174,28 @@ flowchart TD
 ```text
 com.example.ViDroidCall_Studio/
 ├── MainActivity.kt
-├── data/local/          # history SQLite, theme, font, onboarding, feedback JSONL
+├── data/local/          # history SQLite, theme, font, onboarding, TroLyNoiPreferences, feedback JSONL
 ├── data/model/          # NluIntent, NluResult, parser
 ├── data/nlu/            # FastPathMatcher, NluEngineManager, dispatcher, NluConstants
 ├── domain/model/        # NativeAction (gọi, SMS, web, …)
-├── feature/assistant|history|home|onboarding|settings|speech
-├── ui/component         # menu bar (nút giữa = về Home), dialog quyền
-└── util/                # ContactResolver, AppResolver, StoragePermissionHelper
+├── feature/assistant    # AssistantScreen, VoiceInteraction, RecognitionService, ACTION_ASSIST
+├── feature/overlay      # TroLyNoiSheet, OverlayManager, WakeWord, ForegroundService
+├── feature/history|home|onboarding|settings|speech
+├── ui/component         # menu bar (nút giữa = về Home), dialog quyền (kể cả overlay)
+└── util/                # ContactResolver, AppResolver, TroLyNoiPermissions, StoragePermissionHelper
 assets/fast_path_rules.json
 assets/sherpa-onnx-vi/
 ```
 
-Chi tiết file: xem cây trong IDE. `SpeechTextFormatter.kt` — casing STT. `TimeProvider.kt` — giờ cho báo thức.
+Chi tiết schema overlay / DataStore: [docs/SCHEMA.md](docs/SCHEMA.md). `SpeechTextFormatter.kt` — casing STT. `TimeProvider.kt` — giờ cho báo thức.
 
 ---
 
 ## 🚀 Cài đặt & nạp GGUF
 
-[docs/BUILD.md](docs/BUILD.md) · [docs/SCHEMA.md](docs/SCHEMA.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues) · [CHANGELOG.md](CHANGELOG.md)
+[docs/BUILD.md](docs/BUILD.md) · [docs/SCHEMA.md](docs/SCHEMA.md) · [docs/COMMIT.md](docs/COMMIT.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues) · [CHANGELOG.md](CHANGELOG.md)
 
-**Micro chỉ nghe** khi huy hiệu **Trợ lý AI đã sẵn sàng** (đã nạp `.gguf` trong Download). Chưa có file: bấm mic được nhưng **không ghi âm** — **Fast-Path cũng không chạy** (không có câu STT).
+**Micro trên Home chỉ nghe** khi huy hiệu **Trợ lý AI đã sẵn sàng** (đã nạp `.gguf` trong Download). Chưa có file: bấm mic được nhưng **không ghi âm** — **Fast-Path trong app cũng không chạy**.
 
 Sau khi Ready, câu ngắn đi **Fast-Path** (không Llama.cpp). LLM chỉ khi không khớp Fast-Path.
 
@@ -181,7 +222,16 @@ Trọng số nằm trong repo: [`models/qwen3-nlu-run-Q4_K_M.gguf`](models/qwen3
 adb push models/qwen3-nlu-run-Q4_K_M.gguf /sdcard/Download/
 ```
 
-Cấp quyền tệp nếu hệ thống hỏi. Huy hiệu xanh → micro bắt đầu nghe.
+Cấp quyền tệp nếu hệ thống hỏi. Huy hiệu xanh → micro Home bắt đầu nghe.
+
+### Bật Trợ lý nổi
+
+1. Nạp GGUF như trên (cần cho câu không khớp Fast-Path).
+2. Mở **Cài đặt** → bật **Trợ lý nổi** → cấp micro, thông báo, hiện trên ứng dụng khác.
+3. Nói **“Trợ lý ơi”** khi màn hình sáng và đã mở khóa, hoặc chạm thông báo đang chạy.
+4. (Tuỳ chọn) Cài đặt hệ thống → ứng dụng mặc định → trợ lý số → chọn ViDroidCall.
+
+Tắt công tắc thì service, overlay và wake word dừng.
 
 ---
 

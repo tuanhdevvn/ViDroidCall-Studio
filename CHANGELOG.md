@@ -11,6 +11,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Lưu mẫu sai NLU sau câu GGUF: thẻ JSON trên màn trợ lý, danh sách / xem JSON / xóa / share file trong Cài đặt. Fast-Path không lưu.
 
+### Docs
+
+- README, SCHEMA, BUILD, CONTRIBUTING: Trợ lý nổi (wake word, overlay, trợ lý hệ thống Android)
+
 ## [1.1.0] - 2026-09-14
 
 ### Added

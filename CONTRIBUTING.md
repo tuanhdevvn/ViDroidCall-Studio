@@ -14,6 +14,7 @@ Please include:
 
 * Device model and Android version
 * App version (or commit SHA)
+* Lệnh bằng **micro Home** hay **Trợ lý nổi** (wake word / thông báo / trợ lý hệ thống)
 * Steps to reproduce
 * Expected vs actual behavior
 * Logcat snippet if the crash is in Kotlin / native code
@@ -35,11 +36,11 @@ cd ViDroidCall-Studio
 
 Yêu cầu: **JDK 21**, Android SDK (`compileSdk` 37 / `minSdk` 26). Android Studio không bắt buộc; Gradle wrapper là đủ.
 
-Trợ lý giọng nói **chỉ bắt đầu nghe** khi đã nạp file GGUF vào thư mục Download của máy:
+Trợ lý giọng nói **trên tab Home chỉ bắt đầu nghe** khi đã nạp file GGUF vào thư mục Download của máy:
 
 [`models/qwen3-nlu-run-Q4_K_M.gguf`](models/qwen3-nlu-run-Q4_K_M.gguf) (Git LFS; `adb push` sang Download trên máy)
 
-Chi tiết `adb push` và Fast-Path: [README.md](README.md).
+**Trợ lý nổi** (mặc định tắt): Cài đặt → bật công tắc → cấp micro / thông báo / hiện trên ứng dụng khác, rồi nói “Trợ lý ơi”. Chi tiết: [README.md](README.md), [docs/SCHEMA.md](docs/SCHEMA.md) §8.
 
 ---
 
@@ -71,10 +72,10 @@ PR nhắm vào nhánh `main`. GitHub Actions sẽ biên dịch Kotlin và chạy
 
 | Tài liệu | Nội dung |
 | :--- | :--- |
-| [README.md](README.md) | Tổng quan, kiến trúc, cài đặt |
-| [docs/BUILD.md](docs/BUILD.md) | JDK, Gradle, GGUF |
+| [README.md](README.md) | Tổng quan, kiến trúc, Home + Trợ lý nổi |
+| [docs/BUILD.md](docs/BUILD.md) | JDK, Gradle, GGUF, bật overlay |
 | [docs/COMMIT.md](docs/COMMIT.md) | Conventional Commits, nhánh, file cấm |
-| [docs/SCHEMA.md](docs/SCHEMA.md) | JSON NLU, SQLite, DataStore, điều hướng |
+| [docs/SCHEMA.md](docs/SCHEMA.md) | JSON NLU, SQLite, DataStore, overlay / wake word |
 | [CHANGELOG.md](CHANGELOG.md) | Lịch sử phiên bản |
 | [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) | Thư viện bên thứ ba |
 | [LICENSE](LICENSE) / [NOTICE](NOTICE) | Apache-2.0 |
