@@ -4,11 +4,17 @@
 package com.example.ViDroidCall_Studio.feature.settings
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +27,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -32,8 +39,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LightMode
@@ -41,16 +51,12 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.GraphicEq
-import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -69,12 +75,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Velocity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,6 +108,9 @@ import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogReposito
 import com.example.ViDroidCall_Studio.data.nlu.NluModelState
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -210,12 +228,38 @@ fun SettingsScreen(
     var feedbackCount by remember { mutableIntStateOf(0) }
     var feedbackEntries by remember { mutableStateOf<List<NluFeedbackEntry>>(emptyList()) }
     var showClearFeedbackDialog by remember { mutableStateOf(false) }
+    var pendingDeleteEntry by remember { mutableStateOf<NluFeedbackEntry?>(null) }
     var feedbackRefreshKey by remember { mutableIntStateOf(0) }
+    val clipboardManager = LocalClipboardManager.current
 
     fun refreshFeedbackLog() {
         scope.launch {
             feedbackCount = feedbackRepository?.count() ?: 0
             feedbackEntries = feedbackRepository?.readAll().orEmpty().reversed()
+        }
+    }
+
+    fun shareFeedbackLog() {
+        val file = feedbackRepository?.getLogFile()
+        if (file == null || !file.exists()) {
+            Toast.makeText(context, "Chưa có file mẫu sai để chia sẻ", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/json"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, NluFeedbackLogRepository.LOG_FILE_NAME)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Chia sẻ mẫu sai NLU"))
+        } catch (error: Exception) {
+            Toast.makeText(context, "Không chia sẻ được: ${error.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -249,6 +293,38 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearFeedbackDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    pendingDeleteEntry?.let { entry ->
+        AlertDialog(
+            onDismissRequest = { pendingDeleteEntry = null },
+            title = { Text("Xóa mẫu này?") },
+            text = { Text("Câu “${entry.sttText}” sẽ bị xóa khỏi file JSONL.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingDeleteEntry = null
+                        scope.launch {
+                            feedbackRepository?.deleteByIndex(entry.index)
+                                ?.onSuccess {
+                                    feedbackRefreshKey++
+                                    Toast.makeText(context, "Đã xóa mẫu", Toast.LENGTH_SHORT).show()
+                                }
+                                ?.onFailure { error ->
+                                    Toast.makeText(context, "Xóa thất bại: ${error.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                    }
+                ) {
+                    Text("Xóa", color = Color(0xFFDC2626))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteEntry = null }) {
                     Text("Hủy")
                 }
             }
@@ -811,6 +887,179 @@ fun SettingsScreen(
             }
         }
 
+        // 5. Thẻ mẫu sai NLU (R&D: STT + JSON GGUF)
+        item {
+            val accent = Color(0xFFE11D48)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsCardShadow(RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(accent.copy(alpha = 0.10f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.BookmarkAdd,
+                                contentDescription = null,
+                                tint = accent,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Mẫu sai NLU",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Câu nói + JSON GGUF để export",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = accent.copy(alpha = 0.10f)
+                        ) {
+                            Text(
+                                text = "$feedbackCount",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = accent,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                        if (feedbackEntries.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+                                    .bounceClick(scaleDown = 0.88f, onClick = { shareFeedbackLog() }),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Share,
+                                    contentDescription = "Chia sẻ file mẫu sai",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(accent.copy(alpha = 0.10f))
+                                    .bounceClick(scaleDown = 0.88f, onClick = { showClearFeedbackDialog = true }),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.DeleteSweep,
+                                    contentDescription = "Xóa toàn bộ mẫu sai",
+                                    tint = accent,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    if (feedbackEntries.isEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Chưa có mẫu. Sau câu On-Device AI, bấm “Lưu mẫu sai” trên thẻ kết quả.",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 20.sp,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp)
+                            )
+                        }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.10f)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // Nuốt scroll/fling còn thừa để LazyColumn ngoài không bị kéo theo.
+                            val lockOuterScroll = remember {
+                                object : NestedScrollConnection {
+                                    override fun onPostScroll(
+                                        consumed: Offset,
+                                        available: Offset,
+                                        source: NestedScrollSource
+                                    ): Offset = available
+
+                                    override suspend fun onPostFling(
+                                        consumed: Velocity,
+                                        available: Velocity
+                                    ): Velocity = available
+                                }
+                            }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = FeedbackListViewportHeight)
+                                    .nestedScroll(lockOuterScroll)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                feedbackEntries.forEachIndexed { index, entry ->
+                                    FeedbackEntryRow(
+                                        entry = entry,
+                                        accent = accent,
+                                        onDelete = { pendingDeleteEntry = entry },
+                                        onCopyJson = {
+                                            clipboardManager.setText(AnnotatedString(entry.modelOutputJson))
+                                            Toast.makeText(context, "Đã sao chép JSON", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                    if (index < feedbackEntries.lastIndex) {
+                                        HorizontalDivider(
+                                            thickness = 1.dp,
+                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.10f),
+                                            modifier = Modifier.padding(horizontal = 14.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // 4. Thẻ Mô Hình AI (Tách riêng hàng Tiêu đề & Hộp hiển thị đầy đủ tên Model)
         item {
             val modelName = when (modelState) {
@@ -960,45 +1209,163 @@ fun SettingsScreen(
     }
 }
 
+/** Chiều cao khung list ≈ 5 câu thu gọn; phần còn lại cuộn trong khung. */
+private val FeedbackListCollapsedRowHeight = 64.dp
+private val FeedbackListViewportHeight = FeedbackListCollapsedRowHeight * 5
+
 @Composable
 private fun FeedbackEntryRow(
     entry: NluFeedbackEntry,
-    onDelete: () -> Unit
+    accent: Color,
+    onDelete: () -> Unit,
+    onCopyJson: () -> Unit
 ) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+    var expanded by remember { mutableStateOf(false) }
+    val savedAtLabel = remember(entry.savedAt) { formatFeedbackSavedAt(entry.savedAt) }
+    val utterance = entry.sttText.ifBlank { "(trống)" }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .padding(horizontal = 14.dp, vertical = 11.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = entry.sttText,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Rounded.DeleteSweep,
-                contentDescription = "Xóa mẫu",
-                tint = Color(0xFFDC2626),
+            Box(
                 modifier = Modifier
-                    .size(20.dp)
-                    .bounceClick(scaleDown = 0.9f, onClick = onDelete)
+                    .width(3.dp)
+                    .height(28.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(accent.copy(alpha = 0.35f))
             )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .bounceClick(scaleDown = 0.98f, onClick = { expanded = !expanded })
+            ) {
+                Text(
+                    text = utterance,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = if (expanded) 4 else 1,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 20.sp
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = savedAtLabel,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "  ·  ",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    )
+                    Text(
+                        text = if (expanded) "Ẩn JSON" else "JSON",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        imageVector = Icons.Rounded.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                        modifier = Modifier
+                            .size(16.dp)
+                            .rotate(if (expanded) 180f else 0f)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.08f))
+                    .bounceClick(scaleDown = 0.88f, onClick = onDelete),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = "Xóa mẫu",
+                    tint = accent,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFF0F172A),
+                    border = BorderStroke(1.dp, Color(0xFF1E293B)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = entry.modelOutputJson,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        color = Color(0xFF7DD3FC),
+                        lineHeight = 18.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(12.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                        modifier = Modifier.bounceClick(scaleDown = 0.9f, onClick = onCopyJson)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.ContentCopy,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = "Copy",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
+}
+
+private fun formatFeedbackSavedAt(savedAt: Long): String {
+    if (savedAt <= 0L) return "Chưa rõ thời gian"
+    return SimpleDateFormat("HH:mm · dd/MM", Locale.forLanguageTag("vi-VN")).format(Date(savedAt))
 }
 
 private fun Modifier.settingsCardShadow(shape: RoundedCornerShape): Modifier = shadow(

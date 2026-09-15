@@ -26,6 +26,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -122,41 +124,64 @@ fun AssistantScreen(
     onCancelAction: () -> Unit = {},
     onSaveFeedback: () -> Unit = {}
 ) {
-    Column(
+    // Màn chính (badge + micro) chiếm 1 viewport; thẻ JSON/mẫu sai nằm dưới, kéo xuống mới thấy.
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. Trạng thái Mô hình NLU AI & Quản lý Quyền
-        ModelEngineStatusBadge(
-            modelState = modelState,
-            hasStoragePermission = hasStoragePermission,
-            onRequestStoragePermission = onRequestStoragePermission,
-            onRescanModel = onRescanModel
-        )
-
-        // 2. Khu vực Trung tâm Ra lệnh giọng nói AI (Căn giữa hoàn hảo giữa màn hình như cũ)
-        Box(
+        val viewportHeight = maxHeight
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            VoiceAssistantSection(
-                isListening = isListening,
-                speechText = speechText,
-                currentCommand = currentCommand,
-                isNluProcessing = isNluProcessing,
-                modelState = modelState,
-                isTtsSpeaking = isTtsSpeaking,
-                onToggleListening = onToggleListening,
-                onCancelListening = onCancelListening
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(viewportHeight)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ModelEngineStatusBadge(
+                    modelState = modelState,
+                    hasStoragePermission = hasStoragePermission,
+                    onRequestStoragePermission = onRequestStoragePermission,
+                    onRescanModel = onRescanModel
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    VoiceAssistantSection(
+                        isListening = isListening,
+                        speechText = speechText,
+                        currentCommand = currentCommand,
+                        isNluProcessing = isNluProcessing,
+                        modelState = modelState,
+                        isTtsSpeaking = isTtsSpeaking,
+                        onToggleListening = onToggleListening,
+                        onCancelListening = onCancelListening
+                    )
+                }
+            }
+
+            if (isNluProcessing || nluResult != null) {
+                NluJsonResultCard(
+                    nluResult = nluResult,
+                    isProcessing = isNluProcessing,
+                    onSaveFeedback = onSaveFeedback,
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 4.dp, bottom = 20.dp)
+                )
+            }
         }
 
-        // 3. Hộp thoại Xác nhận thực thi hành động nhạy cảm
         if (showConfirmationDialog && pendingAction != null) {
             ActionConfirmationDialog(
                 title = pendingAction.getConfirmationTitle(),
@@ -864,13 +889,16 @@ private fun AnimatedWaveformVisualizer() {
 private fun NluJsonResultCard(
     nluResult: NluResult?,
     isProcessing: Boolean,
-    onSaveFeedback: () -> Unit = {}
+    onSaveFeedback: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    var justSaved by remember(nluResult?.executionId) { mutableStateOf(false) }
+    val canSaveSample = nluResult != null && !nluResult.isFastPath && !isProcessing
 
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .shadow(
                 elevation = 8.dp,
@@ -917,33 +945,40 @@ private fun NluJsonResultCard(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color(0xFFEF4444).copy(alpha = 0.12f),
-                            modifier = Modifier.bounceClick(scaleDown = 0.9f, onClick = onSaveFeedback)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                        if (canSaveSample) {
+                            val saveTint = if (justSaved) Color(0xFF059669) else Color(0xFFDC2626)
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = saveTint.copy(alpha = 0.12f),
+                                modifier = Modifier.bounceClick(scaleDown = 0.9f, onClick = {
+                                    if (!justSaved) {
+                                        onSaveFeedback()
+                                        justSaved = true
+                                    }
+                                })
                             ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.BookmarkAdd,
-                                    contentDescription = "Lưu mẫu sai",
-                                    tint = Color(0xFFDC2626),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Lưu mẫu sai",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFDC2626),
-                                    maxLines = 1
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (justSaved) Icons.Rounded.CheckCircle else Icons.Rounded.BookmarkAdd,
+                                        contentDescription = if (justSaved) "Đã lưu mẫu sai" else "Lưu mẫu sai",
+                                        tint = saveTint,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (justSaved) "Đã lưu" else "Lưu mẫu sai",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = saveTint,
+                                        maxLines = 1
+                                    )
+                                }
                             }
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
-
-                        Spacer(modifier = Modifier.width(8.dp))
 
                         Surface(
                             shape = RoundedCornerShape(20.dp),
@@ -1081,6 +1116,8 @@ private fun NluJsonResultCard(
                         lineHeight = 20.sp,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(max = 220.dp)
+                            .verticalScroll(rememberScrollState())
                             .padding(16.dp)
                     )
                 }
