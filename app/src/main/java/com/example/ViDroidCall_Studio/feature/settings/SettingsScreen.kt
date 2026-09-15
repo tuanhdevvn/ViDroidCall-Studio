@@ -77,9 +77,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Velocity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -1008,10 +1013,26 @@ fun SettingsScreen(
                             ),
                             modifier = Modifier.fillMaxWidth()
                         ) {
+                            // Nuốt scroll/fling còn thừa để LazyColumn ngoài không bị kéo theo.
+                            val lockOuterScroll = remember {
+                                object : NestedScrollConnection {
+                                    override fun onPostScroll(
+                                        consumed: Offset,
+                                        available: Offset,
+                                        source: NestedScrollSource
+                                    ): Offset = available
+
+                                    override suspend fun onPostFling(
+                                        consumed: Velocity,
+                                        available: Velocity
+                                    ): Velocity = available
+                                }
+                            }
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(max = FeedbackListViewportHeight)
+                                    .nestedScroll(lockOuterScroll)
                                     .verticalScroll(rememberScrollState())
                             ) {
                                 feedbackEntries.forEachIndexed { index, entry ->
