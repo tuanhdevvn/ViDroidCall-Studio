@@ -1476,12 +1476,66 @@ class FastPathMatcherTest {
 
     @Test
     fun testGranularNegative_hourOutOfRange() {
-        assertNull(matcher.match("báo thức lúc 25 giờ 90 phút"))
+        val result = matcher.match("báo thức lúc 25 giờ 90 phút")
+        assertNotNull("Phải trả invalid result, không để LLM xử lý", result)
+        assertEquals("set_alarm", result?.intent)
+        assertEquals("invalid", result?.status)
     }
 
     @Test
     fun testGranularNegative_minuteOutOfRange() {
-        assertNull(matcher.match("báo thức 2 giờ 70 phút"))
+        val result = matcher.match("báo thức 2 giờ 70 phút")
+        assertNotNull("Phải trả invalid result, không để LLM xử lý", result)
+        assertEquals("set_alarm", result?.intent)
+        assertEquals("invalid", result?.status)
+    }
+
+    @Test
+    fun testAlarmInvalidMinute_Regression_5Gio99Phut() {
+        val result = matcher.match("Đặt báo thức 5 giờ 99 phút")
+        assertNotNull(result)
+        assertEquals("set_alarm", result?.intent)
+        assertEquals("invalid", result?.status)
+    }
+
+    @Test
+    fun testAlarmInvalidMinute_60Phut() {
+        val result = matcher.match("báo thức 5 giờ 60 phút")
+        assertNotNull(result)
+        assertEquals("invalid", result?.status)
+    }
+
+    @Test
+    fun testAlarmInvalidMinute_100Phut() {
+        val result = matcher.match("báo thức 5 giờ 100 phút")
+        assertNotNull(result)
+        assertEquals("invalid", result?.status)
+    }
+
+    @Test
+    fun testAlarmValidCases_5Gio() {
+        val r = matcher.match("Đặt báo thức 5 giờ")
+        assertNotNull(r)
+        assertEquals("set_alarm", r?.intent)
+        assertEquals("success", r?.status)
+        assertEquals(5, JSONObject(r!!.argumentsJson).optInt("hour"))
+        assertEquals(0, JSONObject(r.argumentsJson).optInt("minute"))
+    }
+
+    @Test
+    fun testAlarmValidCases_5Gio30Phut() {
+        val r = matcher.match("Đặt báo thức 5 giờ 30 phút")
+        assertNotNull(r)
+        assertEquals("success", r?.status)
+        assertEquals(30, JSONObject(r!!.argumentsJson).optInt("minute"))
+    }
+
+    @Test
+    fun testAlarmValidCases_5Gio59Phut() {
+        val r = matcher.match("Đặt báo thức 5 giờ 59 phút")
+        assertNotNull(r)
+        assertEquals("success", r?.status)
+        assertEquals(59, JSONObject(r!!.argumentsJson).optInt("minute"))
     }
 
     @Test

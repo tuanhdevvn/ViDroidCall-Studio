@@ -446,6 +446,13 @@ sealed class NativeAction {
                 "set_alarm" -> {
                     val hour = if (args.has("hour")) args.optInt("hour") else (nluResult.slots["hour"] as? Number)?.toInt() ?: -1
                     val minute = if (args.has("minute")) args.optInt("minute") else (nluResult.slots["minute"] as? Number)?.toInt() ?: 0
+                    if (hour !in 0..23 || minute !in 0..59) {
+                        return Informational(
+                            intentName = "set_alarm",
+                            message = "Thời gian đặt báo thức không hợp lệ.",
+                            speechText = "Thời gian đặt báo thức không hợp lệ"
+                        )
+                    }
                     val label = args.optString("label").ifBlank {
                         args.optString("message").ifBlank {
                             nluResult.slots["label"]?.toString() ?: nluResult.slots["message"]?.toString() ?: "Báo thức AI"

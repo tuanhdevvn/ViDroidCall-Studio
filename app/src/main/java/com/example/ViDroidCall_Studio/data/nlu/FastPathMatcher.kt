@@ -1301,7 +1301,20 @@ class FastPathMatcher(
                     else -> VietnameseNumberParser.parse(minutePartClean)
                 }
 
-                if (minusMinutes == null || minusMinutes !in 1..59 || targetHour !in 0..23) {
+                if (minusMinutes == null) {
+                    return null
+                }
+
+                if (minusMinutes !in 1..59 || targetHour !in 0..23) {
+                    val hasAlarmPrefix = ALARM_PREFIXES.any { unaccented.contains(it) }
+                    if (hasAlarmPrefix) {
+                        val args = JSONObject().apply {
+                            put("hour", targetHour)
+                            put("minute", minusMinutes)
+                            put("label", "Báo thức")
+                        }
+                        return buildNluResult("set_alarm", args, "low", "invalid", false)
+                    }
                     return null
                 }
 
@@ -1410,7 +1423,7 @@ class FastPathMatcher(
             }
         }
 
-        if (parsedHour == null || parsedHour !in 0..23) {
+        if (parsedHour == null) {
             val hasAlarmPrefix = ALARM_PREFIXES.any { unaccented.contains(it) }
             val cleanUnaccented = stripAccents(payload.trim())
             if (hasAlarmPrefix && (cleanUnaccented.isEmpty() || cleanUnaccented in setOf("di", "giup toi", "cho toi", "ho toi", "nhe"))) {
@@ -1418,6 +1431,19 @@ class FastPathMatcher(
                     put("missing", JSONArray().put("time"))
                 }
                 return buildNluResult("clarify", args, "low", "needs_clarification", false)
+            }
+            return null
+        }
+
+        if (parsedHour !in 0..23) {
+            val hasAlarmPrefix = ALARM_PREFIXES.any { unaccented.contains(it) }
+            if (hasAlarmPrefix) {
+                val args = JSONObject().apply {
+                    put("hour", parsedHour)
+                    put("minute", parsedMinute)
+                    put("label", "Báo thức")
+                }
+                return buildNluResult("set_alarm", args, "low", "invalid", false)
             }
             return null
         }
@@ -1448,6 +1474,15 @@ class FastPathMatcher(
         // ============================================================
 
         if (parsedMinute !in 0..59) {
+            val hasAlarmPrefix = ALARM_PREFIXES.any { unaccented.contains(it) }
+            if (hasAlarmPrefix) {
+                val args = JSONObject().apply {
+                    put("hour", hour24)
+                    put("minute", parsedMinute)
+                    put("label", "Báo thức")
+                }
+                return buildNluResult("set_alarm", args, "low", "invalid", false)
+            }
             return null
         }
 
