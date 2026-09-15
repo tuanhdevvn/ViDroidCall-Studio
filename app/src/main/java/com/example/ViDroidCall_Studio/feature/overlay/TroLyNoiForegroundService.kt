@@ -15,6 +15,10 @@ import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
+import android.telephony.PhoneStateListener
+import android.telephony.TelephonyCallback
+import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
@@ -40,6 +44,12 @@ class TroLyNoiForegroundService : Service() {
     private var wakeWordManager: TroLyNoiWakeWordManager? = null
     private var screenReceiver: BroadcastReceiver? = null
 
+    private var wakeLock: PowerManager.WakeLock? = null
+    @Volatile private var isCallActive = false
+    private var telephonyManager: TelephonyManager? = null
+    private var telephonyCallback: Any? = null
+    private var phoneStateListener: PhoneStateListener? = null
+
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var isWakeWordActive = false
     @Volatile private var isBeingDestroyed = false
@@ -56,7 +66,7 @@ class TroLyNoiForegroundService : Service() {
         overlayManager = TroLyNoiOverlayManager(this).apply {
             onDismissListener = {
                 Log.i(TAG, "[ASSISTANT_CLOSE] Overlay đã đóng, kiểm tra tiếp tục Wake Word")
-                if (isWakeWordActive) {
+                if (isWakeWordActive && !isCallActive && TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService)) {
                     wakeWordManager?.resume(retryCount = 3)
                 }
             }
@@ -65,12 +75,17 @@ class TroLyNoiForegroundService : Service() {
 
         wakeWordManager = TroLyNoiWakeWordManager(
             context = this,
-            canListen = { overlayManager?.isShowing != true },
+            canListen = {
+                overlayManager?.isShowing != true &&
+                !isCallActive &&
+                TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this)
+            },
             onWakeWordDetected = { extractedCommand ->
                 overlayManager?.showAssistant(extractedCommand)
             }
         )
 
+        registerTelephonyListener()
         registerScreenReceiver()
 
         // Bật master = bật Wake Word; Service lắng nghe trực tiếp enabledFlow (1 công tắc duy nhất)
@@ -80,6 +95,9 @@ class TroLyNoiForegroundService : Service() {
                 isWakeWordActive = enabled
                 Log.d(TAG, "Master switch → Wake Word: $enabled")
                 if (enabled) {
+                    if (TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService)) {
+                        acquireWakeLock()
+                    }
                     wakeWordManager?.start()
                     // Warm-up so le (Staggered Warm-up): Đợi 2s để WakeWord nạp xong và giải tỏa CPU,
                     // sau đó nạp trước mô hình STT ngầm để khi người dùng nói "Trợ lý ơi" là mic bật tức thì (<100ms)
@@ -91,6 +109,7 @@ class TroLyNoiForegroundService : Service() {
                         }
                     }
                 } else {
+                    releaseWakeLock()
                     wakeWordManager?.stop()
                 }
                 updateNotification()
@@ -103,11 +122,13 @@ class TroLyNoiForegroundService : Service() {
                 delay(8_000)
                 if (!isBeingDestroyed &&
                     isWakeWordActive &&
+                    !isCallActive &&
                     overlayManager?.isShowing != true &&
                     TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService) &&
                     wakeWordManager?.isLoopActive != true
                 ) {
-                    Log.i(TAG, "[WATCHDOG_HEAL] Phát hiện Wake Word listener ngưng hoạt động bất thường, đang tự khôi phục...")
+                    Log.i(TAG, "[WATCHDOG_HEAL] Phát hiện Wake Word listener ngưng hoạt động bất thường khi mở máy, đang tự khôi phục...")
+                    acquireWakeLock()
                     wakeWordManager?.resume(retryCount = 2)
                 }
             }
@@ -203,6 +224,8 @@ class TroLyNoiForegroundService : Service() {
         Log.i(TAG, "[SERVICE_RESTART] TroLyNoiForegroundService onDestroy")
         serviceScope.cancel()
         unregisterScreenReceiverSafely()
+        unregisterTelephonyListenerSafely()
+        releaseWakeLock()
 
         wakeWordManager?.release()
         wakeWordManager = null
@@ -223,23 +246,26 @@ class TroLyNoiForegroundService : Service() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
                     Intent.ACTION_SCREEN_OFF -> {
-                        Log.i(TAG, "[SCREEN_OFF] Màn hình tắt, tạm dừng Wake Word")
+                        Log.i(TAG, "[SCREEN_OFF] Màn hình tắt -> Dừng hoàn toàn mic và giải phóng tài nguyên")
                         wakeWordManager?.pause()
+                        releaseWakeLock()
                     }
                     Intent.ACTION_SCREEN_ON -> {
                         val isUnlocked = TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(this@TroLyNoiForegroundService)
                         if (isUnlocked) {
-                            Log.i(TAG, "[SCREEN_ON] Màn hình sáng và đã mở khóa")
-                            if (isWakeWordActive) {
+                            Log.i(TAG, "[SCREEN_ON] Màn hình sáng và đã mở máy")
+                            if (isWakeWordActive && !isCallActive && overlayManager?.isShowing != true) {
+                                acquireWakeLock()
                                 wakeWordManager?.resume(retryCount = 2)
                             }
                         } else {
-                            Log.i(TAG, "[DEVICE_LOCKED] Màn hình sáng nhưng thiết bị đang khóa")
+                            Log.i(TAG, "[DEVICE_LOCKED] Màn hình sáng nhưng thiết bị đang khóa, chưa bật mic")
                         }
                     }
                     Intent.ACTION_USER_PRESENT -> {
-                        Log.i(TAG, "[DEVICE_UNLOCKED] Người dùng đã mở khóa thiết bị")
-                        if (isWakeWordActive) {
+                        Log.i(TAG, "[DEVICE_UNLOCKED] Người dùng đã mở máy thành công -> Bật mic lắng nghe 'Trợ lý ơi'")
+                        if (isWakeWordActive && !isCallActive && overlayManager?.isShowing != true) {
+                            acquireWakeLock()
                             wakeWordManager?.resume(retryCount = 3)
                         }
                     }
@@ -258,6 +284,111 @@ class TroLyNoiForegroundService : Service() {
             }
             screenReceiver = null
         }
+    }
+
+    private fun acquireWakeLock() {
+        if (wakeLock == null) {
+            try {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+                wakeLock = powerManager?.newWakeLock(
+                    PowerManager.PARTIAL_WAKE_LOCK,
+                    "ViDroidCall:WakeWord247WakeLock"
+                )?.apply {
+                    setReferenceCounted(false)
+                    acquire()
+                    Log.i(TAG, "[WAKE_LOCK] Đã kích hoạt PARTIAL_WAKE_LOCK để mic lắng nghe 24/7 trong nền")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Lỗi khi acquire PARTIAL_WAKE_LOCK: ${e.message}", e)
+            }
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    Log.i(TAG, "[WAKE_LOCK] Đã giải phóng PARTIAL_WAKE_LOCK")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Lỗi khi release PARTIAL_WAKE_LOCK: ${e.message}")
+        }
+        wakeLock = null
+    }
+
+    private fun registerTelephonyListener() {
+        try {
+            telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            if (telephonyManager == null) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val callback = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+                    override fun onCallStateChanged(state: Int) {
+                        handleCallStateChanged(state)
+                    }
+                }
+                telephonyManager?.registerTelephonyCallback(mainExecutor, callback)
+                telephonyCallback = callback
+                Log.d(TAG, "Đã đăng ký TelephonyCallback (Android 12+)")
+            } else {
+                @Suppress("DEPRECATION")
+                val listener = object : PhoneStateListener() {
+                    @Deprecated("Deprecated in Java")
+                    override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                        handleCallStateChanged(state)
+                    }
+                }
+                @Suppress("DEPRECATION")
+                telephonyManager?.listen(listener, PhoneStateListener.LISTEN_CALL_STATE)
+                phoneStateListener = listener
+                Log.d(TAG, "Đã đăng ký PhoneStateListener (Android <12)")
+            }
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Thiếu quyền READ_PHONE_STATE để theo dõi cuộc gọi: ${e.message}")
+        } catch (e: Exception) {
+            Log.w(TAG, "Lỗi khi đăng ký theo dõi trạng thái cuộc gọi: ${e.message}")
+        }
+    }
+
+    private fun handleCallStateChanged(state: Int) {
+        when (state) {
+            TelephonyManager.CALL_STATE_RINGING,
+            TelephonyManager.CALL_STATE_OFFHOOK -> {
+                Log.i(TAG, "[TELEPHONY] Phát hiện cuộc gọi đang diễn ra (state=$state). Tạm dừng WakeWord & Overlay.")
+                isCallActive = true
+                overlayManager?.dismiss()
+                wakeWordManager?.pause()
+            }
+            TelephonyManager.CALL_STATE_IDLE -> {
+                Log.i(TAG, "[TELEPHONY] Cuộc gọi kết thúc. Sẵn sàng khôi phục WakeWord.")
+                val wasActive = isCallActive
+                isCallActive = false
+                if (wasActive && isWakeWordActive && overlayManager?.isShowing != true) {
+                    wakeWordManager?.resume(retryCount = 3)
+                }
+            }
+        }
+    }
+
+    private fun unregisterTelephonyListenerSafely() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (telephonyCallback as? TelephonyCallback)?.let {
+                    telephonyManager?.unregisterTelephonyCallback(it)
+                }
+            } else {
+                phoneStateListener?.let {
+                    @Suppress("DEPRECATION")
+                    telephonyManager?.listen(it, PhoneStateListener.LISTEN_NONE)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Lỗi unregister telephony: ${e.message}")
+        }
+        telephonyCallback = null
+        phoneStateListener = null
     }
 
     private fun createChannel() {
