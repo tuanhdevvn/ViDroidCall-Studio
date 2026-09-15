@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -153,6 +154,19 @@ fun AssistantScreen(
                 isTtsSpeaking = isTtsSpeaking,
                 onToggleListening = onToggleListening,
                 onCancelListening = onCancelListening
+            )
+        }
+
+        AnimatedVisibility(
+            visible = isNluProcessing || nluResult != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            NluJsonResultCard(
+                nluResult = nluResult,
+                isProcessing = isNluProcessing,
+                onSaveFeedback = onSaveFeedback,
+                modifier = Modifier.padding(top = 12.dp)
             )
         }
 
@@ -864,13 +878,16 @@ private fun AnimatedWaveformVisualizer() {
 private fun NluJsonResultCard(
     nluResult: NluResult?,
     isProcessing: Boolean,
-    onSaveFeedback: () -> Unit = {}
+    onSaveFeedback: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    var justSaved by remember(nluResult?.executionId) { mutableStateOf(false) }
+    val canSaveSample = nluResult != null && !nluResult.isFastPath && !isProcessing
 
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .shadow(
                 elevation = 8.dp,
@@ -917,33 +934,40 @@ private fun NluJsonResultCard(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color(0xFFEF4444).copy(alpha = 0.12f),
-                            modifier = Modifier.bounceClick(scaleDown = 0.9f, onClick = onSaveFeedback)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                        if (canSaveSample) {
+                            val saveTint = if (justSaved) Color(0xFF059669) else Color(0xFFDC2626)
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = saveTint.copy(alpha = 0.12f),
+                                modifier = Modifier.bounceClick(scaleDown = 0.9f, onClick = {
+                                    if (!justSaved) {
+                                        onSaveFeedback()
+                                        justSaved = true
+                                    }
+                                })
                             ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.BookmarkAdd,
-                                    contentDescription = "Lưu mẫu sai",
-                                    tint = Color(0xFFDC2626),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Lưu mẫu sai",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFDC2626),
-                                    maxLines = 1
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (justSaved) Icons.Rounded.CheckCircle else Icons.Rounded.BookmarkAdd,
+                                        contentDescription = if (justSaved) "Đã lưu mẫu sai" else "Lưu mẫu sai",
+                                        tint = saveTint,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (justSaved) "Đã lưu" else "Lưu mẫu sai",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = saveTint,
+                                        maxLines = 1
+                                    )
+                                }
                             }
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
-
-                        Spacer(modifier = Modifier.width(8.dp))
 
                         Surface(
                             shape = RoundedCornerShape(20.dp),
@@ -1081,6 +1105,8 @@ private fun NluJsonResultCard(
                         lineHeight = 20.sp,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(max = 220.dp)
+                            .verticalScroll(rememberScrollState())
                             .padding(16.dp)
                     )
                 }
