@@ -49,8 +49,8 @@ object VietnameseNumberParser {
         val clean = normalize(rawTrim)
         if (clean.isEmpty()) return null
 
-        // 3. Xử lý từ đặc biệt FastPath (nửa tiếng/nửa giờ -> 30) và số 0
-        if (clean == "nua") return 30
+        // 3. Xử lý từ đặc biệt FastPath (nửa tiếng/nửa giờ/rưỡi -> 30) và số 0
+        if (clean == "nua" || clean == "ruoi") return 30
         if (clean == "khong") return 0
 
         // 4. Kiểm tra số đơn độc lập (1..9)
@@ -58,12 +58,13 @@ object VietnameseNumberParser {
 
         val words = clean.split("\\s+".toRegex())
 
-        // 5. Nếu có từ "tram", phân tích theo ngữ pháp hàng trăm
-        if (words.contains("tram")) {
-            return parseHundreds(words)
+        // 5. Nếu có từ "tram" hoặc chữ số tròn trăm (100, 200, ...), phân tích theo hàng trăm
+        if (words.contains("tram") || (words[0].toIntOrNull() != null && words[0].toInt() in 100..900 && words[0].toInt() % 100 == 0)) {
+            val hundredsResult = parseHundreds(words)
+            if (hundredsResult != null) return hundredsResult
         }
 
-        // 6. Ngược lại, phân tích theo ngữ pháp hàng chục (10..99)
+        // 6. Ngược lại, phân tích theo ngữ pháp hàng chục (10..99) hoặc số lai
         return parseTens(words)
     }
 
@@ -71,18 +72,29 @@ object VietnameseNumberParser {
         if (words.isEmpty()) return null
 
         if (words.size == 1) {
+            val d = words[0].toIntOrNull()
+            if (d != null && d in 0..999) return d
             return if (words[0] == "muoi") 10 else null
         }
 
         if (words.size == 2) {
+            // Trường hợp hàng chục dạng số kết hợp đơn vị: "90 chín", "20 mốt", "50 lăm", "90 9"
+            val tensInt = words[0].toIntOrNull()
+            if (tensInt != null && tensInt in listOf(10, 20, 30, 40, 50, 60, 70, 80, 90)) {
+                val unit = SINGLE_UNITS[words[1]] ?: words[1].toIntOrNull()
+                if (unit != null && unit in 1..9) {
+                    return tensInt + unit
+                }
+            }
+
             // Dạng "mười một" .. "mười chín" (11..19)
             if (words[0] == "muoi") {
-                val unit = SINGLE_UNITS[words[1]]
+                val unit = SINGLE_UNITS[words[1]] ?: words[1].toIntOrNull()
                 return if (unit != null && unit in 1..9) 10 + unit else null
             }
             // Dạng "hai mươi" .. "chín mươi" (20, 30, 40, ..., 90)
             if (words[1] == "muoi") {
-                val mult = TENS_MULTIPLIERS[words[0]]
+                val mult = TENS_MULTIPLIERS[words[0]] ?: words[0].toIntOrNull()
                 return if (mult != null && mult in 2..9) mult * 10 else null
             }
             return null
@@ -91,8 +103,8 @@ object VietnameseNumberParser {
         if (words.size == 3) {
             // Dạng "hai mươi mốt" .. "chín mươi chín" (21..99 trừ 20, 30...)
             if (words[1] == "muoi") {
-                val mult = TENS_MULTIPLIERS[words[0]]
-                val unit = SINGLE_UNITS[words[2]]
+                val mult = TENS_MULTIPLIERS[words[0]] ?: words[0].toIntOrNull()
+                val unit = SINGLE_UNITS[words[2]] ?: words[2].toIntOrNull()
                 return if (mult != null && mult in 2..9 && unit != null && unit in 1..9) {
                     mult * 10 + unit
                 } else null
@@ -105,25 +117,41 @@ object VietnameseNumberParser {
 
     private fun parseHundreds(words: List<String>): Int? {
         val tramIndex = words.indexOf("tram")
-        // Từ "tram" phải nằm ở vị trí thứ 2 (chỉ số 1), ví dụ "một trăm"
-        if (tramIndex != 1) return null
+        if (tramIndex == 1) {
+            val mult = HUNDREDS_MULTIPLIERS[words[0]] ?: words[0].toIntOrNull() ?: return null
+            if (mult !in 1..9) return null
+            val hundredsVal = mult * 100
 
-        val mult = HUNDREDS_MULTIPLIERS[words[0]] ?: return null
-        val hundredsVal = mult * 100
+            val remainder = words.subList(2, words.size)
+            if (remainder.isEmpty()) return hundredsVal
 
-        val remainder = words.subList(2, words.size)
-        if (remainder.isEmpty()) return hundredsVal
+            // Trường hợp "một trăm linh năm" hoặc "một trăm lẻ năm"
+            if (remainder[0] == "linh" || remainder[0] == "le") {
+                if (remainder.size != 2) return null
+                val unit = SINGLE_UNITS[remainder[1]] ?: remainder[1].toIntOrNull()
+                return if (unit != null && unit in 1..9) hundredsVal + unit else null
+            }
 
-        // Trường hợp "một trăm linh năm" hoặc "một trăm lẻ năm"
-        if (remainder[0] == "linh" || remainder[0] == "le") {
-            if (remainder.size != 2) return null
-            val unit = SINGLE_UNITS[remainder[1]]
-            return if (unit != null && unit in 1..9) hundredsVal + unit else null
+            // Trường hợp phần dư là hàng chục hợp lệ ("hai mươi lăm", "mười lăm", "mười", "90 chín", "25")
+            val tensVal = parseTens(remainder)
+            return if (tensVal != null) hundredsVal + tensVal else null
         }
 
-        // Trường hợp phần dư là hàng chục hợp lệ ("hai mươi lăm", "mười lăm", "mười")
-        val tensVal = parseTens(remainder)
-        return if (tensVal != null) hundredsVal + tensVal else null
+        // Trường hợp words[0] là chữ số tròn trăm: "100", "200", ..., "900"
+        val firstInt = words[0].toIntOrNull()
+        if (firstInt != null && firstInt in 100..900 && firstInt % 100 == 0) {
+            val remainder = words.subList(1, words.size)
+            if (remainder.isEmpty()) return firstInt
+            if (remainder[0] == "linh" || remainder[0] == "le") {
+                if (remainder.size != 2) return null
+                val unit = SINGLE_UNITS[remainder[1]] ?: remainder[1].toIntOrNull()
+                return if (unit != null && unit in 1..9) firstInt + unit else null
+            }
+            val tensVal = parseTens(remainder)
+            return if (tensVal != null) firstInt + tensVal else null
+        }
+
+        return null
     }
 
     // Các chữ số đơn lẻ độc lập

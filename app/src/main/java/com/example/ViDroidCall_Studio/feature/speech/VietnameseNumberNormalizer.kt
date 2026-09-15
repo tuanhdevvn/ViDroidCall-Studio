@@ -247,16 +247,91 @@ object VietnameseNumberNormalizer {
 
     private fun normalizeGeneralNumbers(text: String): String {
         var res = text
-        val compoundMap = listOf(
-            "mười lăm" to "15", "muoi lam" to "15",
-            "hai mươi lăm" to "25", "hai muoi lam" to "25", "hai lăm" to "25", "hăm lăm" to "25",
-            "ba mươi lăm" to "35", "ba muoi lam" to "35", "ba lăm" to "35",
-            "bốn mươi lăm" to "45", "bon muoi lam" to "45", "bốn lăm" to "45",
-            "năm mươi lăm" to "55", "nam muoi lam" to "55", "năm lăm" to "55",
-            "sáu mươi lăm" to "65", "sau muoi lam" to "65", "sáu lăm" to "65",
-            "bảy mươi lăm" to "75", "bay muoi lam" to "75", "bảy lăm" to "75",
-            "tám mươi lăm" to "85", "tam muoi lam" to "85", "tám lăm" to "85",
-            "chín mươi lăm" to "95", "chin muoi lam" to "95", "chín lăm" to "95",
+
+        // 1. Chuẩn hóa các dạng số lai (hybrid) do STT tạo ra: "90 chín" -> "99", "20 mốt" -> "21", "50 lăm" -> "55"
+        val hybridTensPattern = Regex("(?i)(?<!\\p{L})(10|20|30|40|50|60|70|80|90)\\s+(mốt|mot|một|hai|ba|bốn|bon|tư|tu|năm|nam|lăm|lam|sáu|sau|bảy|bay|bẩy|tám|tam|chín|chin)(?!\\p{L})")
+        res = hybridTensPattern.replace(res) { matchResult ->
+            val tens = matchResult.groupValues[1].toInt()
+            val unitStr = stripAccents(matchResult.groupValues[2].lowercase())
+            val unit = DIGIT_WORDS_MAP[unitStr]?.toIntOrNull() ?: 0
+            (tens + unit).toString()
+        }
+
+        // 2. Chuẩn hóa toàn bộ số đếm tiếng Việt dạng đầy đủ từ 21..99 và 11..19
+        // Cụm từ dài hơn (3 từ: "chín mươi chín") PHẢI được thay thế trước cụm từ ngắn (2 từ: "chín mươi")
+        val fullComposites = mutableListOf<Pair<String, String>>()
+        val tensMap = listOf(
+            9 to listOf("chín mươi", "chin muoi"),
+            8 to listOf("tám mươi", "tam muoi"),
+            7 to listOf("bảy mươi", "bay muoi", "bẩy mươi"),
+            6 to listOf("sáu mươi", "sau muoi"),
+            5 to listOf("năm mươi", "nam muoi"),
+            4 to listOf("bốn mươi", "bon muoi"),
+            3 to listOf("ba mươi", "ba muoi"),
+            2 to listOf("hai mươi", "hai muoi", "hăm")
+        )
+        val unitsList = listOf(
+            9 to listOf("chín", "chin"),
+            8 to listOf("tám", "tam"),
+            7 to listOf("bảy", "bay", "bẩy"),
+            6 to listOf("sáu", "sau"),
+            5 to listOf("lăm", "lam", "năm", "nam"),
+            4 to listOf("bốn", "bon", "tư", "tu"),
+            3 to listOf("ba"),
+            2 to listOf("hai"),
+            1 to listOf("mốt", "mot", "một")
+        )
+
+        for ((tVal, tPhrases) in tensMap) {
+            for ((uVal, uPhrases) in unitsList) {
+                val num = (tVal * 10 + uVal).toString()
+                for (tp in tPhrases) {
+                    for (up in uPhrases) {
+                        fullComposites.add("$tp $up" to num)
+                    }
+                }
+            }
+        }
+
+        // Dạng khẩu ngữ ngắn: "hai lăm" -> 25, "ba lăm" -> 35, ...
+        val colloquialLam = listOf(
+            "hai lăm" to "25", "hai lam" to "25", "hăm lăm" to "25",
+            "ba lăm" to "35", "ba lam" to "35",
+            "bốn lăm" to "45", "bon lam" to "45",
+            "năm lăm" to "55", "nam lam" to "55",
+            "sáu lăm" to "65", "sau lam" to "65",
+            "bảy lăm" to "75", "bay lam" to "75",
+            "tám lăm" to "85", "tam lam" to "85",
+            "chín lăm" to "95", "chin lam" to "95"
+        )
+        fullComposites.addAll(colloquialLam)
+
+        // 11..19: "mười một" .. "mười chín"
+        val teensUnits = listOf(
+            9 to listOf("chín", "chin"),
+            8 to listOf("tám", "tam"),
+            7 to listOf("bảy", "bay", "bẩy"),
+            6 to listOf("sáu", "sau"),
+            5 to listOf("lăm", "lam", "năm", "nam"),
+            4 to listOf("bốn", "bon", "tư", "tu"),
+            3 to listOf("ba"),
+            2 to listOf("hai"),
+            1 to listOf("một", "mot")
+        )
+        for ((uVal, uPhrases) in teensUnits) {
+            val num = (10 + uVal).toString()
+            for (up in uPhrases) {
+                fullComposites.add("mười $up" to num)
+                fullComposites.add("muoi $up" to num)
+            }
+        }
+
+        for ((words, num) in fullComposites) {
+            res = res.replace(Regex("(?i)(?<!\\p{L})$words(?!\\p{L})"), num)
+        }
+
+        // 3. Thay thế các số tròn chục (10, 20, 30, ..., 90)
+        val roundTens = listOf(
             "hai mươi" to "20", "hai muoi" to "20",
             "ba mươi" to "30", "ba muoi" to "30",
             "bốn mươi" to "40", "bon muoi" to "40",
@@ -266,7 +341,7 @@ object VietnameseNumberNormalizer {
             "tám mươi" to "80", "tam muoi" to "80",
             "chín mươi" to "90", "chin muoi" to "90"
         )
-        for ((words, num) in compoundMap) {
+        for ((words, num) in roundTens) {
             res = res.replace(Regex("(?i)(?<!\\p{L})$words(?!\\p{L})"), num)
         }
         return res
