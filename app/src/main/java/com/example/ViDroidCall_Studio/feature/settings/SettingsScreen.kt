@@ -1026,9 +1026,13 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        // Tối đa ~5 mẫu thu gọn; mẫu thêm cuộn ngay trong thẻ.
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = FeedbackListViewportHeight)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(FeedbackListItemSpacing)
                         ) {
                             feedbackEntries.forEach { entry ->
                                 FeedbackEntryRow(
@@ -1194,6 +1198,12 @@ fun SettingsScreen(
         }
     }
 }
+
+/** Chiều cao vùng list ≈ 5 hàng mẫu thu gọn; phần còn lại cuộn trong thẻ. */
+private val FeedbackListItemSpacing = 8.dp
+private val FeedbackListCollapsedRowHeight = 72.dp
+private val FeedbackListViewportHeight =
+    FeedbackListCollapsedRowHeight * 5 + FeedbackListItemSpacing * 4
 
 @Composable
 private fun FeedbackEntryRow(
