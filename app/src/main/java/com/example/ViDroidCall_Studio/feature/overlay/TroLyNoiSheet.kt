@@ -58,6 +58,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -455,7 +457,11 @@ private fun DynamicWaveform() {
             Box(
                 modifier = Modifier
                     .width(3.5.dp)
-                    .height(height.dp)
+                    .height(40.dp)
+                    .graphicsLayer {
+                        scaleY = (height / 40f).coerceIn(0.18f, 1f)
+                        transformOrigin = TransformOrigin(0.5f, 0.5f)
+                    }
                     .clip(RoundedCornerShape(9999.dp))
                     .background(color)
             )

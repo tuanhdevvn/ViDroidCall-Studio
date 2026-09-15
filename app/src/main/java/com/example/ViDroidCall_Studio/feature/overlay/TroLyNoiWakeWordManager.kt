@@ -70,7 +70,7 @@ class TroLyNoiWakeWordManager(
         isPaused.set(false)
 
         if (!TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(context) || !canListen()) {
-            Log.i(TAG, "[DEVICE_LOCKED] Thiết bị đang tắt màn hình, bị khóa hoặc Overlay đang mở, tạm hoãn lắng nghe Wake Word.")
+            Log.i(TAG, "[DEVICE_LOCKED] Thiết bị đang tắt màn hình, bị khóa hoặc không đủ điều kiện nghe, tạm hoãn lắng nghe Wake Word.")
             isPaused.set(true)
             return
         }
@@ -101,7 +101,7 @@ class TroLyNoiWakeWordManager(
         }
 
         if (!TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(context) || !canListen()) {
-            Log.i(TAG, "[DEVICE_LOCKED] Màn hình đang tắt, khóa hoặc Overlay đang mở, hoãn resume Wake Word (retryCount=$retryCount).")
+            Log.i(TAG, "[DEVICE_LOCKED] Màn hình đang tắt hoặc máy đang khóa, hoãn resume Wake Word (retryCount=$retryCount).")
             if (retryCount > 0) {
                 mainHandler.postDelayed({
                     if (isRunning.get() && !isLoopRunning.get()) {
@@ -300,7 +300,7 @@ class TroLyNoiWakeWordManager(
             isLoopRunning.set(false)
             stopAudioRecord()
             latch.countDown()
-            // Tự phục hồi: Nếu trạng thái vẫn là đang chạy, không chủ động pause, và đủ điều kiện nghe nhưng vòng lặp bị ngắt
+            // Tự phục hồi: Nếu trạng thái vẫn là đang chạy, không chủ động pause, và máy đang mở màn hình
             if (isRunning.get() && !isPaused.get() && canListen() && TroLyNoiAssistantHelper.isScreenInteractiveAndUnlocked(context)) {
                 Log.i(TAG, "[WAKE_WORD_RECOVERY] Tự động kích hoạt lại Wake Word listener sau 1s...")
                 mainHandler.postDelayed({
