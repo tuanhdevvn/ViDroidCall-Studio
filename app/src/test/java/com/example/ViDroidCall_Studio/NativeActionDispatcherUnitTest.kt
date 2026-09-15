@@ -175,6 +175,35 @@ class NativeActionDispatcherUnitTest {
     }
 
     @Test
+    fun testSetAlarm_invalidMinute99_returnsInformational() {
+        val json = """{"status":"success","intent":"set_alarm","arguments":{"hour":5,"minute":99}}"""
+        val action = NativeAction.fromNluResult(NluJsonParser.parse(json))
+        assertTrue("Phải là Informational, không phải SetAlarm", action is NativeAction.Informational)
+    }
+
+    @Test
+    fun testSetAlarm_invalidMinute60_returnsInformational() {
+        val json = """{"status":"success","intent":"set_alarm","arguments":{"hour":5,"minute":60}}"""
+        val action = NativeAction.fromNluResult(NluJsonParser.parse(json))
+        assertTrue(action is NativeAction.Informational)
+    }
+
+    @Test
+    fun testSetAlarm_invalidHour25_returnsInformational() {
+        val json = """{"status":"success","intent":"set_alarm","arguments":{"hour":25,"minute":0}}"""
+        val action = NativeAction.fromNluResult(NluJsonParser.parse(json))
+        assertTrue(action is NativeAction.Informational)
+    }
+
+    @Test
+    fun testSetAlarm_validMinute59_returnsSetAlarm() {
+        val json = """{"status":"success","intent":"set_alarm","arguments":{"hour":5,"minute":59}}"""
+        val action = NativeAction.fromNluResult(NluJsonParser.parse(json))
+        assertTrue(action is NativeAction.SetAlarm)
+        assertEquals(59, (action as NativeAction.SetAlarm).minute)
+    }
+
+    @Test
     fun testSetTimerActionParsing() {
         val json = """
             {
