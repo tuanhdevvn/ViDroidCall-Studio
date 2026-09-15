@@ -884,6 +884,7 @@ fun SettingsScreen(
 
         // 5. Thẻ mẫu sai NLU (R&D: STT + JSON GGUF)
         item {
+            val accent = Color(0xFFE11D48)
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -895,145 +896,115 @@ fun SettingsScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp)
+                        .padding(20.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(accent.copy(alpha = 0.10f), CircleShape),
+                            contentAlignment = Alignment.Center
                         ) {
+                            Icon(
+                                imageVector = Icons.Rounded.BookmarkAdd,
+                                contentDescription = null,
+                                tint = accent,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Mẫu sai NLU",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Câu nói + JSON GGUF để export",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = accent.copy(alpha = 0.10f)
+                        ) {
+                            Text(
+                                text = "$feedbackCount",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = accent,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                        if (feedbackEntries.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
-                                    .background(Color(0xFFDC2626).copy(alpha = 0.12f), CircleShape),
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+                                    .bounceClick(scaleDown = 0.88f, onClick = { shareFeedbackLog() }),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Rounded.BookmarkAdd,
-                                    contentDescription = null,
-                                    tint = Color(0xFFDC2626),
-                                    modifier = Modifier.size(20.dp)
+                                    imageVector = Icons.Rounded.Share,
+                                    contentDescription = "Chia sẻ file mẫu sai",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Mẫu sai NLU",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Câu STT + JSON GGUF đã lưu để export",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(accent.copy(alpha = 0.10f))
+                                    .bounceClick(scaleDown = 0.88f, onClick = { showClearFeedbackDialog = true }),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.DeleteSweep,
+                                    contentDescription = "Xóa toàn bộ mẫu sai",
+                                    tint = accent,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
-                        }
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFFDC2626).copy(alpha = 0.12f)
-                        ) {
-                            Text(
-                                text = "$feedbackCount mẫu",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFDC2626),
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(14.dp))
+
                     if (feedbackEntries.isEmpty()) {
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Text(
-                            text = "Chưa có mẫu sai. Sau câu On-Device AI (GGUF), bấm “Lưu mẫu sai” trên thẻ Kết quả phân tích.",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 20.sp
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .bounceClick(scaleDown = 0.94f, onClick = { shareFeedbackLog() })
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Share,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Share file",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFDC2626).copy(alpha = 0.12f),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .bounceClick(scaleDown = 0.94f, onClick = { showClearFeedbackDialog = true })
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.DeleteSweep,
-                                        contentDescription = null,
-                                        tint = Color(0xFFDC2626),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Xóa hết",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFDC2626),
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Một khung chứa toàn bộ câu mẫu sai; tối đa ~5 hàng, còn lại cuộn trong khung.
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Chưa có mẫu. Sau câu On-Device AI, bấm “Lưu mẫu sai” trên thẻ kết quả.",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 20.sp,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp)
+                            )
+                        }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
                             border = BorderStroke(
                                 1.dp,
-                                Color(0xFFDC2626).copy(alpha = 0.18f)
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.10f)
                             ),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -1046,6 +1017,7 @@ fun SettingsScreen(
                                 feedbackEntries.forEachIndexed { index, entry ->
                                     FeedbackEntryRow(
                                         entry = entry,
+                                        accent = accent,
                                         onDelete = { pendingDeleteEntry = entry },
                                         onCopyJson = {
                                             clipboardManager.setText(AnnotatedString(entry.modelOutputJson))
@@ -1055,8 +1027,8 @@ fun SettingsScreen(
                                     if (index < feedbackEntries.lastIndex) {
                                         HorizontalDivider(
                                             thickness = 1.dp,
-                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
-                                            modifier = Modifier.padding(horizontal = 12.dp)
+                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.10f),
+                                            modifier = Modifier.padding(horizontal = 14.dp)
                                         )
                                     }
                                 }
@@ -1217,12 +1189,13 @@ fun SettingsScreen(
 }
 
 /** Chiều cao khung list ≈ 5 câu thu gọn; phần còn lại cuộn trong khung. */
-private val FeedbackListCollapsedRowHeight = 68.dp
+private val FeedbackListCollapsedRowHeight = 64.dp
 private val FeedbackListViewportHeight = FeedbackListCollapsedRowHeight * 5
 
 @Composable
 private fun FeedbackEntryRow(
     entry: NluFeedbackEntry,
+    accent: Color,
     onDelete: () -> Unit,
     onCopyJson: () -> Unit
 ) {
@@ -1233,36 +1206,35 @@ private fun FeedbackEntryRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .padding(horizontal = 14.dp, vertical = 11.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .padding(top = 4.dp)
                     .width(3.dp)
-                    .height(34.dp)
+                    .height(28.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color(0xFFDC2626).copy(alpha = 0.55f))
+                    .background(accent.copy(alpha = 0.35f))
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .bounceClick(scaleDown = 0.98f, onClick = { expanded = !expanded })
             ) {
                 Text(
-                    text = "“$utterance”",
+                    text = utterance,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = if (expanded) 4 else 2,
+                    maxLines = if (expanded) 4 else 1,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 20.sp
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = savedAtLabel,
@@ -1270,32 +1242,43 @@ private fun FeedbackEntryRow(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (expanded) "Ẩn JSON" else "Xem JSON",
+                        text = "  ·  ",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    )
+                    Text(
+                        text = if (expanded) "Ẩn JSON" else "JSON",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Icon(
                         imageVector = Icons.Rounded.ExpandMore,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                         modifier = Modifier
-                            .size(18.dp)
+                            .size(16.dp)
                             .rotate(if (expanded) 180f else 0f)
                     )
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Rounded.DeleteOutline,
-                contentDescription = "Xóa mẫu",
-                tint = Color(0xFFDC2626),
+            Box(
                 modifier = Modifier
-                    .size(22.dp)
-                    .bounceClick(scaleDown = 0.9f, onClick = onDelete)
-            )
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.08f))
+                    .bounceClick(scaleDown = 0.88f, onClick = onDelete),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = "Xóa mẫu",
+                    tint = accent,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
 
         AnimatedVisibility(
@@ -1306,20 +1289,20 @@ private fun FeedbackEntryRow(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF1E293B),
-                    border = BorderStroke(1.dp, Color(0xFF334155)),
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFF0F172A),
+                    border = BorderStroke(1.dp, Color(0xFF1E293B)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = entry.modelOutputJson,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 12.sp,
-                        color = Color(0xFF38BDF8),
+                        color = Color(0xFF7DD3FC),
                         lineHeight = 18.sp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 220.dp)
+                            .heightIn(max = 200.dp)
                             .verticalScroll(rememberScrollState())
                             .padding(12.dp)
                     )
@@ -1330,8 +1313,8 @@ private fun FeedbackEntryRow(
                     horizontalArrangement = Arrangement.End
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
                         modifier = Modifier.bounceClick(scaleDown = 0.9f, onClick = onCopyJson)
                     ) {
                         Row(
@@ -1344,9 +1327,9 @@ private fun FeedbackEntryRow(
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "Copy JSON",
+                                text = "Copy",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
