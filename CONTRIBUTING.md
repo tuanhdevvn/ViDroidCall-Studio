@@ -49,9 +49,10 @@ Chi tiết `adb push` và Fast-Path: [README.md](README.md).
 2. Đặt tên nhánh theo convention để CI chạy trên push:
    * `feature/...` — tính năng mới
    * `bugfix/...` — sửa lỗi
-3. Giữ thay đổi tập trung; bám style Kotlin / Compose hiện có.
-4. Chạy `./gradlew testDebugUnitTest` trước khi mở PR.
-5. Mô tả vấn đề, cách sửa, và cách bạn đã kiểm tra.
+3. Commit theo [docs/COMMIT.md](docs/COMMIT.md) (Conventional Commits, subject tiếng Việt không dấu).
+4. Giữ thay đổi tập trung; bám style Kotlin / Compose hiện có.
+5. Chạy `./gradlew testDebugUnitTest` trước khi mở PR.
+6. Mô tả vấn đề, cách sửa, và cách bạn đã kiểm tra.
 
 PR nhắm vào nhánh `main`. GitHub Actions sẽ biên dịch Kotlin và chạy unit test.
 
@@ -72,6 +73,7 @@ PR nhắm vào nhánh `main`. GitHub Actions sẽ biên dịch Kotlin và chạy
 | :--- | :--- |
 | [README.md](README.md) | Tổng quan, kiến trúc, cài đặt |
 | [docs/BUILD.md](docs/BUILD.md) | JDK, Gradle, GGUF |
+| [docs/COMMIT.md](docs/COMMIT.md) | Conventional Commits, nhánh, file cấm |
 | [docs/SCHEMA.md](docs/SCHEMA.md) | JSON NLU, SQLite, DataStore, điều hướng |
 | [CHANGELOG.md](CHANGELOG.md) | Lịch sử phiên bản |
 | [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) | Thư viện bên thứ ba |
