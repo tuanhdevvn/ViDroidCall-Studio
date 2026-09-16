@@ -33,8 +33,9 @@ import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.HourglassBottom
 import androidx.compose.material.icons.rounded.Map
-import androidx.compose.material.icons.rounded.Message
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -59,9 +60,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ViDroidCall_Studio.data.local.habit.HabitQuickAction
+import com.example.ViDroidCall_Studio.data.local.habit.HabitRules
+import com.example.ViDroidCall_Studio.data.local.habit.NativeActionCodec
+import com.example.ViDroidCall_Studio.domain.model.NativeAction
 import com.example.ViDroidCall_Studio.feature.history.model.CommandHistoryItem
+import com.example.ViDroidCall_Studio.ui.component.ActionConfirmationDialog
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
+import java.util.Calendar
 
 /**
  * Màn hình Lịch sử câu lệnh
@@ -70,12 +77,15 @@ import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
 @Composable
 fun HistoryScreen(
     historyItems: List<CommandHistoryItem>,
+    quickActions: List<HabitQuickAction> = emptyList(),
     onRerunCommand: (String) -> Unit = {},
+    onExecuteQuickAction: (NativeAction) -> Unit = {},
     onDeleteItem: (Long) -> Unit = {},
     onClearAll: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
+    var pendingQuickAction by remember { mutableStateOf<NativeAction?>(null) }
     val parentDensity = LocalDensity.current
 
     // Hộp thoại xác nhận xóa toàn bộ lịch sử
@@ -125,6 +135,22 @@ fun HistoryScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         }
+    }
+
+    val pending = pendingQuickAction
+    if (pending != null) {
+        ActionConfirmationDialog(
+            title = pending.getActionTitle(),
+            description = pending.getConfirmationDescription(),
+            onConfirm = {
+                val action = pendingQuickAction
+                pendingQuickAction = null
+                if (action != null) {
+                    onExecuteQuickAction(action)
+                }
+            },
+            onCancel = { pendingQuickAction = null }
+        )
     }
 
     LazyColumn(
@@ -188,10 +214,36 @@ fun HistoryScreen(
             Spacer(modifier = Modifier.height(10.dp))
         }
 
+        if (quickActions.isNotEmpty()) {
+            item {
+                QuickActionsSection(
+                    actions = quickActions,
+                    onClick = { item ->
+                        val action = NativeActionCodec.fromJson(item.actionJson) ?: return@QuickActionsSection
+                        if (action.requiresConfirmation) {
+                            pendingQuickAction = action
+                        } else {
+                            onExecuteQuickAction(action)
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Vừa nói",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(bottom = 12.dp, top = 8.dp)
+                )
+            }
+        }
+
         // 2. Danh sách câu lệnh hoặc Trạng thái trống (Empty State)
         if (historyItems.isEmpty()) {
-            item {
-                EmptyHistoryView()
+            if (quickActions.isEmpty()) {
+                item {
+                    EmptyHistoryView()
+                }
             }
         } else {
             items(historyItems, key = { it.id }) { item ->
@@ -201,6 +253,90 @@ fun HistoryScreen(
                     onDelete = { onDeleteItem(item.id) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickActionsSection(
+    actions: List<HabitQuickAction>,
+    onClick: (HabitQuickAction) -> Unit
+) {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    Text(
+        text = HabitRules.bucketTitle(HabitRules.bucketForHour(hour)),
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        actions.forEach { action ->
+            QuickActionRow(
+                action = action,
+                onClick = { onClick(action) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickActionRow(
+    action: HabitQuickAction,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(20.dp))
+            .bounceClick(scaleDown = 0.97f, onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getIntentIcon(action.intent),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = action.label,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(AppPrimary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PlayArrow,
+                    contentDescription = "Chạy ${action.label}",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }
@@ -357,6 +493,21 @@ private fun EmptyHistoryView() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+private fun getIntentIcon(intent: String): ImageVector {
+    return when (intent) {
+        "call_contact" -> Icons.Rounded.Call
+        "send_sms" -> Icons.AutoMirrored.Rounded.Message
+        "set_alarm" -> Icons.Rounded.AccessAlarm
+        "set_timer" -> Icons.Rounded.HourglassBottom
+        "open_map" -> Icons.Rounded.Map
+        "open_app" -> Icons.Rounded.Apps
+        "search_web" -> Icons.Rounded.Search
+        "search_video" -> Icons.Rounded.PlayArrow
+        "play_music" -> Icons.Rounded.MusicNote
+        else -> Icons.Rounded.CheckCircle
     }
 }
 

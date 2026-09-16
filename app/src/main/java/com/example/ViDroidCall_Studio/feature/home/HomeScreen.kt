@@ -35,6 +35,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.ViDroidCall_Studio.MainActivity
 import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogRepository
+import com.example.ViDroidCall_Studio.data.local.habit.HabitActionsRepository
 import com.example.ViDroidCall_Studio.data.local.history.CommandHistoryRepository
 import com.example.ViDroidCall_Studio.data.nlu.NluActionDispatcher
 import com.example.ViDroidCall_Studio.data.nlu.NluEngineManager
@@ -87,6 +88,8 @@ fun HomeScreen(
     // Quản lý Lịch sử câu lệnh ngoại tuyến (SQLite Repository)
     val historyRepository = remember { CommandHistoryRepository(context.applicationContext) }
     val historyItems by historyRepository.historyFlow.collectAsState(initial = emptyList())
+    val habitRepository = remember { HabitActionsRepository(context.applicationContext) }
+    val quickActions by habitRepository.quickActionsFlow.collectAsState(initial = emptyList())
 
     // Quản lý log mẫu NLU sai (JSONL) để train lại model
     val feedbackRepository = remember { NluFeedbackLogRepository(context.applicationContext) }
@@ -259,6 +262,7 @@ fun HomeScreen(
                             delay(800)
                             pendingPermissionAction = action
                             actionDispatcher.executeNativeAction(action)
+                            habitRepository.record(action)
                         }
                     }
                 } else {
@@ -271,6 +275,10 @@ fun HomeScreen(
         }
     }
 
+    val rememberHabit: (NativeAction) -> Unit = { action ->
+        scope.launch { habitRepository.record(action) }
+    }
+
     val handleConfirmAction = {
         val action = pendingAction
         showConfirmationDialog = false
@@ -278,6 +286,7 @@ fun HomeScreen(
         if (action != null) {
             pendingPermissionAction = action
             actionDispatcher.executeNativeAction(action)
+            rememberHabit(action)
         }
     }
 
@@ -436,9 +445,19 @@ fun HomeScreen(
 
                 NavTab.HISTORY -> HistoryScreen(
                     historyItems = historyItems,
+                    quickActions = quickActions,
                     onRerunCommand = { query ->
                         executeCommand(query)
                         selectedTab = NavTab.ASSISTANT
+                    },
+                    onExecuteQuickAction = { action ->
+                        pendingPermissionAction = action
+                        val speech = action.getSpeechFeedbackText()
+                        if (speech.isNotBlank()) {
+                            textToSpeech.speak(speech)
+                        }
+                        actionDispatcher.executeNativeAction(action)
+                        rememberHabit(action)
                     },
                     onDeleteItem = { id ->
                         scope.launch { historyRepository.deleteItem(id) }
