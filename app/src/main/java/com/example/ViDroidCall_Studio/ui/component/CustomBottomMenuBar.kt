@@ -4,16 +4,11 @@
 package com.example.ViDroidCall_Studio.ui.component
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -47,8 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -218,7 +211,6 @@ fun CustomBottomMenuBar(
     selectedTab: NavTab,
     onTabSelected: (NavTab) -> Unit,
     onMicClick: () -> Unit,
-    isListening: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val surfaceColor = MaterialTheme.colorScheme.surface
@@ -271,7 +263,6 @@ fun CustomBottomMenuBar(
         // NÚT PHẦN TRÒN Ở GIỮA (HOME / MICROPHONE FAB NỔI BẬT)
         CenterMicButton(
             isTabSelected = selectedTab == NavTab.ASSISTANT,
-            isListening = isListening && selectedTab == NavTab.ASSISTANT,
             onMicClick = onMicClick,
             modifier = Modifier.offset(y = (-26).dp)
         )
@@ -351,13 +342,11 @@ private fun NavItem(
 }
 
 /**
- * Nút phần tròn Micro ở giữa thanh Bottom Navigation Bar
- * Có hiệu ứng phát sáng, nhịp thở (pulse animation) khi đang lắng nghe và hiệu ứng Chạm (bounceClick scale)
+ * Nút logo app ở giữa thanh Bottom Navigation Bar (tĩnh, không sóng lắng nghe).
  */
 @Composable
 private fun CenterMicButton(
     isTabSelected: Boolean,
-    isListening: Boolean,
     onMicClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -376,47 +365,10 @@ private fun CenterMicButton(
         label = "micElevation"
     )
 
-    val infiniteTransition = rememberInfiniteTransition(label = "MicPulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
-
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.25f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1400),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
-
     Box(
         modifier = modifier.size(76.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Vòng hào quang xung quanh CHỈ khi đang lắng nghe (KHÔNG vẽ đĩa trắng khi nghỉ)
-        if (isListening) {
-            Canvas(modifier = Modifier.size(96.dp)) {
-                drawCircle(
-                    color = AppPrimary.copy(alpha = pulseAlpha),
-                    radius = size.minDimension / 2 * pulseScale
-                )
-                drawCircle(
-                    color = AppPrimary.copy(alpha = 0.3f),
-                    radius = size.minDimension / 2 * 1.15f,
-                    style = Stroke(width = 2.5f)
-                )
-            }
-        }
-
-        // Khối hình tròn chính màu 0xFF0866FF
         Box(
             modifier = Modifier
                 .size(76.dp)

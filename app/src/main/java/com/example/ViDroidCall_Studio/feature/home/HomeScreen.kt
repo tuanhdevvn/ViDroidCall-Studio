@@ -412,7 +412,6 @@ fun HomeScreen(
                 selectedTab = selectedTab,
                 onTabSelected = { tab -> selectedTab = tab },
                 onMicClick = handleCenterFabClick,
-                isListening = speechToText.isListening,
                 modifier = Modifier.navigationBarsPadding()
             )
         }
