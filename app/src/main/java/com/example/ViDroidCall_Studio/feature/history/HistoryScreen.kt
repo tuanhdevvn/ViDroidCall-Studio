@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.rounded.AccessAlarm
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteOutline
@@ -264,19 +265,71 @@ private fun QuickActionsSection(
     onClick: (HabitQuickAction) -> Unit
 ) {
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    Text(
-        text = HabitRules.bucketTitle(HabitRules.bucketForHour(hour)),
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onBackground,
-        modifier = Modifier.padding(bottom = 12.dp)
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        actions.forEach { action ->
-            QuickActionRow(
-                action = action,
-                onClick = { onClick(action) }
-            )
+    val periodLabel = HabitRules.bucketTitle(HabitRules.bucketForHour(hour))
+        .removePrefix("Hay dùng ")
+        .replaceFirstChar { it.uppercase() }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            ),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f),
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Bolt,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Câu lệnh hay dùng",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = periodLabel,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                actions.forEach { action ->
+                    QuickActionRow(
+                        action = action,
+                        onClick = { onClick(action) }
+                    )
+                }
+            }
         }
     }
 }
@@ -289,9 +342,8 @@ private fun QuickActionRow(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(20.dp))
             .bounceClick(scaleDown = 0.97f, onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
     ) {
