@@ -44,15 +44,18 @@ import com.example.ViDroidCall_Studio.domain.model.NativeAction
 import com.example.ViDroidCall_Studio.feature.speech.SpeechToTextManager
 import com.example.ViDroidCall_Studio.feature.speech.TextToSpeechManager
 import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Quản lý vòng đời cửa sổ hệ thống SYSTEM_ALERT_WINDOW thật.
@@ -63,6 +66,8 @@ class TroLyNoiOverlayManager(
 ) {
     companion object {
         private const val TAG = "ViDroidAssistant"
+        /** Timeout tối đa chờ TTS trước khi auto-dismiss (tránh treo UI). */
+        private const val TTS_AUTO_DISMISS_TIMEOUT_MS = 15_000L
     }
 
     private val appContext = context.applicationContext
@@ -282,14 +287,16 @@ class TroLyNoiOverlayManager(
 
     /**
      * Đóng và dọn dẹp an toàn cửa sổ Overlay.
+     * @param stopTts true khi user chủ động đóng (tap/Back) — cắt TTS;
+     *                false khi auto-dismiss sau khi TTS đã xong (không cắt lại).
      */
     @Synchronized
-    fun dismiss() {
+    fun dismiss(stopTts: Boolean = true) {
         activeSessionJob?.cancel()
         activeSessionJob = null
         pendingListeningAfterSheetLayout = false
         sheetLayoutNotified = false
-        stopSpeechRecognition()
+        stopSpeechRecognition(stopTts = stopTts)
 
         if (overlayView == null) return
         try {
@@ -422,11 +429,40 @@ class TroLyNoiOverlayManager(
         }
     }
 
-    private fun stopSpeechRecognition() {
+    private fun stopSpeechRecognition(stopTts: Boolean = true) {
         speechToTextManager?.cancelListening()
         // Không gán null để giữ mô hình Sherpa-ONNX đã nạp sẵn trong bộ nhớ (Warm State)
         // Nhờ vậy lần mở popup kế tiếp micro sẽ bắt đầu ngay lập tức (<15ms) thay vì phải đợi nạp lại
-        textToSpeechManager?.stop()
+        if (stopTts) {
+            textToSpeechManager?.stop()
+        }
+    }
+
+    /**
+     * Phát TTS phản hồi hội thoại rồi mới auto-dismiss khi đọc xong (hoặc timeout 15s).
+     * User tap/Back vẫn dismiss(stopTts=true) và cắt giọng ngay.
+     */
+    private fun speakFeedbackThenAutoDismiss(speech: String) {
+        activeSessionJob?.cancel()
+        activeSessionJob = scope.launch {
+            if (speech.isBlank()) {
+                delay(800)
+            } else {
+                val finished = CompletableDeferred<Unit>()
+                textToSpeechManager?.speak(
+                    text = speech,
+                    onDone = { finished.complete(Unit) },
+                    onError = { finished.complete(Unit) }
+                ) ?: finished.complete(Unit)
+                withTimeoutOrNull(TTS_AUTO_DISMISS_TIMEOUT_MS) {
+                    finished.await()
+                }
+            }
+            ensureActive()
+            if (isShowing) {
+                dismiss(stopTts = false)
+            }
+        }
     }
 
     fun destroy() {
@@ -508,9 +544,16 @@ class TroLyNoiOverlayManager(
                 if (!nlu.isModelReady()) {
                     val state = nlu.modelState.first { it !is NluModelState.Loading && it !is NluModelState.Uninitialized }
                     if (state !is NluModelState.Ready) {
-                        textToSpeechManager?.speak("Không tìm thấy mô hình AI để xử lý câu lệnh này.")
-                        delay(2000)
-                        dismiss()
+                        overlayDataFlow.value = AssistantOverlayData(
+                            state = AssistantOverlayState.CONFIRM_ACTION,
+                            recognizedText = trimmed,
+                            actionTitle = "Trợ lý phản hồi",
+                            actionDescription = "Không tìm thấy mô hình AI để xử lý câu lệnh này.",
+                            actionIconType = OverlayActionIconType.GENERIC,
+                            onConfirm = { dismiss() },
+                            onCancel = { dismiss() }
+                        )
+                        speakFeedbackThenAutoDismiss("Không tìm thấy mô hình AI để xử lý câu lệnh này.")
                         return@launch
                     }
                 }
@@ -543,9 +586,6 @@ class TroLyNoiOverlayManager(
         when (action) {
             is NativeAction.Informational -> {
                 val speech = action.getSpeechFeedbackText()
-                if (speech.isNotBlank()) {
-                    textToSpeechManager?.speak(speech)
-                }
                 overlayDataFlow.value = AssistantOverlayData(
                     state = AssistantOverlayState.CONFIRM_ACTION,
                     recognizedText = recognizedText,
@@ -555,18 +595,11 @@ class TroLyNoiOverlayManager(
                     onConfirm = { dismiss() },
                     onCancel = { dismiss() }
                 )
-                activeSessionJob?.cancel()
-                activeSessionJob = scope.launch {
-                    delay(2500)
-                    dismiss()
-                }
+                speakFeedbackThenAutoDismiss(speech)
             }
 
             is NativeAction.Unsupported -> {
                 val speech = action.getSpeechFeedbackText()
-                if (speech.isNotBlank()) {
-                    textToSpeechManager?.speak(speech)
-                }
                 overlayDataFlow.value = AssistantOverlayData(
                     state = AssistantOverlayState.CONFIRM_ACTION,
                     recognizedText = recognizedText,
@@ -576,11 +609,7 @@ class TroLyNoiOverlayManager(
                     onConfirm = { dismiss() },
                     onCancel = { dismiss() }
                 )
-                activeSessionJob?.cancel()
-                activeSessionJob = scope.launch {
-                    delay(2500)
-                    dismiss()
-                }
+                speakFeedbackThenAutoDismiss(speech)
             }
 
             else -> {
@@ -606,11 +635,14 @@ class TroLyNoiOverlayManager(
                     actionIconType = iconType,
                     onConfirm = {
                         val speech = action.getSpeechFeedbackText()
+                        actionDispatcher?.executeNativeAction(action)
                         if (speech.isNotBlank()) {
                             textToSpeechManager?.speak(speech)
+                            // Đóng overlay nhưng để TTS đọc nốt câu phản hồi
+                            dismiss(stopTts = false)
+                        } else {
+                            dismiss()
                         }
-                        actionDispatcher?.executeNativeAction(action)
-                        dismiss()
                     },
                     onCancel = {
                         dismiss()
