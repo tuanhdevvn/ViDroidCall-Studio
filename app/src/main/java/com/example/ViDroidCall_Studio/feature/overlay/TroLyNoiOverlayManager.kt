@@ -17,13 +17,6 @@ import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.WindowManager
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -33,10 +26,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -206,34 +196,15 @@ class TroLyNoiOverlayManager(
                                 },
                             contentAlignment = Alignment.BottomCenter
                         ) {
-                            AnimatedVisibility(
-                                visible = true,
-                                enter = slideInVertically(
-                                    initialOffsetY = { fullHeight -> fullHeight },
-                                    animationSpec = spring(
-                                        dampingRatio = 0.82f,
-                                        stiffness = 380f
-                                    )
-                                ) + fadeIn(
-                                    animationSpec = tween(240)
-                                ),
-                                exit = slideOutVertically(
-                                    targetOffsetY = { fullHeight -> fullHeight },
-                                    animationSpec = tween(180)
-                                ) + fadeOut(
-                                    animationSpec = tween(150)
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .navigationBarsPadding()
+                                    .padding(bottom = 12.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .navigationBarsPadding()
-                                        .padding(bottom = 12.dp)
-                                ) {
-                                    TroLyNoiSheet(
-                                        data = currentData,
-                                        onSheetClick = {}
-                                    )
-                                }
+                                TroLyNoiSheet(
+                                    data = currentData,
+                                    onSheetClick = {}
+                                )
                             }
                         }
                     }
