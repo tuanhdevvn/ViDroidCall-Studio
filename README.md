@@ -139,19 +139,18 @@ Từ khóa wake word (chỉ): **“Trợ lý ơi”** và **“Trợ lý”** (b
 
 ## 🏗️ Kiến trúc
 
+Hai cách ra lệnh, **cùng một pipeline** STT/NLU (`Silero-VAD` → Sherpa → ITN → Fast-Path / GGUF → `NativeAction`). Overlay không phải app riêng: cùng APK, tự tạo instance STT/NLU khi hiện popup.
+
+### Trong app (nút micro Home)
+
+Chưa có file `.gguf` thì nút micro trên màn trợ lý **không ghi âm**. Search web trong app không hộp xác nhận.
+
 ```mermaid
 flowchart TD
     A["NluEngineManager quét .gguf"] --> H{"File .gguf Ready?"}
     H -- "Chưa" --> K["Home: không ghi âm"]
     H -- "Có" --> M0["Nút micro Home được phép nghe"]
-    S["Cài đặt: bật Trợ lý nổi"] --> P["Quyền mic / thông báo / overlay"]
-    P --> FS["TroLyNoiForegroundService"]
-    FS --> W["Wake word Trợ lý ơi"]
-    FS --> N["Thông báo / trợ lý hệ thống"]
-    W --> OV["TroLyNoiSheet overlay"]
-    N --> OV
     M0 --> B["Silero-VAD"]
-    OV --> B
     B -->|"Dứt câu"| C["Sherpa-ONNX ASR"]
     C --> D["ITN / SpeechTextFormatter"]
     D --> E{"Fast-Path?"}
@@ -161,10 +160,34 @@ flowchart TD
     F --> L["NluResult"]
     J --> L
     L --> UI["AssistantScreen"]
-    L --> OX["Xác nhận trên overlay"]
     L --> HIS["Lịch sử SQLite tối đa 10"]
     UI --> DIS["NluActionDispatcher"]
-    OX --> DIS
+```
+
+### Trợ lý nổi (popup)
+
+Bật trong Cài đặt. Mọi thao tác native đều hỏi xác nhận trên overlay. Chưa GGUF Ready thì Fast-Path không khớp → overlay báo không tìm thấy AI rồi đóng.
+
+```mermaid
+flowchart TD
+    S["Cài đặt: bật Trợ lý nổi"] --> P["Quyền mic / thông báo / overlay"]
+    P --> FS["TroLyNoiForegroundService"]
+    FS --> W["Wake word Trợ lý ơi"]
+    FS --> N["Thông báo: Nói câu lệnh"]
+    W --> OV["TroLyNoiSheet overlay"]
+    N --> OV
+    OV --> B["Silero-VAD"]
+    B -->|"Dứt câu"| C["Sherpa-ONNX ASR"]
+    C --> D["ITN / SpeechTextFormatter"]
+    D --> E{"Fast-Path?"}
+    E -- "Khớp" --> F["Fast-Path JSON không gọi LLM"]
+    E -- "Không khớp" --> I["Llama.cpp Qwen3 0.6B"]
+    I --> J["NluJsonParser"]
+    F --> L["NluResult"]
+    J --> L
+    L --> OX["Xác nhận trên overlay"]
+    L --> HIS["Lịch sử SQLite tối đa 10"]
+    OX --> DIS["NluActionDispatcher"]
 ```
 
 ---
