@@ -368,16 +368,9 @@ class TroLyNoiWakeWordManager(
         private const val SAMPLE_RATE = 16000
 
         private val WAKE_KEYWORDS = listOf(
+            // Chỉ 「trợ lý ơi」và 「trợ lý」(+ biến thể dấu STT trợ lí)
             "trợ lý ơi",
             "trợ lí ơi",
-            "alo trợ lý",
-            "alo trợ lí",
-            "ê trợ lý",
-            "ê trợ lí",
-            "hey trợ lý",
-            "hey trợ lí",
-            "vidroidcall ơi",
-            "vidroidcall",
             "trợ lý",
             "trợ lí"
         )

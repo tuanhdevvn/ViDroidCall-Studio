@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 ViDroidCall Studio contributors
+
 package com.example.ViDroidCall_Studio.feature.overlay
 
 import org.junit.Assert.assertEquals
@@ -14,16 +17,7 @@ class TroLyNoiWakeWordManagerTest {
             "trợ lý ơi!",
             "Trợ lí ơi...",
             "Trợ lý",
-            "trợ lí",
-            "Alo trợ lý",
-            "alo trợ lí",
-            "ê trợ lý",
-            "ê trợ lí",
-            "hey trợ lý",
-            "hey trợ lí",
-            "ViDroidCall ơi",
-            "vidroidcall",
-            "vidroidcall ơi!"
+            "trợ lí"
         )
 
         for (input in testCases) {
@@ -35,52 +29,38 @@ class TroLyNoiWakeWordManagerTest {
 
     @Test
     fun parseWakeWordCommand_withTrailingCommand_extractsCorrectCommand() {
-        // 1. "Trợ lý ơi gọi cho mẹ"
         val r1 = TroLyNoiWakeWordManager.parseWakeWordCommand("Trợ lý ơi gọi cho mẹ")
         assertNotNull(r1)
         assertEquals("trợ lý ơi", r1?.matchedKeyword)
         assertEquals("gọi cho mẹ", r1?.remainingCommand)
 
-        // 2. "Trợ lý gọi cho mẹ"
         val r2 = TroLyNoiWakeWordManager.parseWakeWordCommand("Trợ lý gọi cho mẹ")
         assertNotNull(r2)
         assertEquals("trợ lý", r2?.matchedKeyword)
         assertEquals("gọi cho mẹ", r2?.remainingCommand)
 
-        // 3. "Ê trợ lý gọi cho bố"
-        val r3 = TroLyNoiWakeWordManager.parseWakeWordCommand("Ê trợ lý gọi cho bố")
-        assertNotNull(r3)
-        assertEquals("ê trợ lý", r3?.matchedKeyword)
-        assertEquals("gọi cho bố", r3?.remainingCommand)
-
-        // 4. "Alo trợ lý mở bản đồ"
-        val r4 = TroLyNoiWakeWordManager.parseWakeWordCommand("Alo trợ lý mở bản đồ")
-        assertNotNull(r4)
-        assertEquals("alo trợ lý", r4?.matchedKeyword)
-        assertEquals("mở bản đồ", r4?.remainingCommand)
-
-        // 5. "Trợ lý ơi đặt báo thức 7 giờ"
         val r5 = TroLyNoiWakeWordManager.parseWakeWordCommand("Trợ lý ơi đặt báo thức 7 giờ")
         assertNotNull(r5)
         assertEquals("trợ lý ơi", r5?.matchedKeyword)
         assertEquals("đặt báo thức 7 giờ", r5?.remainingCommand)
 
-        // 6. "Trợ lý ơi nhắn tin cho mẹ"
         val r6 = TroLyNoiWakeWordManager.parseWakeWordCommand("Trợ lý ơi nhắn tin cho mẹ")
         assertNotNull(r6)
         assertEquals("trợ lý ơi", r6?.matchedKeyword)
         assertEquals("nhắn tin cho mẹ", r6?.remainingCommand)
 
-        // 7. "ViDroidCall ơi mở cài đặt"
-        val r7 = TroLyNoiWakeWordManager.parseWakeWordCommand("ViDroidCall ơi mở cài đặt")
-        assertNotNull(r7)
-        assertEquals("vidroidcall ơi", r7?.matchedKeyword)
-        assertEquals("mở cài đặt", r7?.remainingCommand)
-
-        // 8. Đệm từ phía trước: "Này trợ lý ơi mở youtube"
+        // Đệm từ phía trước: "Này trợ lý ơi mở youtube"
         val r8 = TroLyNoiWakeWordManager.parseWakeWordCommand("Này trợ lý ơi mở youtube")
         assertNotNull(r8)
         assertEquals("mở youtube", r8?.remainingCommand)
+    }
+
+    @Test
+    fun parseWakeWordCommand_removedVariants_noLongerMatchAlone() {
+        // Các biến thể đã loại (không chứa đúng 「trợ lý」/「trợ lý ơi」như từ khóa chính)
+        assertNull(TroLyNoiWakeWordManager.parseWakeWordCommand("vidroidcall"))
+        assertNull(TroLyNoiWakeWordManager.parseWakeWordCommand("vidroidcall ơi"))
+        assertNull(TroLyNoiWakeWordManager.parseWakeWordCommand("ViDroidCall ơi mở cài đặt"))
     }
 
     @Test
@@ -109,7 +89,7 @@ class TroLyNoiWakeWordManagerTest {
         assertNotNull(test1)
         assertEquals("gọi cho mẹ", test1?.remainingCommand)
 
-        val test2 = TroLyNoiWakeWordManager.parseWakeWordCommand("Alo   trợ lí,   mở bản đồ!")
+        val test2 = TroLyNoiWakeWordManager.parseWakeWordCommand("  trợ lí,   mở bản đồ!")
         assertNotNull(test2)
         assertEquals("mở bản đồ", test2?.remainingCommand)
     }
