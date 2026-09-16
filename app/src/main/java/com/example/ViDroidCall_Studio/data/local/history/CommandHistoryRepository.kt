@@ -28,18 +28,7 @@ class CommandHistoryRepository(context: Context) {
     suspend fun addFromNluResult(query: String, nluResult: NluResult?) {
         if (query.isBlank()) return
 
-        val category = when (nluResult?.intent) {
-            "call_contact" -> "Cuộc gọi"
-            "send_sms" -> "Tin nhắn"
-            "set_alarm" -> "Báo thức"
-            "set_timer" -> "Hẹn giờ"
-            "open_map" -> "Bản đồ"
-            "open_app" -> "Ứng dụng"
-            "greeting" -> "Chào hỏi"
-            "goodbye" -> "Tạm biệt"
-            "clarify" -> "Hỏi lại"
-            else -> "Hệ thống"
-        }
+        val category = categoryForIntent(nluResult?.intent)
 
         val status = if (nluResult != null && nluResult.isParsedSuccessfully && nluResult.errorMessage == null) {
             "Thành công"
@@ -56,5 +45,25 @@ class CommandHistoryRepository(context: Context) {
 
     suspend fun clearHistory() {
         dbHelper.clearAll()
+    }
+
+    companion object {
+        fun categoryForIntent(intent: String?): String {
+            return when (intent) {
+                "call_contact" -> "Cuộc gọi"
+                "send_sms" -> "Tin nhắn"
+                "set_alarm" -> "Báo thức"
+                "set_timer" -> "Hẹn giờ"
+                "open_map" -> "Bản đồ"
+                "open_app" -> "Ứng dụng"
+                "search_web" -> "Tìm web"
+                "search_video" -> "Video"
+                "play_music" -> "Nhạc"
+                "greeting" -> "Chào hỏi"
+                "goodbye" -> "Tạm biệt"
+                "clarify" -> "Hỏi lại"
+                else -> "Hệ thống"
+            }
+        }
     }
 }
