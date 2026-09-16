@@ -224,8 +224,14 @@ fun HomeScreen(
 
                 val action = NativeAction.fromNluResult(result)
 
-                if (result.status == "success") {
-                    if (action.requiresConfirmation) {
+                when {
+                    action is NativeAction.Informational || action is NativeAction.Unsupported -> {
+                        val speech = action.getSpeechFeedbackText()
+                        if (speech.isNotBlank()) {
+                            textToSpeech.speak(speech)
+                        }
+                    }
+                    action.requiresConfirmation -> {
                         pendingAction = action
                         showConfirmationDialog = true
 
@@ -234,7 +240,6 @@ fun HomeScreen(
                             textToSpeech.speak(confirmationSpeech)
                         }
 
-                        // Nếu là hành động danh bạ và chưa cấp quyền READ_CONTACTS, bật ngay popup quyền Android
                         val target = when (action) {
                             is NativeAction.CallContact -> if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
                             is NativeAction.SendSms -> if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
@@ -246,29 +251,16 @@ fun HomeScreen(
                                 runtimePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                             }
                         }
-                    } else when (action) {
-                        is NativeAction.Informational, is NativeAction.Unsupported -> {
-                            val speech = action.getSpeechFeedbackText()
-                            if (speech.isNotBlank()) {
-                                textToSpeech.speak(speech)
-                            }
-                        }
-                        else -> {
-                            val speech = action.getSpeechFeedbackText()
-                            if (speech.isNotBlank()) {
-                                textToSpeech.speak(speech)
-                            }
-                            // Delay 800ms cho hành động an toàn không cần xác nhận
-                            delay(800)
-                            pendingPermissionAction = action
-                            actionDispatcher.executeNativeAction(action)
-                            habitRepository.record(action)
-                        }
                     }
-                } else {
-                    val speech = action.getSpeechFeedbackText()
-                    if (speech.isNotBlank()) {
-                        textToSpeech.speak(speech)
+                    else -> {
+                        val speech = action.getSpeechFeedbackText()
+                        if (speech.isNotBlank()) {
+                            textToSpeech.speak(speech)
+                        }
+                        delay(800)
+                        pendingPermissionAction = action
+                        actionDispatcher.executeNativeAction(action)
+                        habitRepository.record(action)
                     }
                 }
             }

@@ -477,15 +477,8 @@ class NluActionDispatcher(
             putExtra(AlarmClock.EXTRA_SKIP_UI, false)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
-        if (alarmIntent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(alarmIntent)
-            logLifecycle("ACTION_SUCCESS", "intent=set_alarm, time=${action.hour}:${action.minute}")
-        } else {
-            val errorMsg = "Thiết bị không có ứng dụng phù hợp để thực hiện hành động này."
-            logLifecycle("ACTION_FAILED", "intent=set_alarm, error=No activity found to handle ACTION_SET_ALARM")
-            showToast(errorMsg)
-            onActionError(errorMsg)
-        }
+        context.startActivity(alarmIntent)
+        logLifecycle("ACTION_SUCCESS", "intent=set_alarm, time=${action.hour}:${action.minute}")
     }
 
     private fun executeSetTimer(context: Context, action: NativeAction.SetTimer) {
@@ -504,15 +497,8 @@ class NluActionDispatcher(
             putExtra(AlarmClock.EXTRA_SKIP_UI, false)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
-        if (timerIntent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(timerIntent)
-            logLifecycle("ACTION_SUCCESS", "intent=set_timer, duration=${action.durationSeconds}s")
-        } else {
-            val errorMsg = "Thiết bị không có ứng dụng phù hợp để thực hiện hành động này."
-            logLifecycle("ACTION_FAILED", "intent=set_timer, error=No activity found to handle ACTION_SET_TIMER")
-            showToast(errorMsg)
-            onActionError(errorMsg)
-        }
+        context.startActivity(timerIntent)
+        logLifecycle("ACTION_SUCCESS", "intent=set_timer, duration=${action.durationSeconds}s")
     }
 
     private fun executeSearchVideo(context: Context, action: NativeAction.SearchVideo) {
