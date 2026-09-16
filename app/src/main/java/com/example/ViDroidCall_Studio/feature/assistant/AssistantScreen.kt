@@ -693,6 +693,26 @@ private fun VoiceAssistantSection(
                                 color = MaterialTheme.colorScheme.primary,
                                 textAlign = TextAlign.Center
                             )
+                            if (isNluProcessing) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "AI đang phân tích câu lệnh...",
+                                        fontSize = 14.5.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                                    )
+                                }
+                            }
                         }
                         // 6. AI phân tích từ nguồn khác (fallback khi chưa kịp có command text)
                         isNluProcessing -> {

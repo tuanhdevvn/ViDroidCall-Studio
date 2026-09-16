@@ -31,7 +31,8 @@ Package Kotlin của nhóm:
 | `data/model` | `NluResult`, enum intent / status / risk, parser JSON |
 | `data/nlu` | Fast-Path, Llama.cpp, `NluEngineManager`, dispatcher |
 | `data/local` | DataStore (theme, font, onboarding, Trợ lý nổi) |
-| `data/local/history` | SQLite lịch sử lệnh |
+| `data/local/history` | SQLite lịch sử lệnh (10 câu STT mới nhất) |
+| `data/local/habit` | SQLite lệnh hay dùng (`habit_actions` + events; không lấy từ history) |
 | `data/local/feedback` | JSONL phản hồi NLU (nếu bật) |
 | `domain/model` | `NativeAction` (thao tác Android) |
 | `feature/assistant` | Màn Home, helper khóa màn hình |
@@ -176,6 +177,14 @@ Bảng `command_history`, tối đa **10** dòng mới nhất.
 | `timestamp` | INTEGER NOT NULL |
 
 UI: `CommandHistoryItem(id, commandText, time, status, category, timestamp)`.
+
+### SQLite — `vidroidcall_habit.db`
+
+Bảng `habit_actions` / `habit_events` / `habit_meta`. **Không** nới `command_history` để tính tần suất.
+
+Ghi khi user đã thực thi (`NativeAction` đủ điều kiện: không `greeting` / `goodbye` / `clarify` / `unsupported`). Unique `intent|slot`. Nhãn kiểu `Gọi Mai`, JSON đủ `executeNativeAction`.
+
+Top 5: `hits ≥ 2` trong 24 giờ; loại `last_used` > 3 ngày; snapshot 1 lần / 3 ngày (`habit_meta`). Dòng không event 7 ngày thì xóa. DB trống thì gieo 5 lệnh mẫu một lần (`demo_seeded`). UI: khối trên tab Lịch sử.
 
 ### DataStore Preferences
 

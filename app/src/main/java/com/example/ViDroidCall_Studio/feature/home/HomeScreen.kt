@@ -35,6 +35,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.ViDroidCall_Studio.MainActivity
 import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogRepository
+import com.example.ViDroidCall_Studio.data.local.habit.HabitActionsRepository
 import com.example.ViDroidCall_Studio.data.local.history.CommandHistoryRepository
 import com.example.ViDroidCall_Studio.data.nlu.NluActionDispatcher
 import com.example.ViDroidCall_Studio.data.nlu.NluEngineManager
@@ -87,6 +88,8 @@ fun HomeScreen(
     // Quản lý Lịch sử câu lệnh ngoại tuyến (SQLite Repository)
     val historyRepository = remember { CommandHistoryRepository(context.applicationContext) }
     val historyItems by historyRepository.historyFlow.collectAsState(initial = emptyList())
+    val habitRepository = remember { HabitActionsRepository(context.applicationContext) }
+    val quickActions by habitRepository.quickActionsFlow.collectAsState(initial = emptyList())
 
     // Quản lý log mẫu NLU sai (JSONL) để train lại model
     val feedbackRepository = remember { NluFeedbackLogRepository(context.applicationContext) }
@@ -221,8 +224,14 @@ fun HomeScreen(
 
                 val action = NativeAction.fromNluResult(result)
 
-                if (result.status == "success") {
-                    if (action.requiresConfirmation) {
+                when {
+                    action is NativeAction.Informational || action is NativeAction.Unsupported -> {
+                        val speech = action.getSpeechFeedbackText()
+                        if (speech.isNotBlank()) {
+                            textToSpeech.speak(speech)
+                        }
+                    }
+                    action.requiresConfirmation -> {
                         pendingAction = action
                         showConfirmationDialog = true
 
@@ -231,7 +240,6 @@ fun HomeScreen(
                             textToSpeech.speak(confirmationSpeech)
                         }
 
-                        // Nếu là hành động danh bạ và chưa cấp quyền READ_CONTACTS, bật ngay popup quyền Android
                         val target = when (action) {
                             is NativeAction.CallContact -> if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
                             is NativeAction.SendSms -> if (action.phoneNumber.isNotBlank()) action.phoneNumber else action.contact
@@ -243,32 +251,24 @@ fun HomeScreen(
                                 runtimePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                             }
                         }
-                    } else when (action) {
-                        is NativeAction.Informational, is NativeAction.Unsupported -> {
-                            val speech = action.getSpeechFeedbackText()
-                            if (speech.isNotBlank()) {
-                                textToSpeech.speak(speech)
-                            }
-                        }
-                        else -> {
-                            val speech = action.getSpeechFeedbackText()
-                            if (speech.isNotBlank()) {
-                                textToSpeech.speak(speech)
-                            }
-                            // Delay 800ms cho hành động an toàn không cần xác nhận
-                            delay(800)
-                            pendingPermissionAction = action
-                            actionDispatcher.executeNativeAction(action)
-                        }
                     }
-                } else {
-                    val speech = action.getSpeechFeedbackText()
-                    if (speech.isNotBlank()) {
-                        textToSpeech.speak(speech)
+                    else -> {
+                        val speech = action.getSpeechFeedbackText()
+                        if (speech.isNotBlank()) {
+                            textToSpeech.speak(speech)
+                        }
+                        delay(800)
+                        pendingPermissionAction = action
+                        actionDispatcher.executeNativeAction(action)
+                        habitRepository.record(action)
                     }
                 }
             }
         }
+    }
+
+    val rememberHabit: (NativeAction) -> Unit = { action ->
+        scope.launch { habitRepository.record(action) }
     }
 
     val handleConfirmAction = {
@@ -278,6 +278,7 @@ fun HomeScreen(
         if (action != null) {
             pendingPermissionAction = action
             actionDispatcher.executeNativeAction(action)
+            rememberHabit(action)
         }
     }
 
@@ -403,7 +404,6 @@ fun HomeScreen(
                 selectedTab = selectedTab,
                 onTabSelected = { tab -> selectedTab = tab },
                 onMicClick = handleCenterFabClick,
-                isListening = speechToText.isListening,
                 modifier = Modifier.navigationBarsPadding()
             )
         }
@@ -436,9 +436,19 @@ fun HomeScreen(
 
                 NavTab.HISTORY -> HistoryScreen(
                     historyItems = historyItems,
+                    quickActions = quickActions,
                     onRerunCommand = { query ->
                         executeCommand(query)
                         selectedTab = NavTab.ASSISTANT
+                    },
+                    onExecuteQuickAction = { action ->
+                        pendingPermissionAction = action
+                        val speech = action.getSpeechFeedbackText()
+                        if (speech.isNotBlank()) {
+                            textToSpeech.speak(speech)
+                        }
+                        actionDispatcher.executeNativeAction(action)
+                        rememberHabit(action)
                     },
                     onDeleteItem = { id ->
                         scope.launch { historyRepository.deleteItem(id) }

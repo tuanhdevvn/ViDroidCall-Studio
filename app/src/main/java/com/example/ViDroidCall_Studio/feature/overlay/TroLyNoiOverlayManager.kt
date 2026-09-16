@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.example.ViDroidCall_Studio.data.local.habit.HabitActionsRepository
 import com.example.ViDroidCall_Studio.data.local.history.CommandHistoryRepository
 import com.example.ViDroidCall_Studio.data.nlu.FastPathMatcher
 import com.example.ViDroidCall_Studio.data.nlu.NluActionDispatcher
@@ -89,6 +90,7 @@ class TroLyNoiOverlayManager(
     private var fastPathMatcher: FastPathMatcher? = null
     private var actionDispatcher: NluActionDispatcher? = null
     private var historyRepository: CommandHistoryRepository? = null
+    private var habitRepository: HabitActionsRepository? = null
 
     /** Chờ TroLyNoiSheet layout xong rồi mới bật STT (tránh audio chạy trước popup). */
     private var pendingListeningAfterSheetLayout = false
@@ -386,6 +388,9 @@ class TroLyNoiOverlayManager(
         if (historyRepository == null) {
             historyRepository = CommandHistoryRepository(appContext)
         }
+        if (habitRepository == null) {
+            habitRepository = HabitActionsRepository(appContext)
+        }
         if (actionDispatcher == null) {
             actionDispatcher = NluActionDispatcher(
                 context = appContext,
@@ -523,6 +528,7 @@ class TroLyNoiOverlayManager(
         fastPathMatcher = null
         actionDispatcher = null
         historyRepository = null
+        habitRepository = null
     }
 
     /**
@@ -673,6 +679,9 @@ class TroLyNoiOverlayManager(
                     actionIconType = iconType,
                     onConfirm = {
                         val speech = action.getSpeechFeedbackText()
+                        scope.launch(Dispatchers.IO) {
+                            habitRepository?.record(action)
+                        }
                         actionDispatcher?.executeNativeAction(action)
                         if (speech.isNotBlank()) {
                             textToSpeechManager?.speak(speech)

@@ -348,10 +348,16 @@ sealed class NativeAction {
                 return Unsupported(intentName = nluResult.intent, message = nluResult.errorMessage ?: "Lỗi parse JSON")
             }
 
-            val status = nluResult.status
+            val args = try {
+                JSONObject(nluResult.argumentsJson)
+            } catch (e: Exception) {
+                JSONObject()
+            }
+
+            val status = effectiveStatus(nluResult, args)
             if (status == "needs_clarification") {
                 val missingArr = try {
-                    JSONObject(nluResult.argumentsJson).optJSONArray("missing")
+                    args.optJSONArray("missing")
                 } catch (e: Exception) { null }
                 val isSearchQueryMissing = missingArr != null && missingArr.toString().contains("query")
                 val messageText = if (isSearchQueryMissing) {
@@ -384,12 +390,6 @@ sealed class NativeAction {
                     intentName = nluResult.intent,
                     message = "Chưa hỗ trợ tính năng này."
                 )
-            }
-
-            val args = try {
-                JSONObject(nluResult.argumentsJson)
-            } catch (e: Exception) {
-                JSONObject()
             }
 
             val requiresConf = nluResult.requiresConfirmation
@@ -444,8 +444,8 @@ sealed class NativeAction {
                 }
 
                 "set_alarm" -> {
-                    val hour = if (args.has("hour")) args.optInt("hour") else (nluResult.slots["hour"] as? Number)?.toInt() ?: -1
-                    val minute = if (args.has("minute")) args.optInt("minute") else (nluResult.slots["minute"] as? Number)?.toInt() ?: 0
+                    val hour = parseClockInt(args, nluResult.slots, "hour", missing = -1) ?: -1
+                    val minute = parseClockInt(args, nluResult.slots, "minute", missing = 0) ?: 0
                     if (hour !in 0..23 || minute !in 0..59) {
                         return Informational(
                             intentName = "set_alarm",
@@ -467,7 +467,7 @@ sealed class NativeAction {
                 }
 
                 "set_timer" -> {
-                    val duration = if (args.has("duration")) args.optInt("duration") else (nluResult.slots["duration"] as? Number)?.toInt() ?: 0
+                    val duration = parseClockInt(args, nluResult.slots, "duration", missing = 0) ?: 0
                     val unit = args.optString("unit").ifBlank {
                         nluResult.slots["unit"]?.toString() ?: "minutes"
                     }
@@ -558,6 +558,48 @@ sealed class NativeAction {
                 )
 
                 else -> Unsupported(intentName = nluResult.intent)
+            }
+        }
+
+        /**
+         * GGUF đôi khi gắn status=invalid dù hour/minute nằm trong 0–23 / 0–59
+         * (ví dụ 5:00). Chỉ coi là giờ sai khi giá trị thật sự ngoài khoảng.
+         */
+        private fun effectiveStatus(nluResult: NluResult, args: JSONObject): String {
+            val status = nluResult.status
+            if (status != "invalid") return status
+            return when (nluResult.intent) {
+                "set_alarm" -> {
+                    val hour = parseClockInt(args, nluResult.slots, "hour", missing = -1) ?: -1
+                    val minute = parseClockInt(args, nluResult.slots, "minute", missing = 0) ?: 0
+                    if (hour in 0..23 && minute in 0..59) "success" else "invalid"
+                }
+                "set_timer" -> {
+                    val duration = parseClockInt(args, nluResult.slots, "duration", missing = 0) ?: 0
+                    if (duration > 0) "success" else "invalid"
+                }
+                else -> "invalid"
+            }
+        }
+
+        private fun parseClockInt(
+            args: JSONObject,
+            slots: Map<String, Any?>,
+            key: String,
+            missing: Int
+        ): Int? {
+            if (args.has(key) && !args.isNull(key)) {
+                return coerceInt(args.opt(key)) ?: missing
+            }
+            return coerceInt(slots[key]) ?: missing
+        }
+
+        private fun coerceInt(raw: Any?): Int? {
+            return when (raw) {
+                null, JSONObject.NULL -> null
+                is Number -> raw.toInt()
+                is String -> raw.trim().toDoubleOrNull()?.toInt()
+                else -> null
             }
         }
     }

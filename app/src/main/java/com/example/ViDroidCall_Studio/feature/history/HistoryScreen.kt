@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.rounded.AccessAlarm
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteOutline
@@ -33,8 +34,9 @@ import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.HourglassBottom
 import androidx.compose.material.icons.rounded.Map
-import androidx.compose.material.icons.rounded.Message
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -59,9 +61,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ViDroidCall_Studio.data.local.habit.HabitQuickAction
+import com.example.ViDroidCall_Studio.data.local.habit.HabitRules
+import com.example.ViDroidCall_Studio.data.local.habit.NativeActionCodec
+import com.example.ViDroidCall_Studio.domain.model.NativeAction
 import com.example.ViDroidCall_Studio.feature.history.model.CommandHistoryItem
+import com.example.ViDroidCall_Studio.ui.component.ActionConfirmationDialog
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
+import java.util.Calendar
 
 /**
  * Màn hình Lịch sử câu lệnh
@@ -70,12 +78,15 @@ import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
 @Composable
 fun HistoryScreen(
     historyItems: List<CommandHistoryItem>,
+    quickActions: List<HabitQuickAction> = emptyList(),
     onRerunCommand: (String) -> Unit = {},
+    onExecuteQuickAction: (NativeAction) -> Unit = {},
     onDeleteItem: (Long) -> Unit = {},
     onClearAll: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
+    var pendingQuickAction by remember { mutableStateOf<NativeAction?>(null) }
     val parentDensity = LocalDensity.current
 
     // Hộp thoại xác nhận xóa toàn bộ lịch sử
@@ -125,6 +136,22 @@ fun HistoryScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         }
+    }
+
+    val pending = pendingQuickAction
+    if (pending != null) {
+        ActionConfirmationDialog(
+            title = pending.getActionTitle(),
+            description = pending.getConfirmationDescription(),
+            onConfirm = {
+                val action = pendingQuickAction
+                pendingQuickAction = null
+                if (action != null) {
+                    onExecuteQuickAction(action)
+                }
+            },
+            onCancel = { pendingQuickAction = null }
+        )
     }
 
     LazyColumn(
@@ -188,10 +215,36 @@ fun HistoryScreen(
             Spacer(modifier = Modifier.height(10.dp))
         }
 
+        if (quickActions.isNotEmpty()) {
+            item {
+                QuickActionsSection(
+                    actions = quickActions,
+                    onClick = { item ->
+                        val action = NativeActionCodec.fromJson(item.actionJson) ?: return@QuickActionsSection
+                        if (action.requiresConfirmation) {
+                            pendingQuickAction = action
+                        } else {
+                            onExecuteQuickAction(action)
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Vừa nói",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(bottom = 12.dp, top = 8.dp)
+                )
+            }
+        }
+
         // 2. Danh sách câu lệnh hoặc Trạng thái trống (Empty State)
         if (historyItems.isEmpty()) {
-            item {
-                EmptyHistoryView()
+            if (quickActions.isEmpty()) {
+                item {
+                    EmptyHistoryView()
+                }
             }
         } else {
             items(historyItems, key = { it.id }) { item ->
@@ -202,6 +255,135 @@ fun HistoryScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun QuickActionsSection(
+    actions: List<HabitQuickAction>,
+    onClick: (HabitQuickAction) -> Unit
+) {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val periodLabel = HabitRules.bucketTitle(HabitRules.bucketForHour(hour))
+        .removePrefix("Hay dùng ")
+        .replaceFirstChar { it.uppercase() }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            ),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Bolt,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Câu lệnh hay dùng",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = periodLabel,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            actions.forEach { action ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.16f))
+                )
+                QuickActionRow(
+                    action = action,
+                    onClick = { onClick(action) }
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+        }
+    }
+}
+
+@Composable
+private fun QuickActionRow(
+    action: HabitQuickAction,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bounceClick(scaleDown = 0.98f, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = getIntentIcon(action.intent),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Text(
+            text = action.label,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(AppPrimary),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.PlayArrow,
+                contentDescription = "Chạy ${action.label}",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
@@ -357,6 +539,21 @@ private fun EmptyHistoryView() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+private fun getIntentIcon(intent: String): ImageVector {
+    return when (intent) {
+        "call_contact" -> Icons.Rounded.Call
+        "send_sms" -> Icons.AutoMirrored.Rounded.Message
+        "set_alarm" -> Icons.Rounded.AccessAlarm
+        "set_timer" -> Icons.Rounded.HourglassBottom
+        "open_map" -> Icons.Rounded.Map
+        "open_app" -> Icons.Rounded.Apps
+        "search_web" -> Icons.Rounded.Search
+        "search_video" -> Icons.Rounded.PlayArrow
+        "play_music" -> Icons.Rounded.MusicNote
+        else -> Icons.Rounded.CheckCircle
     }
 }
 
