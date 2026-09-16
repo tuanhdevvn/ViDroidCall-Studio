@@ -409,7 +409,8 @@ class TroLyNoiOverlayManager(
     }
 
     /**
-     * Bật STT sau khi sheet đã layout và mic Wake Word đã nhả (120ms).
+     * Bật STT sau khi sheet đã layout và mic Wake Word đã nhả.
+     * 250ms cho HAL đủ thời gian; SpeechToTextManager còn retry thêm nếu mic busy.
      */
     private fun onSheetLaidOut() {
         if (sheetLayoutNotified || !pendingListeningAfterSheetLayout || !isShowing) return
@@ -417,7 +418,7 @@ class TroLyNoiOverlayManager(
         pendingListeningAfterSheetLayout = false
         activeSessionJob?.cancel()
         activeSessionJob = scope.launch {
-            delay(120)
+            delay(250)
             if (isShowing) {
                 startSpeechRecognition()
             }
