@@ -191,11 +191,6 @@ class TroLyNoiOverlayManager(
 
                 setContent {
                     val currentData by overlayDataFlow.collectAsState()
-                    var isVisible by remember { mutableStateOf(false) }
-
-                    LaunchedEffect(Unit) {
-                        isVisible = true
-                    }
 
                     ViDroidCallTheme {
                         // Nền Root bán trong suốt nhẹ nhàng (Scrim) êm ái, chuẩn trợ lý ảo
@@ -212,7 +207,7 @@ class TroLyNoiOverlayManager(
                             contentAlignment = Alignment.BottomCenter
                         ) {
                             AnimatedVisibility(
-                                visible = isVisible,
+                                visible = true,
                                 enter = slideInVertically(
                                     initialOffsetY = { fullHeight -> fullHeight },
                                     animationSpec = spring(
