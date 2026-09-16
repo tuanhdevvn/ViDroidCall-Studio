@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 ViDroidCall Studio contributors
+
 package com.example.ViDroidCall_Studio.feature.settings
 
 import org.junit.Assert.assertEquals
@@ -6,9 +9,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Kiểm tra tính độc lập giữa 2 kênh kích hoạt:
- * Kênh 1: Hands-free Wake Word ("Trợ lý ơi")
- * Kênh 2: Default Digital Assistant cấp hệ thống (VoiceInteractionService)
+ * Kiểm tra tính độc lập giữa 2 kênh kích hoạt overlay:
+ * Kênh 1: Hands-free Wake Word ("Trợ lý ơi" / "Trợ lý")
+ * Kênh 2: Nút nhanh trên thông báo foreground ("Nói câu lệnh")
  */
 class SettingsIndependentStateTest {
 
@@ -23,7 +26,6 @@ class SettingsIndependentStateTest {
 
     class DualActivationCoordinator(
         var masterSwitchEnabled: Boolean = false,
-        var isSystemDefaultAssistant: Boolean = false,
         var isScreenInteractiveAndUnlocked: Boolean = true
     ) {
         val wakeWordSwitchEnabled: Boolean
@@ -51,7 +53,6 @@ class SettingsIndependentStateTest {
 
         fun onWakeWordDetected(hasCommand: Boolean) {
             if (!isWakeWordMicActive) return
-            // Release Wake Word mic immediately
             isWakeWordMicActive = false
             currentState = ActivationChannelState.WAKE_WORD_DETECTED
 
@@ -62,8 +63,9 @@ class SettingsIndependentStateTest {
             }
         }
 
-        fun onDefaultAssistantTriggered() {
-            // Can be triggered even if masterSwitchEnabled is false!
+        /** Nút nhanh trên thông báo — chỉ khi master switch bật. */
+        fun onNotificationQuickAction() {
+            if (!masterSwitchEnabled) return
             if (isWakeWordMicActive) {
                 isWakeWordMicActive = false
             }
@@ -83,51 +85,40 @@ class SettingsIndependentStateTest {
     }
 
     @Test
-    fun testTwoChannelsAreIndependent() {
-        val coordinator = DualActivationCoordinator(
-            masterSwitchEnabled = false,
-            isSystemDefaultAssistant = true
-        )
+    fun testNotificationRequiresMasterSwitch() {
+        val coordinator = DualActivationCoordinator(masterSwitchEnabled = false)
 
-        // 1. Master switch is OFF -> Wake Word mic should NOT be active
         coordinator.evaluateWakeWordState()
-        assertFalse("Wake Word mic không được chạy khi masterSwitchEnabled=false", coordinator.isWakeWordMicActive)
-        assertEquals(ActivationChannelState.IDLE, coordinator.currentState)
-
-        // 2. Default Assistant can still be triggered by hardware key/gesture
-        coordinator.onDefaultAssistantTriggered()
-        assertTrue("Assistant overlay mic phải bật khi trigger qua Default Assistant", coordinator.isAssistantMicActive)
-        assertFalse("Wake Word mic tuyệt đối không được chạy song song", coordinator.isWakeWordMicActive)
-        assertEquals(ActivationChannelState.ASSISTANT_LISTENING, coordinator.currentState)
-
-        // 3. Finish Assistant session
-        coordinator.onAssistantDone()
-        assertFalse(coordinator.isAssistantMicActive)
         assertFalse(coordinator.isWakeWordMicActive)
+
+        coordinator.onNotificationQuickAction()
+        assertFalse(
+            "Nút thông báo không mở overlay khi master switch tắt",
+            coordinator.isAssistantMicActive
+        )
         assertEquals(ActivationChannelState.IDLE, coordinator.currentState)
+
+        coordinator.masterSwitchEnabled = true
+        coordinator.onNotificationQuickAction()
+        assertTrue(coordinator.isAssistantMicActive)
+        assertEquals(ActivationChannelState.ASSISTANT_LISTENING, coordinator.currentState)
     }
 
     @Test
     fun testWakeWordStateMachineAndNoMicConflict() {
-        val coordinator = DualActivationCoordinator(
-            masterSwitchEnabled = true,
-            isSystemDefaultAssistant = false
-        )
+        val coordinator = DualActivationCoordinator(masterSwitchEnabled = true)
 
-        // 1. Initial evaluate
         coordinator.evaluateWakeWordState()
         assertTrue(coordinator.isWakeWordMicActive)
         assertEquals(ActivationChannelState.WAKE_WORD_LISTENING, coordinator.currentState)
 
-        // 2. Wake word detected without trailing command -> transitions to ASSISTANT_LISTENING
         coordinator.onWakeWordDetected(hasCommand = false)
         assertFalse("Wake Word mic phải giải phóng ngay lập tức", coordinator.isWakeWordMicActive)
         assertTrue("Assistant mic phải mở", coordinator.isAssistantMicActive)
         assertEquals(ActivationChannelState.ASSISTANT_LISTENING, coordinator.currentState)
 
-        // 3. User finishes speaking
         coordinator.onAssistantDone()
-        assertFalse("Assistant mic phải giải phóng", coordinator.isAssistantMicActive)
+        assertFalse(coordinator.isAssistantMicActive)
         assertTrue("Wake Word mic phải resume lại sau khi Overlay đóng", coordinator.isWakeWordMicActive)
         assertEquals(ActivationChannelState.WAKE_WORD_LISTENING, coordinator.currentState)
     }
@@ -136,40 +127,33 @@ class SettingsIndependentStateTest {
     fun testScreenOffAndLockPausesWakeWord() {
         val coordinator = DualActivationCoordinator(
             masterSwitchEnabled = true,
-            isSystemDefaultAssistant = true,
             isScreenInteractiveAndUnlocked = true
         )
 
         coordinator.evaluateWakeWordState()
         assertTrue(coordinator.isWakeWordMicActive)
 
-        // Screen turns OFF / Device Locked
         coordinator.isScreenInteractiveAndUnlocked = false
         coordinator.evaluateWakeWordState()
         assertFalse("Wake Word mic phải tạm dừng khi màn hình tắt hoặc khóa", coordinator.isWakeWordMicActive)
         assertEquals(ActivationChannelState.IDLE, coordinator.currentState)
 
-        // Device Unlocks
         coordinator.isScreenInteractiveAndUnlocked = true
         coordinator.evaluateWakeWordState()
-        assertTrue("Wake Word mic phải tự động khôi phục sau khi mở khóa", coordinator.isWakeWordMicActive)
+        assertTrue(coordinator.isWakeWordMicActive)
         assertEquals(ActivationChannelState.WAKE_WORD_LISTENING, coordinator.currentState)
     }
 
     @Test
     fun testMasterSwitchOffStopsEverything() {
-        val coordinator = DualActivationCoordinator(
-            masterSwitchEnabled = true,
-            isSystemDefaultAssistant = true
-        )
+        val coordinator = DualActivationCoordinator(masterSwitchEnabled = true)
 
         coordinator.evaluateWakeWordState()
         assertTrue(coordinator.isWakeWordMicActive)
 
-        // Master switch turned OFF
         coordinator.masterSwitchEnabled = false
         coordinator.evaluateWakeWordState()
-        assertFalse("Khi Master switch OFF, mic ngầm phải dừng hoàn toàn", coordinator.isWakeWordMicActive)
+        assertFalse(coordinator.isWakeWordMicActive)
         assertEquals(ActivationChannelState.IDLE, coordinator.currentState)
     }
 }

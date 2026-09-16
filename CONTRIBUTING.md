@@ -14,7 +14,7 @@ Please include:
 
 * Device model and Android version
 * App version (or commit SHA)
-* Lệnh bằng **micro Home** hay **Trợ lý nổi** (wake word / thông báo / trợ lý hệ thống)
+* Lệnh bằng **micro Home** hay **Trợ lý nổi** (wake word「Trợ lý ơi」/「Trợ lý」hoặc nút thông báo)
 * Steps to reproduce
 * Expected vs actual behavior
 * Logcat snippet if the crash is in Kotlin / native code

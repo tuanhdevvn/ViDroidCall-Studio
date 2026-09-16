@@ -80,11 +80,12 @@ default**. Enable it in Settings after install:
 1. Push the GGUF file (needed when Fast-Path does not match).
 2. Toggle **Trợ lý nổi** and grant microphone, notifications (API 33+), and
    “Display over other apps”.
-3. Say **“Trợ lý ơi”** with the screen on and unlocked, or tap the persistent
-   notification. Optionally set ViDroidCall as the default Android assistant.
+3. Say **“Trợ lý ơi”** or **“Trợ lý”** with the screen on and unlocked, or tap the
+   persistent notification / **Nói câu lệnh** action.
 
-Wake-word spotting uses Sherpa-ONNX (no GGUF). The overlay pauses wake word
-while it is visible, and while the device is locked or the screen is off.
+Wake-word spotting uses Sherpa-ONNX (no GGUF). Only those two phrases (plus STT
+spelling `trợ lí`) are accepted — not “alo/hey/vidroidcall…”. The overlay pauses
+wake word while it is visible, and while the device is locked or the screen is off.
 
 **Memory (hybrid / Option D):** Closing the overlay unloads the GGUF/NLU native
 model from RAM (`NluEngineManager.releaseModel`). Sherpa STT and system TTS stay

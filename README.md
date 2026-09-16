@@ -32,7 +32,7 @@
 2. **Sherpa-ONNX ASR & Silero-VAD** — nhận diện tiếng Việt trên máy (Zipformer 30M Int8), ngắt câu theo VAD, chuẩn hóa số (ITN).
 3. **Fast-Path** — sau khi AI Ready: câu ngắn khớp quy tắc/regex **không gọi LLM**.
 4. **On-device LLM (Llama.cpp, Qwen3 0.6B GGUF)** — khi Fast-Path không khớp.
-5. **Trợ lý nổi** (mặc định tắt) — hộp thoại đè lên app khác; nói **“Trợ lý ơi”**, chạm thông báo, hoặc đặt làm trợ lý mặc định Android.
+5. **Trợ lý nổi** (mặc định tắt) — hộp thoại đè lên app khác; nói **“Trợ lý ơi”** / **“Trợ lý”**, hoặc chạm thông báo / nút **Nói câu lệnh**.
 
 STT và NLU **không cần internet**. Gọi / SMS / mở app / báo thức chạy local. **Chỉ đường, YouTube, tìm web** mở app hệ thống và có thể cần mạng.
 
@@ -91,15 +91,14 @@ Công tắc **một hàng** trong Cài đặt: *Nói “Trợ lý ơi” hiện 
 
 Khi bật:
 
-* Foreground service + thông báo *ViDroidCall: Trợ lý nổi sẵn sàng* (chạm để nói / mở Cài đặt).
+* Foreground service + thông báo *ViDroidCall: Trợ lý nổi sẵn sàng* (chạm / nút **Nói câu lệnh** để mở popup; mở Cài đặt).
 * Wake word chạy nền bằng cùng engine Sherpa; **tạm dừng** khi màn hình tắt, máy khóa, hoặc overlay đang mở (tránh tranh micro).
 * Hộp thoại nổi: chờ nói → câu STT → phân tích → **xác nhận mọi thao tác native** (gọi, SMS, bản đồ, app, …). Overlay **ẩn số điện thoại** (hiện tên liên hệ hoặc `****`).
 * UI overlay không hiện huy hiệu kỹ thuật Fast-Path / GGUF.
-* Có thể đặt ViDroidCall làm **trợ lý mặc định** Android (`VoiceInteractionService` + `RecognitionService` + `ACTION_ASSIST`) để phím/cử chỉ hệ thống mở cùng hộp thoại.
 
 Câu lệnh sau wake word vẫn Hybrid NLU. Fast-Path không cần LLM; câu phức tạp cần GGUF Ready — chưa có mô hình thì overlay báo không tìm thấy AI rồi đóng.
 
-Từ khóa chính: **“Trợ lý ơi”**. Cũng nhận biến thể như “alo trợ lý”, “vidroidcall ơi”. Có thể nói liền: *“Trợ lý ơi gọi cho mẹ”* (không cần thu âm lại).
+Từ khóa wake word (chỉ): **“Trợ lý ơi”** và **“Trợ lý”** (biến thể dấu STT: *trợ lí*). Có thể nói liền: *“Trợ lý ơi gọi cho mẹ”*. Cách khác để mở popup: **nút nhanh trên thông báo**.
 
 ### 4. Fast-Path (không LLM, chỉ khi đã nạp GGUF)
 * Micro **trong app** / STT tắt cho đến khi huy hiệu **Trợ lý AI đã sẵn sàng**.
@@ -178,7 +177,7 @@ com.example.ViDroidCall_Studio/
 ├── data/model/          # NluIntent, NluResult, parser
 ├── data/nlu/            # FastPathMatcher, NluEngineManager, dispatcher, NluConstants
 ├── domain/model/        # NativeAction (gọi, SMS, web, …)
-├── feature/assistant    # AssistantScreen, VoiceInteraction, RecognitionService, ACTION_ASSIST
+├── feature/assistant    # AssistantScreen, TroLyNoiAssistantHelper (màn hình / khóa)
 ├── feature/overlay      # TroLyNoiSheet, OverlayManager, WakeWord, ForegroundService
 ├── feature/history|home|onboarding|settings|speech
 ├── ui/component         # menu bar (nút giữa = về Home), dialog quyền (kể cả overlay)

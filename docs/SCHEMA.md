@@ -34,7 +34,7 @@ Package Kotlin của nhóm:
 | `data/local/history` | SQLite lịch sử lệnh |
 | `data/local/feedback` | JSONL phản hồi NLU (nếu bật) |
 | `domain/model` | `NativeAction` (thao tác Android) |
-| `feature/assistant` | Màn Home, VoiceInteraction, RecognitionService, ACTION_ASSIST |
+| `feature/assistant` | Màn Home, helper khóa màn hình |
 | `feature/overlay` | Hộp thoại nổi, wake word, foreground service |
 | `feature/*` | `home`, `history`, `settings`, `onboarding`, `speech` |
 | `navigation` | `AppRoute` |
@@ -225,13 +225,10 @@ Trợ lý nổi **không** phải `AppRoute`. `TroLyNoiOverlayManager` gắn `Co
 | `TroLyNoiWakeWordManager` | Lắng nghe từ khóa khi màn hình sáng, đã mở khóa, overlay không đang hiện |
 | `TroLyNoiOverlayManager` | STT + Fast-Path / GGUF + hộp xác nhận trên overlay |
 | `TroLyNoiSheet` | UI hộp thoại; không hiện huy hiệu Fast-Path / GGUF |
-| `ViDroidVoiceInteractionService` | Ứng cử viên trợ lý mặc định Android |
-| `ViDroidRecognitionService` | Bắt buộc khi khai báo VoiceInteraction |
-| `ViDroidAssistActivity` | `ACTION_ASSIST` → mở overlay rồi `finish()` |
 
-Từ khóa wake word (chuỗi đã lowercase): `trợ lý ơi`, `trợ lí ơi`, `alo trợ lý`, `vidroidcall ơi`, `vidroidcall`, `trợ lý`, … — xem `WAKE_KEYWORDS` trong `TroLyNoiWakeWordManager`. Có thể nói liền lệnh sau từ khóa.
+Cách mở overlay: wake word **「Trợ lý ơi」** / **「Trợ lý」** (biến thể dấu `trợ lí`), hoặc **nút nhanh trên thông báo** (`ACTION_SHOW_OVERLAY`). Không còn trợ lý mặc định hệ thống (`VoiceInteraction` / `ACTION_ASSIST`).
 
-`AssistantOverlayState` (UI gộp một số giá trị): `LISTENING`, `STT`, `FAST_PATH`, `ANALYZING` / `GGUF_LOADING`, `CONFIRM_CALL`, `MAP_CONFIRM`, `CONFIRM_ACTION`. Overlay xác nhận **mọi** `NativeAction` native; `Informational` / `Unsupported` tự đóng sau ~2,5s. Tóm tắt gọi/SMS trên overlay dùng `getActionSummary()` (ẩn số).
+`AssistantOverlayState` (UI): `LISTENING`, `STT`, `FAST_PATH`, `ANALYZING` / `GGUF_LOADING`, `CONFIRM_CALL`, `MAP_CONFIRM`, `CONFIRM_ACTION`, `CONVERSATIONAL_REPLY`. Overlay xác nhận **mọi** `NativeAction` native; phản hồi hội thoại dùng nút「Nói tiếp」. Tóm tắt gọi/SMS trên overlay dùng `getActionSummary()` (ẩn số).
 
 Wake word **tạm dừng** khi: overlay đang mở, màn hình tắt, hoặc keyguard khóa.
 
