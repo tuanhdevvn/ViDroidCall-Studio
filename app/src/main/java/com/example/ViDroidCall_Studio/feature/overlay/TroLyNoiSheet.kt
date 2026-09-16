@@ -209,18 +209,8 @@ fun TroLyNoiSheet(
  * Hiển thị logo logo_ai.png nhịp thở nhẹ, tuyệt đối không có huy hiệu kỹ thuật.
  */
 @Composable
-private fun SheetHeader(isIdle: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition(label = "logo_pulse")
-    val logoScale by infiniteTransition.animateFloat(
-        initialValue = 0.94f,
-        targetValue = 1.06f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "logo_scale"
-    )
-
+private fun SheetHeader(@Suppress("UNUSED_PARAMETER") isIdle: Boolean) {
+    // Không pulse khi LISTENING — giảm jank GPU lúc mở overlay trên Home.
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Start,
@@ -233,9 +223,7 @@ private fun SheetHeader(isIdle: Boolean) {
             Image(
                 painter = painterResource(id = R.drawable.logo_ai),
                 contentDescription = "Logo ViDroidCall",
-                modifier = Modifier
-                    .size(36.dp)
-                    .then(if (isIdle) Modifier.scale(logoScale) else Modifier)
+                modifier = Modifier.size(36.dp)
             )
 
             Text(
