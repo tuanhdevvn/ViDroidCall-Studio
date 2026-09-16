@@ -160,6 +160,41 @@ class TroLyNoiActionConfirmationTest {
     }
 
     @Test
+    fun assistantOverlayData_conversationalReply_invokesContinueListening() {
+        var continued = false
+
+        val data = AssistantOverlayData(
+            state = AssistantOverlayState.CONVERSATIONAL_REPLY,
+            recognizedText = "xin chào",
+            actionTitle = "Trợ lý phản hồi",
+            actionDescription = "Xin chào! Tôi có thể giúp gì cho bạn?",
+            continueButtonLabel = "Nói tiếp",
+            onContinueListening = { continued = true }
+        )
+
+        assertEquals(AssistantOverlayState.CONVERSATIONAL_REPLY, data.state)
+        assertEquals("Nói tiếp", data.continueButtonLabel)
+        assertNotNull(data.onContinueListening)
+        data.onContinueListening?.invoke()
+        assertTrue("Callback onContinueListening phải được kích hoạt", continued)
+    }
+
+    @Test
+    fun assistantOverlayData_goodbye_usesCloseLabel() {
+        val data = AssistantOverlayData(
+            state = AssistantOverlayState.CONVERSATIONAL_REPLY,
+            recognizedText = "tạm biệt",
+            actionTitle = "Trợ lý phản hồi",
+            actionDescription = "Tạm biệt và hẹn gặp lại!",
+            continueButtonLabel = "Đóng",
+            onContinueListening = {}
+        )
+
+        assertEquals("Đóng", data.continueButtonLabel)
+        assertEquals(AssistantOverlayState.CONVERSATIONAL_REPLY, data.state)
+    }
+
+    @Test
     fun nativeAction_fromNluResult_createsExpectedAction() {
         val nluResult = NluResult(
             rawJson = """{"intent": "open_app", "arguments": {"app_name": "zalo"}}""",

@@ -44,18 +44,15 @@ import com.example.ViDroidCall_Studio.domain.model.NativeAction
 import com.example.ViDroidCall_Studio.feature.speech.SpeechToTextManager
 import com.example.ViDroidCall_Studio.feature.speech.TextToSpeechManager
 import com.example.ViDroidCall_Studio.ui.theme.ViDroidCallTheme
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Quản lý vòng đời cửa sổ hệ thống SYSTEM_ALERT_WINDOW thật.
@@ -66,8 +63,6 @@ class TroLyNoiOverlayManager(
 ) {
     companion object {
         private const val TAG = "ViDroidAssistant"
-        /** Timeout tối đa chờ TTS trước khi auto-dismiss (tránh treo UI). */
-        private const val TTS_AUTO_DISMISS_TIMEOUT_MS = 15_000L
     }
 
     private val appContext = context.applicationContext
@@ -439,30 +434,66 @@ class TroLyNoiOverlayManager(
     }
 
     /**
-     * Phát TTS phản hồi hội thoại rồi mới auto-dismiss khi đọc xong (hoặc timeout 15s).
-     * User tap/Back vẫn dismiss(stopTts=true) và cắt giọng ngay.
+     * Phát TTS phản hồi hội thoại; giữ overlay mở chờ user bấm Nói tiếp / Đóng.
      */
-    private fun speakFeedbackThenAutoDismiss(speech: String) {
+    private fun speakFeedbackKeepOpen(speech: String) {
+        if (speech.isBlank()) return
         activeSessionJob?.cancel()
+        activeSessionJob = null
+        textToSpeechManager?.speak(speech)
+    }
+
+    /**
+     * Quay lại LISTENING trong cùng phiên overlay (không dismiss).
+     */
+    private fun resumeListening() {
+        if (!isShowing) return
+        activeSessionJob?.cancel()
+        activeSessionJob = null
+        textToSpeechManager?.stop()
+        pendingListeningAfterSheetLayout = false
+        sheetLayoutNotified = true
+        overlayDataFlow.value = AssistantOverlayData(
+            state = AssistantOverlayState.LISTENING,
+            statusMessage = SpeechToTextManager.WAITING_PLACEHOLDER
+        )
+        // Đệm ngắn để HAL ổn định sau khi dừng TTS / phiên trước
         activeSessionJob = scope.launch {
-            if (speech.isBlank()) {
-                delay(800)
-            } else {
-                val finished = CompletableDeferred<Unit>()
-                textToSpeechManager?.speak(
-                    text = speech,
-                    onDone = { finished.complete(Unit) },
-                    onError = { finished.complete(Unit) }
-                ) ?: finished.complete(Unit)
-                withTimeoutOrNull(TTS_AUTO_DISMISS_TIMEOUT_MS) {
-                    finished.await()
-                }
-            }
-            ensureActive()
+            delay(150)
             if (isShowing) {
-                dismiss(stopTts = false)
+                startSpeechRecognition()
             }
         }
+    }
+
+    /**
+     * Hiển thị màn phản hồi hội thoại (1 nút) thay vì Hủy/Xác nhận.
+     */
+    private fun showConversationalReply(
+        recognizedText: String,
+        actionTitle: String,
+        actionDescription: String,
+        speech: String,
+        intentName: String = "",
+        closeSession: Boolean = false
+    ) {
+        overlayDataFlow.value = AssistantOverlayData(
+            state = AssistantOverlayState.CONVERSATIONAL_REPLY,
+            recognizedText = recognizedText,
+            intentName = intentName,
+            actionTitle = actionTitle,
+            actionDescription = actionDescription,
+            actionIconType = OverlayActionIconType.GENERIC,
+            continueButtonLabel = if (closeSession) "Đóng" else "Nói tiếp",
+            onContinueListening = {
+                if (closeSession) {
+                    dismiss()
+                } else {
+                    resumeListening()
+                }
+            }
+        )
+        speakFeedbackKeepOpen(speech)
     }
 
     fun destroy() {
@@ -544,16 +575,12 @@ class TroLyNoiOverlayManager(
                 if (!nlu.isModelReady()) {
                     val state = nlu.modelState.first { it !is NluModelState.Loading && it !is NluModelState.Uninitialized }
                     if (state !is NluModelState.Ready) {
-                        overlayDataFlow.value = AssistantOverlayData(
-                            state = AssistantOverlayState.CONFIRM_ACTION,
+                        showConversationalReply(
                             recognizedText = trimmed,
                             actionTitle = "Trợ lý phản hồi",
                             actionDescription = "Không tìm thấy mô hình AI để xử lý câu lệnh này.",
-                            actionIconType = OverlayActionIconType.GENERIC,
-                            onConfirm = { dismiss() },
-                            onCancel = { dismiss() }
+                            speech = "Không tìm thấy mô hình AI để xử lý câu lệnh này."
                         )
-                        speakFeedbackThenAutoDismiss("Không tìm thấy mô hình AI để xử lý câu lệnh này.")
                         return@launch
                     }
                 }
@@ -579,37 +606,32 @@ class TroLyNoiOverlayManager(
     }
 
     /**
-     * Hiển thị màn hình xác nhận hành động trực quan cho MỌI intent.
-     * Người dùng bấm [Xác nhận] mới thực thi hành động; bấm [Hủy] thì đóng box.
+     * Hiển thị xác nhận hành động hoặc phản hồi hội thoại.
+     * - Informational / Unsupported → 1 nút Nói tiếp (hoặc Đóng với goodbye)
+     * - Intent thực thi → [Hủy] [Xác nhận]
      */
     private fun showConfirmationForAction(recognizedText: String, action: NativeAction) {
         when (action) {
             is NativeAction.Informational -> {
-                val speech = action.getSpeechFeedbackText()
-                overlayDataFlow.value = AssistantOverlayData(
-                    state = AssistantOverlayState.CONFIRM_ACTION,
+                val isGoodbye = action.intentName == "goodbye"
+                showConversationalReply(
                     recognizedText = recognizedText,
                     actionTitle = "Trợ lý phản hồi",
                     actionDescription = action.message,
-                    actionIconType = OverlayActionIconType.GENERIC,
-                    onConfirm = { dismiss() },
-                    onCancel = { dismiss() }
+                    speech = action.getSpeechFeedbackText(),
+                    intentName = action.intentName,
+                    closeSession = isGoodbye
                 )
-                speakFeedbackThenAutoDismiss(speech)
             }
 
             is NativeAction.Unsupported -> {
-                val speech = action.getSpeechFeedbackText()
-                overlayDataFlow.value = AssistantOverlayData(
-                    state = AssistantOverlayState.CONFIRM_ACTION,
+                showConversationalReply(
                     recognizedText = recognizedText,
                     actionTitle = "Chưa hỗ trợ",
                     actionDescription = action.message,
-                    actionIconType = OverlayActionIconType.GENERIC,
-                    onConfirm = { dismiss() },
-                    onCancel = { dismiss() }
+                    speech = action.getSpeechFeedbackText(),
+                    intentName = action.intentName
                 )
-                speakFeedbackThenAutoDismiss(speech)
             }
 
             else -> {

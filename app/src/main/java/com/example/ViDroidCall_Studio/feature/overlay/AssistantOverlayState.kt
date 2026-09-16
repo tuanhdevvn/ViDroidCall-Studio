@@ -14,6 +14,8 @@ enum class AssistantOverlayState {
     CONFIRM_CALL,
     MAP_CONFIRM,
     CONFIRM_ACTION,
+    /** Phản hồi hội thoại (chào, unsupported…) — 1 nút Nói tiếp / Đóng */
+    CONVERSATIONAL_REPLY,
     GGUF_LOADING
 }
 
@@ -48,5 +50,8 @@ data class AssistantOverlayData(
     val statusMessage: String = "",
     val isTtsSpeaking: Boolean = false,
     val onConfirm: (() -> Unit)? = null,
-    val onCancel: (() -> Unit)? = null
+    val onCancel: (() -> Unit)? = null,
+    /** Callback nút hội thoại (Nói tiếp → resumeListening, Đóng → dismiss). */
+    val onContinueListening: (() -> Unit)? = null,
+    val continueButtonLabel: String = "Nói tiếp"
 )
