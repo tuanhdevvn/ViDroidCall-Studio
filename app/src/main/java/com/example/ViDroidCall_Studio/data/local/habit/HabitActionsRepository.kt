@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
- * Ghi việc đã thực thi và trả về tối đa 5 lối tắt (snapshot 1 lần/ngày).
+ * Ghi việc đã thực thi và trả về tối đa 5 lối tắt (snapshot 15 phút).
  */
 class HabitActionsRepository(context: Context) {
     private val dbHelper = HabitActionsDatabaseHelper(context.applicationContext)
@@ -36,6 +36,7 @@ class HabitActionsRepository(context: Context) {
     }
 
     suspend fun loadQuickActions(nowMs: Long = System.currentTimeMillis()): List<HabitQuickAction> {
+        dbHelper.ensureDemoSeed(nowMs)
         val records = dbHelper.loadRecords()
         val events = dbHelper.loadEvents()
         val candidates = HabitQuickActionSelector.rankCandidates(records, events, nowMs)

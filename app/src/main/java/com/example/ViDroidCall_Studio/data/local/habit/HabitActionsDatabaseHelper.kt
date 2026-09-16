@@ -60,6 +60,42 @@ class HabitActionsDatabaseHelper(context: Context) :
         onCreate(db)
     }
 
+    /**
+     * Gieo 5 lệnh mẫu một lần — để bảng Lịch sử hiện ngay khi đang thử, không chờ 14 ngày.
+     */
+    suspend fun ensureDemoSeed(nowMs: Long) = withContext(Dispatchers.IO) {
+        if (readMeta(META_DEMO_SEEDED) == "1") return@withContext
+
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            HabitDemoSeed.records(nowMs).forEach { record ->
+                val values = ContentValues().apply {
+                    put(COLUMN_SLOT_KEY, record.slotKey)
+                    put(COLUMN_INTENT, record.intent)
+                    put(COLUMN_LABEL, record.label)
+                    put(COLUMN_ACTION_JSON, record.actionJson)
+                    put(COLUMN_LAST_USED, record.lastUsedMs)
+                }
+                db.insertWithOnConflict(TABLE_ACTIONS, null, values, SQLiteDatabase.CONFLICT_REPLACE)
+                HabitDemoSeed.eventTimestamps(nowMs).forEach { ts ->
+                    val event = ContentValues().apply {
+                        put(COLUMN_SLOT_KEY, record.slotKey)
+                        put(COLUMN_TIMESTAMP, ts)
+                    }
+                    db.insert(TABLE_EVENTS, null, event)
+                }
+            }
+            writeMeta(META_DEMO_SEEDED, "1")
+            writeMeta(META_SNAPSHOT_DAY, "")
+            writeMeta(META_SNAPSHOT_KEYS, "[]")
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        updateNotifier.tryEmit(Unit)
+    }
+
     suspend fun upsertAction(record: HabitActionRecord, eventAtMs: Long) = withContext(Dispatchers.IO) {
         val db = writableDatabase
         db.beginTransaction()
@@ -207,6 +243,7 @@ class HabitActionsDatabaseHelper(context: Context) :
 
         const val META_SNAPSHOT_DAY = "snapshot_day"
         const val META_SNAPSHOT_KEYS = "snapshot_keys"
+        const val META_DEMO_SEEDED = "demo_seeded"
 
         private val updateNotifier = MutableSharedFlow<Unit>(
             replay = 1,

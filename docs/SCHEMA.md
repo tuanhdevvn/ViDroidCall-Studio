@@ -184,7 +184,7 @@ Bảng `habit_actions` / `habit_events` / `habit_meta`. **Không** nới `comman
 
 Ghi khi user đã thực thi (`NativeAction` đủ điều kiện: không `greeting` / `goodbye` / `clarify` / `unsupported`). Unique `intent|slot`. Nhãn kiểu `Gọi Mai`, JSON đủ `executeNativeAction`.
 
-Top 5: `hits ≥ 2` trong 14 ngày; loại `last_used` > 30 ngày; snapshot 1 lần/ngày (`habit_meta`). Dòng không event 60 ngày thì xóa. UI: khối trên tab Lịch sử.
+Top 5: `hits ≥ 2` trong 24 giờ; loại `last_used` > 3 ngày; snapshot mỗi 15 phút (`habit_meta`). Dòng không event 7 ngày thì xóa. DB trống thì gieo 5 lệnh mẫu một lần (`demo_seeded`). UI: khối trên tab Lịch sử.
 
 ### DataStore Preferences
 

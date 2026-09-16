@@ -41,16 +41,20 @@ enum class HabitTimeBucket {
 }
 
 object HabitRules {
-    const val WINDOW_DAYS = 14
-    const val STALE_DAYS = 30
-    const val PURGE_DAYS = 60
+    /** Cửa sổ đếm hit — rút còn 1 ngày để bảng hiện sớm khi đang thử. */
+    const val WINDOW_HOURS = 24
+    const val STALE_DAYS = 3
+    const val PURGE_DAYS = 7
     const val MIN_HITS = 2
     const val MAX_QUICK_ACTIONS = 5
     const val REPLACE_RATIO = 1.5
+    /** Làm mới danh sách lối tắt — rút còn 15 phút thay vì 1 lần/ngày. */
+    const val SNAPSHOT_MINUTES = 15
 
-    const val WINDOW_MS = WINDOW_DAYS * 24L * 60L * 60L * 1000L
+    const val WINDOW_MS = WINDOW_HOURS * 60L * 60L * 1000L
     const val STALE_MS = STALE_DAYS * 24L * 60L * 60L * 1000L
     const val PURGE_MS = PURGE_DAYS * 24L * 60L * 60L * 1000L
+    const val SNAPSHOT_MS = SNAPSHOT_MINUTES * 60L * 1000L
 
     fun bucketForHour(hour: Int): HabitTimeBucket {
         return when (hour) {

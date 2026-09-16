@@ -4,6 +4,7 @@
 package com.example.ViDroidCall_Studio
 
 import com.example.ViDroidCall_Studio.data.local.habit.HabitActionRecord
+import com.example.ViDroidCall_Studio.data.local.habit.HabitDemoSeed
 import com.example.ViDroidCall_Studio.data.local.habit.HabitEvent
 import com.example.ViDroidCall_Studio.data.local.habit.HabitQuickActionSelector
 import com.example.ViDroidCall_Studio.data.local.habit.HabitRules
@@ -25,7 +26,6 @@ class HabitQuickActionsTest {
 
     private val zone: ZoneId = ZoneId.of("Asia/Ho_Chi_Minh")
     private val morningMs = localTimeMs(2026, 9, 16, 7, 0)
-    private val dayMs = TimeUnit.DAYS.toMillis(1)
 
     @Test
     fun bucketForHour_mapsMorningAfternoonEvening() {
@@ -84,11 +84,11 @@ class HabitQuickActionsTest {
     }
 
     @Test
-    fun rank_requiresTwoHitsInside14Days() {
+    fun rank_requiresTwoHitsInsideWindow() {
         val mai = record("call_contact|mai", "Gọi Mai", morningMs)
         val events = listOf(
             HabitEvent(mai.slotKey, morningMs),
-            HabitEvent(mai.slotKey, morningMs - dayMs)
+            HabitEvent(mai.slotKey, morningMs - TimeUnit.HOURS.toMillis(2))
         )
         val ranked = HabitQuickActionSelector.rankCandidates(listOf(mai), events, morningMs)
         assertEquals(1, ranked.size)
@@ -101,8 +101,8 @@ class HabitQuickActionsTest {
         val zalo = record("open_app|zalo", "Mở Zalo", morningMs)
         val events = listOf(
             HabitEvent(mai.slotKey, morningMs),
-            HabitEvent(zalo.slotKey, morningMs - TimeUnit.DAYS.toMillis(20)),
-            HabitEvent(zalo.slotKey, morningMs - TimeUnit.DAYS.toMillis(21))
+            HabitEvent(zalo.slotKey, morningMs - TimeUnit.HOURS.toMillis(25)),
+            HabitEvent(zalo.slotKey, morningMs - TimeUnit.HOURS.toMillis(26))
         )
         val ranked = HabitQuickActionSelector.rankCandidates(listOf(mai, zalo), events, morningMs)
         assertTrue(ranked.none { it.record.slotKey == mai.slotKey })
@@ -110,7 +110,7 @@ class HabitQuickActionsTest {
     }
 
     @Test
-    fun snapshot_freezesOnSameDay() {
+    fun snapshot_freezesInsideSamePeriod() {
         val candidates = (1..6).map { index ->
             ranked("call_contact|p$index", "Gọi $index", hits = 3 + index)
         }
@@ -118,10 +118,41 @@ class HabitQuickActionsTest {
         assertTrue(first.second)
         assertEquals(5, first.first.slotKeys.size)
 
-        val laterSameDay = localTimeMs(2026, 9, 16, 19, 0)
-        val second = HabitQuickActionSelector.resolveSnapshot(candidates, first.first, laterSameDay, zone)
+        val laterSamePeriod = morningMs + TimeUnit.MINUTES.toMillis(5)
+        val second = HabitQuickActionSelector.resolveSnapshot(candidates, first.first, laterSamePeriod, zone)
         assertFalse(second.second)
         assertEquals(first.first.slotKeys, second.first.slotKeys)
+    }
+
+    @Test
+    fun snapshot_refreshesAfterPeriod() {
+        val candidates = (1..5).map { index ->
+            ranked("call_contact|p$index", "Gọi $index", hits = 3)
+        }
+        val first = HabitQuickActionSelector.resolveSnapshot(candidates, null, morningMs, zone)
+        val nextPeriod = morningMs + HabitRules.SNAPSHOT_MS
+        val second = HabitQuickActionSelector.resolveSnapshot(candidates, first.first, nextPeriod, zone)
+        assertTrue(second.second)
+        assertEquals(HabitQuickActionSelector.periodId(nextPeriod), second.first.dayId)
+    }
+
+    @Test
+    fun demoSeed_ranksFiveActionsInCurrentWindow() {
+        val records = HabitDemoSeed.records(morningMs)
+        val events = records.flatMap { record ->
+            HabitDemoSeed.eventTimestamps(morningMs).map { ts -> HabitEvent(record.slotKey, ts) }
+        }
+        val ranked = HabitQuickActionSelector.rankCandidates(records, events, morningMs)
+        assertEquals(5, ranked.size)
+        assertTrue(ranked.all { it.hits14d >= HabitRules.MIN_HITS })
+        val snapshot = HabitQuickActionSelector.resolveSnapshot(ranked, null, morningMs, zone)
+        assertEquals(5, snapshot.first.slotKeys.size)
+        val labels = HabitQuickActionSelector.toQuickActions(snapshot.first, records).map { it.label }
+        assertTrue(labels.contains("Mở Zalo"))
+        assertTrue(labels.contains("Mở YouTube"))
+        assertTrue(labels.contains("Báo thức 5 giờ"))
+        assertTrue(labels.contains("Gọi Mai"))
+        assertTrue(labels.contains("Video nhạc bolero"))
     }
 
     @Test

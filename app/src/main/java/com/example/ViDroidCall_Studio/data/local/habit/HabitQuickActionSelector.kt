@@ -3,12 +3,11 @@
 
 package com.example.ViDroidCall_Studio.data.local.habit
 
-import java.time.Instant
 import java.time.ZoneId
 import java.util.Calendar
 
 /**
- * Chọn tối đa 5 lối tắt: cửa sổ 14 ngày, snapshot 1 lần/ngày, hysteresis 1.5×.
+ * Chọn tối đa 5 lối tắt: cửa sổ 24 giờ, snapshot 15 phút, hysteresis 1.5×.
  */
 object HabitQuickActionSelector {
 
@@ -18,8 +17,8 @@ object HabitQuickActionSelector {
         val bucketHits: Int
     )
 
-    fun dayId(nowMs: Long, zone: ZoneId = ZoneId.systemDefault()): String {
-        return Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate().toString()
+    fun periodId(nowMs: Long): String {
+        return (nowMs / HabitRules.SNAPSHOT_MS).toString()
     }
 
     fun hourOf(nowMs: Long): Int {
@@ -58,7 +57,7 @@ object HabitQuickActionSelector {
     }
 
     /**
-     * @return snapshot mới và cờ đã refresh (đổi ngày hoặc chưa có snapshot).
+     * @return snapshot mới và cờ đã refresh (hết chu kỳ 15 phút hoặc chưa có snapshot).
      */
     fun resolveSnapshot(
         candidates: List<RankedCandidate>,
@@ -66,8 +65,8 @@ object HabitQuickActionSelector {
         nowMs: Long,
         zone: ZoneId = ZoneId.systemDefault()
     ): Pair<HabitSnapshot, Boolean> {
-        val today = dayId(nowMs, zone)
-        if (previous != null && previous.dayId == today) {
+        val currentPeriod = periodId(nowMs)
+        if (previous != null && previous.dayId == currentPeriod) {
             return previous to false
         }
 
@@ -97,7 +96,7 @@ object HabitQuickActionSelector {
         }
 
         return HabitSnapshot(
-            dayId = today,
+            dayId = currentPeriod,
             slotKeys = kept.take(HabitRules.MAX_QUICK_ACTIONS)
         ) to true
     }
