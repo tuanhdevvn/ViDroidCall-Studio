@@ -26,18 +26,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.rounded.AccessAlarm
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Call
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.HourglassBottom
+import androidx.compose.material.icons.rounded.Logout
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SmartDisplay
+import androidx.compose.material.icons.rounded.SmartToy
+import androidx.compose.material.icons.rounded.WavingHand
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -554,7 +558,7 @@ private fun getIntentIcon(intent: String): ImageVector {
         "search_web" -> Icons.Rounded.Search
         "search_video" -> Icons.Rounded.SmartDisplay
         "play_music" -> Icons.Rounded.MusicNote
-        else -> Icons.Rounded.CheckCircle
+        else -> Icons.Rounded.SmartToy
     }
 }
 
@@ -569,6 +573,10 @@ private fun getCategoryIcon(category: String): ImageVector {
         "Tìm web" -> Icons.Rounded.Search
         "Video" -> Icons.Rounded.SmartDisplay
         "Nhạc" -> Icons.Rounded.MusicNote
-        else -> Icons.Rounded.CheckCircle
+        "Chào hỏi" -> Icons.Rounded.WavingHand
+        "Tạm biệt" -> Icons.Rounded.Logout
+        "Hỏi lại" -> Icons.Rounded.HelpOutline
+        "Không hỗ trợ" -> Icons.Rounded.Block
+        else -> Icons.Rounded.SmartToy
     }
 }

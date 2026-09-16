@@ -27,9 +27,17 @@ class CommandHistoryCategoryTest {
     }
 
     @Test
+    fun categoryForIntent_mapsConversationalIntents() {
+        assertEquals("Chào hỏi", CommandHistoryRepository.categoryForIntent("greeting"))
+        assertEquals("Tạm biệt", CommandHistoryRepository.categoryForIntent("goodbye"))
+        assertEquals("Hỏi lại", CommandHistoryRepository.categoryForIntent("clarify"))
+        assertEquals("Không hỗ trợ", CommandHistoryRepository.categoryForIntent("unsupported"))
+    }
+
+    @Test
     fun categoryForIntent_fallsBackToHeThong() {
         assertEquals("Hệ thống", CommandHistoryRepository.categoryForIntent(null))
-        assertEquals("Hệ thống", CommandHistoryRepository.categoryForIntent("unsupported"))
         assertEquals("Hệ thống", CommandHistoryRepository.categoryForIntent("unknown"))
+        assertEquals("Hệ thống", CommandHistoryRepository.categoryForIntent(""))
     }
 }
