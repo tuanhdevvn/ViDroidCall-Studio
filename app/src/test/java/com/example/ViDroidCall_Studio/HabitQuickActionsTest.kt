@@ -118,7 +118,7 @@ class HabitQuickActionsTest {
         assertTrue(first.second)
         assertEquals(5, first.first.slotKeys.size)
 
-        val laterSamePeriod = morningMs + TimeUnit.MINUTES.toMillis(5)
+        val laterSamePeriod = morningMs + TimeUnit.DAYS.toMillis(1)
         val second = HabitQuickActionSelector.resolveSnapshot(candidates, first.first, laterSamePeriod, zone)
         assertFalse(second.second)
         assertEquals(first.first.slotKeys, second.first.slotKeys)

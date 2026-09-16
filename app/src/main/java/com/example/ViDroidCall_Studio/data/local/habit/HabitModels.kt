@@ -48,13 +48,13 @@ object HabitRules {
     const val MIN_HITS = 2
     const val MAX_QUICK_ACTIONS = 5
     const val REPLACE_RATIO = 1.5
-    /** Làm mới danh sách lối tắt — rút còn 15 phút thay vì 1 lần/ngày. */
-    const val SNAPSHOT_MINUTES = 15
+    /** Làm mới danh sách lối tắt 1 lần / 3 ngày. */
+    const val SNAPSHOT_DAYS = 3
 
     const val WINDOW_MS = WINDOW_HOURS * 60L * 60L * 1000L
     const val STALE_MS = STALE_DAYS * 24L * 60L * 60L * 1000L
     const val PURGE_MS = PURGE_DAYS * 24L * 60L * 60L * 1000L
-    const val SNAPSHOT_MS = SNAPSHOT_MINUTES * 60L * 1000L
+    const val SNAPSHOT_MS = SNAPSHOT_DAYS * 24L * 60L * 60L * 1000L
 
     fun bucketForHour(hour: Int): HabitTimeBucket {
         return when (hour) {

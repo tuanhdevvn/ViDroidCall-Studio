@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
- * Ghi việc đã thực thi và trả về tối đa 5 lối tắt (snapshot 15 phút).
+ * Ghi việc đã thực thi và trả về tối đa 5 lối tắt (snapshot 3 ngày).
  */
 class HabitActionsRepository(context: Context) {
     private val dbHelper = HabitActionsDatabaseHelper(context.applicationContext)

@@ -7,7 +7,7 @@ import java.time.ZoneId
 import java.util.Calendar
 
 /**
- * Chọn tối đa 5 lối tắt: cửa sổ 24 giờ, snapshot 15 phút, hysteresis 1.5×.
+ * Chọn tối đa 5 lối tắt: cửa sổ 24 giờ, snapshot 3 ngày, hysteresis 1.5×.
  */
 object HabitQuickActionSelector {
 
@@ -57,7 +57,7 @@ object HabitQuickActionSelector {
     }
 
     /**
-     * @return snapshot mới và cờ đã refresh (hết chu kỳ 15 phút hoặc chưa có snapshot).
+     * @return snapshot mới và cờ đã refresh (hết chu kỳ 3 ngày hoặc chưa có snapshot).
      */
     fun resolveSnapshot(
         candidates: List<RankedCandidate>,
