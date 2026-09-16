@@ -37,6 +37,7 @@ import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SmartDisplay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -551,7 +552,7 @@ private fun getIntentIcon(intent: String): ImageVector {
         "open_map" -> Icons.Rounded.Map
         "open_app" -> Icons.Rounded.Apps
         "search_web" -> Icons.Rounded.Search
-        "search_video" -> Icons.Rounded.PlayArrow
+        "search_video" -> Icons.Rounded.SmartDisplay
         "play_music" -> Icons.Rounded.MusicNote
         else -> Icons.Rounded.CheckCircle
     }
@@ -565,6 +566,9 @@ private fun getCategoryIcon(category: String): ImageVector {
         "Hẹn giờ" -> Icons.Rounded.HourglassBottom
         "Bản đồ" -> Icons.Rounded.Map
         "Ứng dụng" -> Icons.Rounded.Apps
+        "Tìm web" -> Icons.Rounded.Search
+        "Video" -> Icons.Rounded.SmartDisplay
+        "Nhạc" -> Icons.Rounded.MusicNote
         else -> Icons.Rounded.CheckCircle
     }
 }
