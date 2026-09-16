@@ -297,7 +297,6 @@ class TroLyNoiOverlayManager(
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                 format = PixelFormat.TRANSLUCENT
                 gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                windowAnimations = android.R.style.Animation_Dialog
             }
 
             windowManager.addView(rootLayout, layoutParams)
