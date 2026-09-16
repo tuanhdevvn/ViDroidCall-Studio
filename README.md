@@ -216,7 +216,7 @@ Chi tiết schema overlay / DataStore: [docs/SCHEMA.md](docs/SCHEMA.md). `Speech
 
 ## 🚀 Cài đặt & nạp GGUF
 
-[docs/BUILD.md](docs/BUILD.md) · [docs/SCHEMA.md](docs/SCHEMA.md) · [docs/COMMIT.md](docs/COMMIT.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues) · [CHANGELOG.md](CHANGELOG.md)
+[docs/BUILD.md](docs/BUILD.md) · [docs/SCHEMA.md](docs/SCHEMA.md) · [docs/COMMIT.md](docs/COMMIT.md) · [docs/NLU_TEST_UTTERANCES.md](docs/NLU_TEST_UTTERANCES.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [Issues](https://github.com/tuanhdevvn/ViDroidCall-Studio/issues) · [CHANGELOG.md](CHANGELOG.md)
 
 **Micro trên Home chỉ nghe** khi huy hiệu **Trợ lý AI đã sẵn sàng** (đã nạp `.gguf` trong Download). Chưa có file: bấm mic được nhưng **không ghi âm** — **Fast-Path trong app cũng không chạy**.
 
