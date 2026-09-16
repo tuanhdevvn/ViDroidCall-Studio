@@ -17,7 +17,6 @@ import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.WindowManager
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -29,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -188,11 +186,10 @@ class TroLyNoiOverlayManager(
                     val currentData by overlayDataFlow.collectAsState()
 
                     ViDroidCallTheme {
-                        // Nền Root bán trong suốt nhẹ nhàng (Scrim) êm ái, chuẩn trợ lý ảo
+                        // Nền root trong suốt — Home phía dưới không bị mờ đen; tap ngoài sheet vẫn dismiss
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.28f))
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
