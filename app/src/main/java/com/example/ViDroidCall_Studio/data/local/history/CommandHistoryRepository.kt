@@ -62,6 +62,7 @@ class CommandHistoryRepository(context: Context) {
                 "greeting" -> "Chào hỏi"
                 "goodbye" -> "Tạm biệt"
                 "clarify" -> "Hỏi lại"
+                "unsupported" -> "Không hỗ trợ"
                 else -> "Hệ thống"
             }
         }
