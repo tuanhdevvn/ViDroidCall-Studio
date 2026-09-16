@@ -17,6 +17,14 @@ import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.WindowManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -25,9 +33,13 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
@@ -75,6 +87,9 @@ class TroLyNoiOverlayManager(
     private var screenOffReceiver: BroadcastReceiver? = null
     var onDismissListener: (() -> Unit)? = null
 
+    // Quản lý tiến trình xử lý NLU/STT ngầm của phiên popup hiện tại
+    private var activeSessionJob: Job? = null
+
     // Quản lý trạng thái hiển thị
     private val overlayDataFlow = MutableStateFlow(AssistantOverlayData())
 
@@ -94,6 +109,7 @@ class TroLyNoiOverlayManager(
      * Nếu có initialCommand (từ Wake Word "Trợ lý ơi [câu lệnh]"), xử lý trực tiếp không cần thu âm lại.
      */
     fun showAssistant(initialCommand: String? = null) {
+        activeSessionJob?.cancel()
         if (initialCommand.isNullOrBlank()) {
             show(
                 AssistantOverlayData(
@@ -101,7 +117,13 @@ class TroLyNoiOverlayManager(
                     statusMessage = SpeechToTextManager.WAITING_PLACEHOLDER
                 )
             )
-            startSpeechRecognition()
+            // Bàn giao micro an toàn: đệm nhẹ 120ms để Audio HAL nhả hoàn toàn AudioRecord từ WakeWord
+            activeSessionJob = scope.launch {
+                delay(120)
+                if (isShowing) {
+                    startSpeechRecognition()
+                }
+            }
         } else {
             // Khi mở trợ lý, luôn hiển thị giao diện LISTENING ("Hãy nói gì đó..." + sóng âm)
             // trong 600ms để người dùng thấy rõ Trợ lý lắng nghe trước khi chuyển sang STT
@@ -111,8 +133,9 @@ class TroLyNoiOverlayManager(
                     statusMessage = "Đang lắng nghe..."
                 )
             )
-            scope.launch {
+            activeSessionJob = scope.launch {
                 delay(600)
+                if (!isShowing) return@launch
                 overlayDataFlow.value = AssistantOverlayData(
                     state = AssistantOverlayState.STT,
                     recognizedText = initialCommand
@@ -134,19 +157,13 @@ class TroLyNoiOverlayManager(
      */
     @Synchronized
     private fun show(initialData: AssistantOverlayData) {
-        // 1. Kiểm tra trạng thái khóa màn hình: Chỉ hiển thị khi thiết bị ĐÃ MỞ KHÓA
-        if (keyguardManager?.isKeyguardLocked == true) {
-            Log.w(TAG, "Thiết bị đang khóa màn hình. Không hiển thị Trợ lý nổi theo yêu cầu an toàn.")
-            return
-        }
-
-        // 2. Kiểm tra quyền SYSTEM_ALERT_WINDOW
+        // 1. Kiểm tra quyền SYSTEM_ALERT_WINDOW
         if (!Settings.canDrawOverlays(appContext)) {
             Log.w(TAG, "Chưa được cấp quyền SYSTEM_ALERT_WINDOW. Không thể mở overlay.")
             return
         }
 
-        // 3. Nếu đang hiển thị thì chỉ cập nhật dữ liệu, không tạo thêm cửa sổ chồng lấn
+        // 2. Nếu đang hiển thị thì chỉ cập nhật dữ liệu, không tạo thêm cửa sổ chồng lấn
         overlayDataFlow.value = initialData
         if (overlayView != null) {
             return
@@ -174,12 +191,18 @@ class TroLyNoiOverlayManager(
 
                 setContent {
                     val currentData by overlayDataFlow.collectAsState()
+                    var isVisible by remember { mutableStateOf(false) }
+
+                    LaunchedEffect(Unit) {
+                        isVisible = true
+                    }
 
                     ViDroidCallTheme {
-                        // Nền Root 100% TRONG SUỐT — Không có Wallpaper, Clock, Icon giả
+                        // Nền Root bán trong suốt nhẹ nhàng (Scrim) êm ái, chuẩn trợ lý ảo
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.28f))
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
@@ -188,15 +211,34 @@ class TroLyNoiOverlayManager(
                                 },
                             contentAlignment = Alignment.BottomCenter
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .navigationBarsPadding()
-                                    .padding(bottom = 12.dp)
-                            ) {
-                                TroLyNoiSheet(
-                                    data = currentData,
-                                    onSheetClick = {}
+                            AnimatedVisibility(
+                                visible = isVisible,
+                                enter = slideInVertically(
+                                    initialOffsetY = { fullHeight -> fullHeight },
+                                    animationSpec = spring(
+                                        dampingRatio = 0.82f,
+                                        stiffness = 380f
+                                    )
+                                ) + fadeIn(
+                                    animationSpec = tween(240)
+                                ),
+                                exit = slideOutVertically(
+                                    targetOffsetY = { fullHeight -> fullHeight },
+                                    animationSpec = tween(180)
+                                ) + fadeOut(
+                                    animationSpec = tween(150)
                                 )
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .navigationBarsPadding()
+                                        .padding(bottom = 12.dp)
+                                ) {
+                                    TroLyNoiSheet(
+                                        data = currentData,
+                                        onSheetClick = {}
+                                    )
+                                }
                             }
                         }
                     }
@@ -210,6 +252,19 @@ class TroLyNoiOverlayManager(
                         return true
                     }
                     return super.dispatchKeyEvent(event)
+                }
+
+                private var hasHadWindowFocus = false
+
+                override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+                    super.onWindowFocusChanged(hasWindowFocus)
+                    if (hasWindowFocus) {
+                        hasHadWindowFocus = true
+                    } else if (hasHadWindowFocus) {
+                        // Người dùng chuyển ứng dụng, nhấn Home hoặc mở thanh thông báo -> dismiss ngay
+                        Log.d(TAG, "Overlay mất window focus -> tự động dismiss")
+                        dismiss()
+                    }
                 }
             }.apply {
                 isFocusable = true
@@ -235,13 +290,14 @@ class TroLyNoiOverlayManager(
                     @Suppress("DEPRECATION")
                     WindowManager.LayoutParams.TYPE_PHONE
                 }
-                flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                @Suppress("DEPRECATION")
+                flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                        WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED or
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                 format = PixelFormat.TRANSLUCENT
                 gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-                    blurBehindRadius = 24
-                }
+                windowAnimations = android.R.style.Animation_Dialog
             }
 
             windowManager.addView(rootLayout, layoutParams)
@@ -261,10 +317,12 @@ class TroLyNoiOverlayManager(
      */
     @Synchronized
     fun dismiss() {
+        activeSessionJob?.cancel()
+        activeSessionJob = null
+        stopSpeechRecognition()
+
         if (overlayView == null) return
         try {
-            stopSpeechRecognition()
-
             unregisterScreenOffReceiver()
 
             val viewToRemove = overlayView
@@ -367,6 +425,7 @@ class TroLyNoiOverlayManager(
     }
 
     private fun startSpeechRecognition() {
+        if (!isShowing) return
         ensureComponentsInitialized()
         try {
             speechToTextManager?.cancelListening()
@@ -415,15 +474,29 @@ class TroLyNoiOverlayManager(
             recognizedText = trimmed
         )
 
-        scope.launch {
-            // Dành khoảng 900ms để người dùng thấy rõ câu nói vừa nhận diện xong trượt dọc mượt mà
-            delay(900)
+        // Lưu câu lệnh vào lịch sử ngay lập tức trên luồng IO độc lập,
+        // đảm bảo kể cả khi popup bị đóng/hủy sau đó thì câu lệnh vẫn được ghi nhận đầy đủ vào SQLite
+        scope.launch(Dispatchers.IO) {
+            try {
+                ensureComponentsInitialized()
+                val fastResult = fastPathMatcher?.match(trimmed)
+                historyRepository?.addFromNluResult(trimmed, fastResult)
+                Log.i(TAG, "Đã lưu thành công câu lệnh vào lịch sử: \"$trimmed\"")
+            } catch (e: Exception) {
+                Log.e(TAG, "Lỗi lưu lịch sử câu lệnh: ${e.message}", e)
+            }
+        }
+
+        activeSessionJob?.cancel()
+        activeSessionJob = scope.launch {
+            // Dành khoảng 800ms để người dùng thấy rõ câu nói vừa nhận diện xong trượt dọc mượt mà
+            delay(800)
+            if (!isShowing) return@launch
 
             // Kiểm tra Fast-Path trước (<5ms, hoàn toàn chưa nạp GGUF)
             val fastResult = fastPathMatcher?.match(trimmed)
             if (fastResult != null) {
                 val nativeAction = NativeAction.fromNluResult(fastResult)
-                historyRepository?.addFromNluResult(trimmed, fastResult)
                 // Chuyển tiếp sang màn hình xác nhận hành động
                 showConfirmationForAction(trimmed, nativeAction)
                 return@launch
@@ -454,6 +527,8 @@ class TroLyNoiOverlayManager(
                         return@launch
                     }
                 }
+
+                if (!isShowing) return@launch
 
                 // Lắng nghe kết quả kế tiếp từ nluEvents
                 val listenerJob = launch {
@@ -493,7 +568,8 @@ class TroLyNoiOverlayManager(
                     onConfirm = { dismiss() },
                     onCancel = { dismiss() }
                 )
-                scope.launch {
+                activeSessionJob?.cancel()
+                activeSessionJob = scope.launch {
                     delay(2500)
                     dismiss()
                 }
@@ -513,7 +589,8 @@ class TroLyNoiOverlayManager(
                     onConfirm = { dismiss() },
                     onCancel = { dismiss() }
                 )
-                scope.launch {
+                activeSessionJob?.cancel()
+                activeSessionJob = scope.launch {
                     delay(2500)
                     dismiss()
                 }
@@ -560,7 +637,9 @@ class TroLyNoiOverlayManager(
         if (screenOffReceiver != null) return
         screenOffReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == Intent.ACTION_SCREEN_OFF || intent?.action == Intent.ACTION_USER_PRESENT) {
+                if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                    dismiss()
+                } else if (intent?.action == Intent.ACTION_USER_PRESENT) {
                     if (keyguardManager?.isKeyguardLocked == true) {
                         dismiss()
                     }

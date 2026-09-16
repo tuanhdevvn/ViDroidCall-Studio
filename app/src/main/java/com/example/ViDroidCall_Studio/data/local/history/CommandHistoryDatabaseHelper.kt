@@ -25,12 +25,6 @@ import java.util.Locale
 class CommandHistoryDatabaseHelper(context: Context) :
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
-    private val updateNotifier = MutableSharedFlow<Unit>(
-        replay = 1,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    ).apply { tryEmit(Unit) }
-
     override fun onCreate(db: SQLiteDatabase) {
         val createTableQuery = """
             CREATE TABLE $TABLE_HISTORY (
@@ -171,5 +165,11 @@ class CommandHistoryDatabaseHelper(context: Context) :
         const val COLUMN_STATUS = "status"
         const val COLUMN_TIME_FORMATTED = "time_formatted"
         const val COLUMN_TIMESTAMP = "timestamp"
+
+        private val updateNotifier = MutableSharedFlow<Unit>(
+            replay = 1,
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        ).apply { tryEmit(Unit) }
     }
 }
