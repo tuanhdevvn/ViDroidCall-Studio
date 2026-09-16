@@ -172,8 +172,7 @@ class SpeechToTextManager(
             return
         }
 
-        SystemSoundHelper.playMicStartSound(context)
-
+        // Beep sau khi AudioRecord startRecording thành công (xem startAudioRecordingLoop)
         isCancelled.set(false)
         isListeningActive.set(true)
         callbacks.onListeningChanged(true)
@@ -212,22 +211,53 @@ class SpeechToTextManager(
         val bufferSize = maxOf(minBufferSize, 2048)
 
         try {
-            audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
-                SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                bufferSize
-            )
+            // Retry khi HAL còn giữ mic sau Wake Word (thiết bị yếu / handoff chậm)
+            var record: AudioRecord? = null
+            var retry = 0
+            while (retry < 4) {
+                if (isCancelled.get() || !isListeningActive.get()) {
+                    handleStopListeningInternal()
+                    return
+                }
+                record?.release()
+                record = AudioRecord(
+                    MediaRecorder.AudioSource.MIC,
+                    SAMPLE_RATE,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    bufferSize
+                )
+                if (record.state == AudioRecord.STATE_INITIALIZED) break
+                Log.w(TAG, "AudioRecord chưa sẵn sàng (lần ${retry + 1}/4), đợi HAL nhả mic...")
+                try {
+                    Thread.sleep(80L * (retry + 1))
+                } catch (_: InterruptedException) {
+                    break
+                }
+                retry++
+            }
 
+            audioRecord = record
             if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "AudioRecord khởi tạo thất bại!")
+                Log.e(TAG, "AudioRecord khởi tạo thất bại sau $retry lần thử (mic busy)")
                 handleStopListeningInternal()
+                mainHandler.post {
+                    callbacks.onTextChanged("Không mở được micro. Vui lòng thử lại.")
+                    callbacks.onListeningChanged(false)
+                }
                 return
             }
 
             audioRecord?.startRecording()
             vad?.reset()
+
+            // Báo mic sẵn sàng: beep + placeholder (user mới nên bắt đầu nói)
+            mainHandler.post {
+                if (isListeningActive.get() && !isCancelled.get()) {
+                    SystemSoundHelper.playMicStartSound(context)
+                    callbacks.onTextChanged(WAITING_PLACEHOLDER)
+                }
+            }
 
             val audioBuffer = ShortArray(512)
             val floatBuffer = FloatArray(512)
@@ -336,15 +366,17 @@ class SpeechToTextManager(
     }
 
     fun cancelListening() {
-        if (isListeningActive.get()) {
+        val wasListening = isListeningActive.get()
+        if (wasListening) {
             SystemSoundHelper.playMicStopSound(context)
         }
         isCancelled.set(true)
         isListeningActive.set(false)
         handleStopListeningInternal()
-        mainHandler.post {
-            callbacks.onListeningChanged(false)
-            callbacks.onTextChanged("")
+        if (wasListening) {
+            mainHandler.post {
+                callbacks.onListeningChanged(false)
+            }
         }
     }
 
