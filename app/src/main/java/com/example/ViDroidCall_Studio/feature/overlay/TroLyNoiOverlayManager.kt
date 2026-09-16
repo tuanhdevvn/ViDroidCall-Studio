@@ -17,13 +17,6 @@ import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.WindowManager
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -33,13 +26,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
@@ -101,6 +92,10 @@ class TroLyNoiOverlayManager(
     private var actionDispatcher: NluActionDispatcher? = null
     private var historyRepository: CommandHistoryRepository? = null
 
+    /** Chờ TroLyNoiSheet layout xong rồi mới bật STT (tránh audio chạy trước popup). */
+    private var pendingListeningAfterSheetLayout = false
+    private var sheetLayoutNotified = false
+
     val isShowing: Boolean
         get() = overlayView != null
 
@@ -111,19 +106,14 @@ class TroLyNoiOverlayManager(
     fun showAssistant(initialCommand: String? = null) {
         activeSessionJob?.cancel()
         if (initialCommand.isNullOrBlank()) {
+            pendingListeningAfterSheetLayout = true
+            sheetLayoutNotified = false
             show(
                 AssistantOverlayData(
                     state = AssistantOverlayState.LISTENING,
                     statusMessage = SpeechToTextManager.WAITING_PLACEHOLDER
                 )
             )
-            // Bàn giao micro an toàn: đệm nhẹ 120ms để Audio HAL nhả hoàn toàn AudioRecord từ WakeWord
-            activeSessionJob = scope.launch {
-                delay(120)
-                if (isShowing) {
-                    startSpeechRecognition()
-                }
-            }
         } else {
             // Khi mở trợ lý, luôn hiển thị giao diện LISTENING ("Hãy nói gì đó..." + sóng âm)
             // trong 600ms để người dùng thấy rõ Trợ lý lắng nghe trước khi chuyển sang STT
@@ -166,8 +156,13 @@ class TroLyNoiOverlayManager(
         // 2. Nếu đang hiển thị thì chỉ cập nhật dữ liệu, không tạo thêm cửa sổ chồng lấn
         overlayDataFlow.value = initialData
         if (overlayView != null) {
+            if (pendingListeningAfterSheetLayout && !sheetLayoutNotified) {
+                onSheetLaidOut()
+            }
             return
         }
+
+        sheetLayoutNotified = false
 
         try {
             ensureComponentsInitialized()
@@ -191,11 +186,6 @@ class TroLyNoiOverlayManager(
 
                 setContent {
                     val currentData by overlayDataFlow.collectAsState()
-                    var isVisible by remember { mutableStateOf(false) }
-
-                    LaunchedEffect(Unit) {
-                        isVisible = true
-                    }
 
                     ViDroidCallTheme {
                         // Nền Root bán trong suốt nhẹ nhàng (Scrim) êm ái, chuẩn trợ lý ảo
@@ -211,34 +201,16 @@ class TroLyNoiOverlayManager(
                                 },
                             contentAlignment = Alignment.BottomCenter
                         ) {
-                            AnimatedVisibility(
-                                visible = isVisible,
-                                enter = slideInVertically(
-                                    initialOffsetY = { fullHeight -> fullHeight },
-                                    animationSpec = spring(
-                                        dampingRatio = 0.82f,
-                                        stiffness = 380f
-                                    )
-                                ) + fadeIn(
-                                    animationSpec = tween(240)
-                                ),
-                                exit = slideOutVertically(
-                                    targetOffsetY = { fullHeight -> fullHeight },
-                                    animationSpec = tween(180)
-                                ) + fadeOut(
-                                    animationSpec = tween(150)
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .navigationBarsPadding()
+                                    .padding(bottom = 12.dp)
+                                    .onGloballyPositioned { onSheetLaidOut() }
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .navigationBarsPadding()
-                                        .padding(bottom = 12.dp)
-                                ) {
-                                    TroLyNoiSheet(
-                                        data = currentData,
-                                        onSheetClick = {}
-                                    )
-                                }
+                                TroLyNoiSheet(
+                                    data = currentData,
+                                    onSheetClick = {}
+                                )
                             }
                         }
                     }
@@ -297,7 +269,6 @@ class TroLyNoiOverlayManager(
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                 format = PixelFormat.TRANSLUCENT
                 gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                windowAnimations = android.R.style.Animation_Dialog
             }
 
             windowManager.addView(rootLayout, layoutParams)
@@ -319,6 +290,8 @@ class TroLyNoiOverlayManager(
     fun dismiss() {
         activeSessionJob?.cancel()
         activeSessionJob = null
+        pendingListeningAfterSheetLayout = false
+        sheetLayoutNotified = false
         stopSpeechRecognition()
 
         if (overlayView == null) return
@@ -432,6 +405,23 @@ class TroLyNoiOverlayManager(
             speechToTextManager?.startListening()
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khởi chạy thu âm: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Bật STT sau khi sheet đã layout và mic Wake Word đã nhả.
+     * 250ms cho HAL đủ thời gian; SpeechToTextManager còn retry thêm nếu mic busy.
+     */
+    private fun onSheetLaidOut() {
+        if (sheetLayoutNotified || !pendingListeningAfterSheetLayout || !isShowing) return
+        sheetLayoutNotified = true
+        pendingListeningAfterSheetLayout = false
+        activeSessionJob?.cancel()
+        activeSessionJob = scope.launch {
+            delay(250)
+            if (isShowing) {
+                startSpeechRecognition()
+            }
         }
     }
 

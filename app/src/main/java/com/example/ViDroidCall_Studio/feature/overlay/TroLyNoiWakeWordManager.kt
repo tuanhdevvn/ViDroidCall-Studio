@@ -11,7 +11,6 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.ViDroidCall_Studio.feature.assistant.TroLyNoiAssistantHelper
-import com.example.ViDroidCall_Studio.util.SystemSoundHelper
 import com.k2fsa.sherpa.onnx.FeatureConfig
 import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineRecognizer
@@ -280,8 +279,9 @@ class TroLyNoiWakeWordManager(
                             // Tạm dừng mic ngầm ngay lập tức để nhường mic hoàn toàn cho Overlay STT
                             pause()
 
+                            // Không beep ở đây — beep khi Overlay STT mở AudioRecord xong
+                            // (tránh user nói sớm trong lúc mic chưa sẵn sàng).
                             mainHandler.post {
-                                SystemSoundHelper.playMicStartSound(context)
                                 onWakeWordDetected(
                                     if (match.remainingCommand.isNotBlank()) match.remainingCommand else null
                                 )
