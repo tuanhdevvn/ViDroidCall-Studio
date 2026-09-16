@@ -41,6 +41,7 @@ import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
@@ -163,6 +164,16 @@ fun TroLyNoiSheet(
                                 actionIconType = data.actionIconType,
                                 onConfirm = data.onConfirm,
                                 onCancel = data.onCancel
+                            )
+                        }
+
+                        AssistantOverlayState.CONVERSATIONAL_REPLY -> {
+                            ConversationalReplyContent(
+                                recognizedText = data.recognizedText,
+                                actionTitle = data.actionTitle,
+                                actionDescription = data.actionDescription,
+                                continueButtonLabel = data.continueButtonLabel,
+                                onContinueListening = data.onContinueListening
                             )
                         }
 
@@ -606,6 +617,123 @@ private fun AnalyzingContent(recognizedText: String) {
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0866FF),
                     letterSpacing = (-0.2).sp
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Phản hồi hội thoại: câu user + thẻ phản hồi + 1 nút full-width (Nói tiếp / Đóng).
+ */
+@Composable
+private fun ConversationalReplyContent(
+    recognizedText: String,
+    actionTitle: String,
+    actionDescription: String,
+    continueButtonLabel: String,
+    onContinueListening: (() -> Unit)?
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (recognizedText.isNotBlank()) {
+            Text(
+                text = "“$recognizedText”",
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A),
+                letterSpacing = (-0.2).sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            color = Color(0xFFF8FAFC),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0866FF)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Mic,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = actionTitle.ifBlank { "Trợ lý phản hồi" },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF64748B)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = actionDescription.ifBlank { "…" },
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A),
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        val isContinueListening = continueButtonLabel != "Đóng"
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            color = Color(0xFF0866FF),
+            shadowElevation = 3.dp,
+            onClick = { onContinueListening?.invoke() }
+        ) {
+            Row(
+                modifier = Modifier.fillMaxHeight(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (isContinueListening) {
+                    Icon(
+                        imageVector = Icons.Rounded.Mic,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text(
+                    text = continueButtonLabel.ifBlank { "Nói tiếp" },
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
         }
