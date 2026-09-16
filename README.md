@@ -50,10 +50,11 @@ Phiên bản nguồn: [GitHub Release v1.1.0](https://github.com/tuanhdevvn/ViDr
 <p align="center">
   <img src="docs/screenshots/02-history.png" width="240" alt="Lịch sử câu lệnh — chạy lại hoặc xóa"/>
   <img src="docs/screenshots/03-settings.png" width="240" alt="Cài đặt theme, cỡ chữ, mô hình GGUF và công tắc Trợ lý nổi"/>
+  <img src="docs/screenshots/06-overlay-listening.jpg" width="240" alt="Trợ lý nổi — Đang lắng nghe trên màn hình khác"/>
 </p>
 
 <p align="center">
-  <sub>Home · Câu lệnh · Xác nhận gọi · Lịch sử · Cài đặt (công tắc Trợ lý nổi nằm dưới thẻ mô hình AI)</sub>
+  <sub>Home · Câu lệnh · Xác nhận gọi · Lịch sử · Cài đặt · Trợ lý nổi (công tắc Trợ lý nổi nằm dưới thẻ mô hình AI)</sub>
 </p>
 
 Hai cách ra lệnh:
