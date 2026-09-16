@@ -278,16 +278,14 @@ private fun QuickActionsSection(
                 spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
             ),
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f),
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f))
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -321,15 +319,19 @@ private fun QuickActionsSection(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                actions.forEach { action ->
-                    QuickActionRow(
-                        action = action,
-                        onClick = { onClick(action) }
-                    )
-                }
+            actions.forEach { action ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.16f))
+                )
+                QuickActionRow(
+                    action = action,
+                    onClick = { onClick(action) }
+                )
             }
+            Spacer(modifier = Modifier.height(6.dp))
         }
     }
 }
@@ -339,57 +341,49 @@ private fun QuickActionRow(
     action: HabitQuickAction,
     onClick: () -> Unit
 ) {
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .bounceClick(scaleDown = 0.97f, onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            .bounceClick(scaleDown = 0.98f, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(46.dp)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = getIntentIcon(action.intent),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Text(
-                text = action.label,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+            Icon(
+                imageVector = getIntentIcon(action.intent),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
             )
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(AppPrimary),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.PlayArrow,
-                    contentDescription = "Chạy ${action.label}",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Text(
+            text = action.label,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(AppPrimary),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.PlayArrow,
+                contentDescription = "Chạy ${action.label}",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
