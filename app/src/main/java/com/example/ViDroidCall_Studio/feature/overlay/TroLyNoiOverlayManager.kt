@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
@@ -91,6 +92,10 @@ class TroLyNoiOverlayManager(
     private var actionDispatcher: NluActionDispatcher? = null
     private var historyRepository: CommandHistoryRepository? = null
 
+    /** Chờ TroLyNoiSheet layout xong rồi mới bật STT (tránh audio chạy trước popup). */
+    private var pendingListeningAfterSheetLayout = false
+    private var sheetLayoutNotified = false
+
     val isShowing: Boolean
         get() = overlayView != null
 
@@ -101,19 +106,14 @@ class TroLyNoiOverlayManager(
     fun showAssistant(initialCommand: String? = null) {
         activeSessionJob?.cancel()
         if (initialCommand.isNullOrBlank()) {
+            pendingListeningAfterSheetLayout = true
+            sheetLayoutNotified = false
             show(
                 AssistantOverlayData(
                     state = AssistantOverlayState.LISTENING,
                     statusMessage = SpeechToTextManager.WAITING_PLACEHOLDER
                 )
             )
-            // Bàn giao micro an toàn: đệm nhẹ 120ms để Audio HAL nhả hoàn toàn AudioRecord từ WakeWord
-            activeSessionJob = scope.launch {
-                delay(120)
-                if (isShowing) {
-                    startSpeechRecognition()
-                }
-            }
         } else {
             // Khi mở trợ lý, luôn hiển thị giao diện LISTENING ("Hãy nói gì đó..." + sóng âm)
             // trong 600ms để người dùng thấy rõ Trợ lý lắng nghe trước khi chuyển sang STT
@@ -156,8 +156,13 @@ class TroLyNoiOverlayManager(
         // 2. Nếu đang hiển thị thì chỉ cập nhật dữ liệu, không tạo thêm cửa sổ chồng lấn
         overlayDataFlow.value = initialData
         if (overlayView != null) {
+            if (pendingListeningAfterSheetLayout && !sheetLayoutNotified) {
+                onSheetLaidOut()
+            }
             return
         }
+
+        sheetLayoutNotified = false
 
         try {
             ensureComponentsInitialized()
@@ -200,6 +205,7 @@ class TroLyNoiOverlayManager(
                                 modifier = Modifier
                                     .navigationBarsPadding()
                                     .padding(bottom = 12.dp)
+                                    .onGloballyPositioned { onSheetLaidOut() }
                             ) {
                                 TroLyNoiSheet(
                                     data = currentData,
@@ -284,6 +290,8 @@ class TroLyNoiOverlayManager(
     fun dismiss() {
         activeSessionJob?.cancel()
         activeSessionJob = null
+        pendingListeningAfterSheetLayout = false
+        sheetLayoutNotified = false
         stopSpeechRecognition()
 
         if (overlayView == null) return
@@ -397,6 +405,22 @@ class TroLyNoiOverlayManager(
             speechToTextManager?.startListening()
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khởi chạy thu âm: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Bật STT sau khi sheet đã layout và mic Wake Word đã nhả (120ms).
+     */
+    private fun onSheetLaidOut() {
+        if (sheetLayoutNotified || !pendingListeningAfterSheetLayout || !isShowing) return
+        sheetLayoutNotified = true
+        pendingListeningAfterSheetLayout = false
+        activeSessionJob?.cancel()
+        activeSessionJob = scope.launch {
+            delay(120)
+            if (isShowing) {
+                startSpeechRecognition()
+            }
         }
     }
 
