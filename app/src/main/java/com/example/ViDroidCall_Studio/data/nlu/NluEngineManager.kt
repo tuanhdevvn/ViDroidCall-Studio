@@ -194,8 +194,6 @@ class NluEngineManager(
         scope.launch(Dispatchers.IO) {
             if (_modelState.value is NluModelState.Loading) return@launch
             _modelState.value = NluModelState.Loading
-            isNativeReady = false
-            llamaHelper = null
             try {
                 loadNativeModel(File(filePath))
             } catch (e: Exception) {
@@ -206,8 +204,7 @@ class NluEngineManager(
     }
 
     private suspend fun loadNativeModel(targetFile: File) = withContext(Dispatchers.IO) {
-        isNativeReady = false
-        llamaHelper = null
+        releaseNativeHelperLocked()
 
         val fileUri = try {
             androidx.core.content.FileProvider.getUriForFile(
@@ -239,6 +236,39 @@ class NluEngineManager(
             Log.i(TAG, "✅ [100% GGUF Model Loaded]: ${targetFile.name}")
         }
         llamaHelper = helper
+    }
+
+    /**
+     * Giải phóng native GGUF khỏi RAM (LlamaHelper.releaseContext).
+     * Dùng khi đóng overlay / không còn cần suy luận — giữ Fast-Path nhẹ.
+     */
+    fun releaseModel() {
+        scope.launch(Dispatchers.IO) {
+            try {
+                releaseNativeHelperLocked()
+                _isGenerating.value = false
+                _modelState.value = NluModelState.Uninitialized
+                Log.i(TAG, "[GGUF_UNLOAD] Đã giải phóng mô hình GGUF khỏi RAM")
+            } catch (e: Exception) {
+                Log.w(TAG, "[GGUF_UNLOAD] Lỗi khi giải phóng GGUF: ${e.message}", e)
+                llamaHelper = null
+                isNativeReady = false
+                _modelState.value = NluModelState.Uninitialized
+            }
+        }
+    }
+
+    private fun releaseNativeHelperLocked() {
+        try {
+            llamaHelper?.abort()
+            llamaHelper?.stopPrediction()
+            llamaHelper?.release()
+        } catch (e: Exception) {
+            Log.w(TAG, "Lỗi release LlamaHelper: ${e.message}")
+        } finally {
+            llamaHelper = null
+            isNativeReady = false
+        }
     }
 
     /**
