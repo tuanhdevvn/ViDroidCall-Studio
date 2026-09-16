@@ -7,13 +7,24 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-16
+
 ### Added
 
 - Lưu mẫu sai NLU sau câu GGUF: thẻ JSON trên màn trợ lý, danh sách / xem JSON / xóa / share file trong Cài đặt. Fast-Path không lưu.
 
+### Changed
+
+- Trợ lý nổi chỉ kích hoạt bằng wake word **「trợ lý」 / 「trợ lý ơi」** hoặc nút trên thông báo (bỏ VoiceInteraction / ASSIST hệ thống)
+- Overlay: scrim chỉ khi hiện sheet; TTS không bị cắt sớm; xác nhận Hủy/Xác nhận dạng hội thoại; warm RAM / unload GGUF khi cần
+
+### Fixed
+
+- Overlay tối màn hình trước khi popup; độ trễ STT sau wake; dismiss cắt TTS; UX xác nhận gọi/SMS trên overlay
+
 ### Docs
 
-- README, SCHEMA, BUILD, CONTRIBUTING: Trợ lý nổi (wake word, overlay, trợ lý hệ thống Android)
+- README, SCHEMA, BUILD, CONTRIBUTING: Trợ lý nổi; ảnh screenshot overlay đang lắng nghe
 
 ## [1.1.0] - 2026-09-14
 

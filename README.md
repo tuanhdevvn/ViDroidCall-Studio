@@ -36,7 +36,7 @@
 
 STT và NLU **không cần internet**. Gọi / SMS / mở app / báo thức chạy local. **Chỉ đường, YouTube, tìm web** mở app hệ thống và có thể cần mạng.
 
-Phiên bản nguồn: [GitHub Release v1.1.0](https://github.com/tuanhdevvn/ViDroidCall-Studio/releases/tag/v1.1.0).
+Phiên bản nguồn: [GitHub Release v1.1.1](https://github.com/tuanhdevvn/ViDroidCall-Studio/releases/tag/v1.1.1).
 
 ---
 
