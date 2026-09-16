@@ -974,7 +974,10 @@ class FastPathMatcher(
     private fun isAlarmCommand(text: String): Boolean {
         if (TIMER_PREFIXES.any { text.contains(it) }) return false
         if (text.contains("giay") && !text.contains("bao thuc")) return false
-        return ALARM_PREFIXES.any { text.contains(it) } || text.contains("gio") || text.contains("h")
+        // Dùng word boundary cho "h" để tránh khớp nhầm với chữ "h" trong từ tiếng Việt
+        // (ví dụ: "chuyện"→"chuyen" chứa h, "phut" chứa h, nhưng KHÔNG phải đơn vị giờ "h")
+        val hasHourH = Regex("""\bh\b""").containsMatchIn(text)
+        return ALARM_PREFIXES.any { text.contains(it) } || text.contains("gio") || hasHourH
     }
 
     private fun isTimerCommand(text: String): Boolean {
@@ -1022,7 +1025,15 @@ class FastPathMatcher(
         val numStr = TIMER_UNITS_CLEAN_REGEX.replace(payload, "").trim()
 
         val duration = VietnameseNumberParser.parse(numStr)
-        if (duration != null && duration > 0) {
+        if (duration != null) {
+            if (duration <= 0) {
+                val args = JSONObject().apply {
+                    put("duration", 0)
+                    put("unit", unit)
+                    put("label", "Hẹn giờ")
+                }
+                return buildNluResult("set_timer", args, "low", "invalid", false)
+            }
             val args = JSONObject().apply {
                 put("duration", duration)
                 put("unit", unit)
@@ -1054,7 +1065,14 @@ class FastPathMatcher(
 
         var addMins = 0
 
-        if (payload == "nua tieng" || payload == "nua gio") {
+        val compoundHm = Regex("^(.+?)\\s*(?:tieng|gio|\\bh\\b|(?<=\\d)h)\\s*(.+?)(?:\\s*(?:phut|p))?$").find(payload)
+        if (compoundHm != null) {
+            val h = VietnameseNumberParser.parse(compoundHm.groupValues[1].trim())
+            val m = VietnameseNumberParser.parse(compoundHm.groupValues[2].trim())
+            if (h != null && m != null) {
+                addMins = h * 60 + m
+            }
+        } else if (payload == "nua tieng" || payload == "nua gio") {
             addMins = 30
         } else {
             val unit = when {
@@ -1283,7 +1301,20 @@ class FastPathMatcher(
                     else -> VietnameseNumberParser.parse(minutePartClean)
                 }
 
-                if (minusMinutes == null || minusMinutes !in 1..59 || targetHour !in 0..23) {
+                if (minusMinutes == null) {
+                    return null
+                }
+
+                if (minusMinutes !in 1..59 || targetHour !in 0..23) {
+                    val hasAlarmPrefix = ALARM_PREFIXES.any { unaccented.contains(it) }
+                    if (hasAlarmPrefix) {
+                        val args = JSONObject().apply {
+                            put("hour", targetHour)
+                            put("minute", minusMinutes)
+                            put("label", "Báo thức")
+                        }
+                        return buildNluResult("set_alarm", args, "low", "invalid", false)
+                    }
                     return null
                 }
 
@@ -1306,12 +1337,12 @@ class FastPathMatcher(
                     totalMinutes += 24 * 60
                 }
 
-                val resultHour = (totalMinutes / 60) % 24
-                val resultMinute = totalMinutes % 60
+                val finalHour = totalMinutes / 60
+                val finalMinute = totalMinutes % 60
 
                 val args = JSONObject().apply {
-                    put("hour", resultHour)
-                    put("minute", resultMinute)
+                    put("hour", finalHour)
+                    put("minute", finalMinute)
                     put("label", "Báo thức")
                 }
 
@@ -1383,6 +1414,8 @@ class FastPathMatcher(
                     val parsed = VietnameseNumberParser.parse(minutePart)
                     if (parsed != null) {
                         parsedMinute = parsed
+                    } else {
+                        return null
                     }
                 }
             } else {
@@ -1391,14 +1424,27 @@ class FastPathMatcher(
         }
 
         if (parsedHour == null) {
+            val hasAlarmPrefix = ALARM_PREFIXES.any { unaccented.contains(it) }
+            val cleanUnaccented = stripAccents(payload.trim())
+            if (hasAlarmPrefix && (cleanUnaccented.isEmpty() || cleanUnaccented in setOf("di", "giup toi", "cho toi", "ho toi", "nhe"))) {
+                val args = JSONObject().apply {
+                    put("missing", JSONArray().put("time"))
+                }
+                return buildNluResult("clarify", args, "low", "needs_clarification", false)
+            }
             return null
         }
 
-        // ============================================================
-        // 7. KIỂM TRA GIỜ HỢP LỆ
-        // ============================================================
-
         if (parsedHour !in 0..23) {
+            val hasAlarmPrefix = ALARM_PREFIXES.any { unaccented.contains(it) }
+            if (hasAlarmPrefix) {
+                val args = JSONObject().apply {
+                    put("hour", parsedHour)
+                    put("minute", parsedMinute)
+                    put("label", "Báo thức")
+                }
+                return buildNluResult("set_alarm", args, "low", "invalid", false)
+            }
             return null
         }
 
@@ -1428,6 +1474,15 @@ class FastPathMatcher(
         // ============================================================
 
         if (parsedMinute !in 0..59) {
+            val hasAlarmPrefix = ALARM_PREFIXES.any { unaccented.contains(it) }
+            if (hasAlarmPrefix) {
+                val args = JSONObject().apply {
+                    put("hour", hour24)
+                    put("minute", parsedMinute)
+                    put("label", "Báo thức")
+                }
+                return buildNluResult("set_alarm", args, "low", "invalid", false)
+            }
             return null
         }
 
@@ -1470,13 +1525,55 @@ class FastPathMatcher(
 
         payload = payload.trim()
 
-        val compoundHourMin = Regex("(\\d+)\\s*(?:tieng|gio|h)\\s*(\\d+)(?:\\s*phut|\\s*p)?")
+        if (payload.isEmpty() || payload in setOf("di", "giup toi", "cho toi", "ho toi", "nhe")) {
+            val args = JSONObject().apply {
+                put("missing", JSONArray().put("duration"))
+            }
+            return buildNluResult("clarify", args, "low", "needs_clarification", false)
+        }
+
+        // 1. Dạng kết hợp Giờ + Phút + Giây (ví dụ: "1 giờ 30 phút 15 giây")
+        val compoundHmsRegex = Regex("^(.+?)\\s*(?:tieng|gio|h)\\s*(.+?)\\s*(?:phut|p)\\s*(.+?)(?:\\s*(?:giay|s))?$")
+        val matchHms = compoundHmsRegex.find(payload)
+        if (matchHms != null) {
+            val h = VietnameseNumberParser.parse(matchHms.groupValues[1].trim())
+            val m = VietnameseNumberParser.parse(matchHms.groupValues[2].trim())
+            val s = VietnameseNumberParser.parse(matchHms.groupValues[3].trim())
+            if (h != null && m != null && s != null) {
+                val totalSecs = h * 3600 + m * 60 + s
+                if (totalSecs <= 0) {
+                    val args = JSONObject().apply {
+                        put("duration", 0)
+                        put("unit", "seconds")
+                        put("label", "Hẹn giờ")
+                    }
+                    return buildNluResult("set_timer", args, "low", "invalid", false)
+                }
+                val args = JSONObject().apply {
+                    put("duration", totalSecs)
+                    put("unit", "seconds")
+                    put("label", "Hẹn giờ")
+                }
+                return buildNluResult("set_timer", args, "low", "success", false)
+            }
+        }
+
+        // 2. Dạng kết hợp Giờ + Phút (ví dụ: "5 giờ 90 chín phút", "1 tiếng 30 phút", "2h15p", "5 giờ 30")
+        val compoundHourMin = Regex("^(.+?)\\s*(?:tieng|gio|h)\\s*(.+?)(?:\\s*(?:phut|p))?$")
         val matchHm = compoundHourMin.find(payload)
         if (matchHm != null) {
-            val h = matchHm.groupValues[1].toIntOrNull() ?: 0
-            val m = matchHm.groupValues[2].toIntOrNull() ?: 0
-            val totalMins = h * 60 + m
-            if (totalMins > 0) {
+            val h = VietnameseNumberParser.parse(matchHm.groupValues[1].trim())
+            val m = VietnameseNumberParser.parse(matchHm.groupValues[2].trim())
+            if (h != null && m != null) {
+                val totalMins = h * 60 + m
+                if (totalMins <= 0) {
+                    val args = JSONObject().apply {
+                        put("duration", 0)
+                        put("unit", "minutes")
+                        put("label", "Hẹn giờ")
+                    }
+                    return buildNluResult("set_timer", args, "low", "invalid", false)
+                }
                 val args = JSONObject().apply {
                     put("duration", totalMins)
                     put("unit", "minutes")
@@ -1485,13 +1582,23 @@ class FastPathMatcher(
                 return buildNluResult("set_timer", args, "low", "success", false)
             }
         }
-        val compoundMinSec = Regex("(\\d+)\\s*(?:phut|p)\\s*(\\d+)(?:\\s*giay|\\s*s)?")
+
+        // 3. Dạng kết hợp Phút + Giây (ví dụ: "5 phút 30 giây", "10p 20s", "5 phút 90 chín giây")
+        val compoundMinSec = Regex("^(.+?)\\s*(?:phut|p)\\s*(.+?)(?:\\s*(?:giay|s))?$")
         val matchMs = compoundMinSec.find(payload)
         if (matchMs != null) {
-            val m = matchMs.groupValues[1].toIntOrNull() ?: 0
-            val s = matchMs.groupValues[2].toIntOrNull() ?: 0
-            val totalSecs = m * 60 + s
-            if (totalSecs > 0) {
+            val m = VietnameseNumberParser.parse(matchMs.groupValues[1].trim())
+            val s = VietnameseNumberParser.parse(matchMs.groupValues[2].trim())
+            if (m != null && s != null) {
+                val totalSecs = m * 60 + s
+                if (totalSecs <= 0) {
+                    val args = JSONObject().apply {
+                        put("duration", 0)
+                        put("unit", "seconds")
+                        put("label", "Hẹn giờ")
+                    }
+                    return buildNluResult("set_timer", args, "low", "invalid", false)
+                }
                 val args = JSONObject().apply {
                     put("duration", totalSecs)
                     put("unit", "seconds")
@@ -1510,7 +1617,15 @@ class FastPathMatcher(
         val numStr = TIMER_UNITS_CLEAN_REGEX.replace(payload, "").trim()
 
         val duration = VietnameseNumberParser.parse(numStr)
-        if (duration != null && duration > 0) {
+        if (duration != null) {
+            if (duration <= 0) {
+                val args = JSONObject().apply {
+                    put("duration", duration)
+                    put("unit", unit)
+                    put("label", "Hẹn giờ")
+                }
+                return buildNluResult("set_timer", args, "low", "invalid", false)
+            }
             val args = JSONObject().apply {
                 put("duration", duration)
                 put("unit", unit)
