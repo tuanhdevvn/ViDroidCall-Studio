@@ -204,6 +204,60 @@ class NativeActionDispatcherUnitTest {
     }
 
     @Test
+    fun testSetAlarm_ggufInvalidStatusButHour5IsValid() {
+        val json = """
+            {
+              "intent": "set_alarm",
+              "arguments": { "hour": 5, "minute": 0 },
+              "risk_level": "low",
+              "status": "invalid",
+              "requires_confirmation": false
+            }
+        """.trimIndent()
+        val action = NativeAction.fromNluResult(NluJsonParser.parse(json))
+        assertTrue(action is NativeAction.SetAlarm)
+        val alarm = action as NativeAction.SetAlarm
+        assertEquals(5, alarm.hour)
+        assertEquals(0, alarm.minute)
+    }
+
+    @Test
+    fun testSetAlarm_hourAsStringAndDoubleStillValid() {
+        val asString = NativeAction.fromNluResult(
+            NluJsonParser.parse("""{"status":"success","intent":"set_alarm","arguments":{"hour":"5","minute":"0"}}""")
+        )
+        assertTrue(asString is NativeAction.SetAlarm)
+        assertEquals(5, (asString as NativeAction.SetAlarm).hour)
+
+        val asDouble = NativeAction.fromNluResult(
+            NluJsonParser.parse("""{"status":"success","intent":"set_alarm","arguments":{"hour":5.0,"minute":0.0}}""")
+        )
+        assertTrue(asDouble is NativeAction.SetAlarm)
+        assertEquals(5, (asDouble as NativeAction.SetAlarm).hour)
+        assertEquals(0, asDouble.minute)
+    }
+
+    @Test
+    fun testSetAlarm_invalidStatusWithoutClockStaysInvalid() {
+        val action = NativeAction.fromNluResult(
+            NluJsonParser.parse("""{"intent":"set_alarm","status":"invalid"}""")
+        )
+        assertTrue(action is NativeAction.Informational)
+        assertEquals(
+            "Thời gian bạn yêu cầu không hợp lệ.",
+            (action as NativeAction.Informational).message
+        )
+    }
+
+    @Test
+    fun testSetTimer_invalidStatusButDurationValid() {
+        val json = """{"intent":"set_timer","status":"invalid","arguments":{"duration":10,"unit":"minutes"}}"""
+        val action = NativeAction.fromNluResult(NluJsonParser.parse(json))
+        assertTrue(action is NativeAction.SetTimer)
+        assertEquals(10, (action as NativeAction.SetTimer).displayDuration)
+    }
+
+    @Test
     fun testSetTimerActionParsing() {
         val json = """
             {
