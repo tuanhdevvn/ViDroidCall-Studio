@@ -86,6 +86,12 @@ default**. Enable it in Settings after install:
 Wake-word spotting uses Sherpa-ONNX (no GGUF). The overlay pauses wake word
 while it is visible, and while the device is locked or the screen is off.
 
+**Memory (hybrid / Option D):** Closing the overlay unloads the GGUF/NLU native
+model from RAM (`NluEngineManager.releaseModel`). Sherpa STT and system TTS stay
+warm so the next open is fast. Wake-word models stay loaded while the master
+switch is on. Turning off **Trợ lý nổi** stops the foreground service and
+releases remaining managers.
+
 Details: [SCHEMA.md](SCHEMA.md) §8, [README](../README.md).
 
 ## Third-party native binaries

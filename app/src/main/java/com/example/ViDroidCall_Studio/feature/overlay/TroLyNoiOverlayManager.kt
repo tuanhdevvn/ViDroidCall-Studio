@@ -292,6 +292,8 @@ class TroLyNoiOverlayManager(
         pendingListeningAfterSheetLayout = false
         sheetLayoutNotified = false
         stopSpeechRecognition(stopTts = stopTts)
+        // Option D (#75): unload GGUF nặng khi đóng popup; giữ STT/TTS warm cho lần mở sau
+        releaseHeavyModels()
 
         if (overlayView == null) return
         try {
@@ -426,10 +428,22 @@ class TroLyNoiOverlayManager(
 
     private fun stopSpeechRecognition(stopTts: Boolean = true) {
         speechToTextManager?.cancelListening()
-        // Không gán null để giữ mô hình Sherpa-ONNX đã nạp sẵn trong bộ nhớ (Warm State)
-        // Nhờ vậy lần mở popup kế tiếp micro sẽ bắt đầu ngay lập tức (<15ms) thay vì phải đợi nạp lại
+        // Giữ Sherpa STT + TTS warm trong RAM (Option D #75) — chỉ nhả mic / dừng phát.
+        // GGUF được unload riêng trong releaseHeavyModels() khi dismiss.
         if (stopTts) {
             textToSpeechManager?.stop()
+        }
+    }
+
+    /**
+     * Unload GGUF native khi đóng overlay. STT/TTS vẫn warm.
+     */
+    private fun releaseHeavyModels() {
+        val nlu = nluEngineManager
+        nluEngineManager = null
+        if (nlu != null) {
+            Log.i(TAG, "[GGUF_UNLOAD] Overlay dismiss — giải phóng NLU/GGUF")
+            nlu.releaseModel()
         }
     }
 
@@ -503,6 +517,8 @@ class TroLyNoiOverlayManager(
         speechToTextManager = null
         textToSpeechManager?.shutdown()
         textToSpeechManager = null
+        // releaseHeavyModels() đã chạy trong dismiss(); đảm bảo không còn tham chiếu
+        nluEngineManager?.releaseModel()
         nluEngineManager = null
         fastPathMatcher = null
         actionDispatcher = null
