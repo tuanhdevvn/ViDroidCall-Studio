@@ -1,11 +1,16 @@
 # Third-party binaries bundled in this repository
 
-These files are **unmodified** upstream artifacts. ViDroidCall Studio does not
-patch their source or weights. They are included so `./gradlew assembleDebug`
-produces a runnable APK without a separate native build.
+Native `.so` files and speech-model weights in this repo are **unmodified**
+upstream artifacts. ViDroidCall Studio does not patch their code or weights.
+They are included so `./gradlew assembleDebug` produces a runnable APK
+without a separate native build.
+
+The Kotlin files under `com/k2fsa/sherpa/onnx/` are an upstream API copy.
+Their logic is unchanged; SPDX and the Apache 2.0 notice were added so each
+file states the license (see [Kotlin API copy](#kotlin-api-copy)).
 
 Maven/Gradle already supplies Jetpack, Kotlin, and `llamacpp-kotlin`.
-GGUF NLU weights are **not** stored in git (hundreds of MB to 1.6 GB).
+GGUF NLU weights are stored in `models/` via Git LFS (~397 MB).
 
 ## Native libraries (`app/src/main/jniLibs`)
 
@@ -62,5 +67,7 @@ After `git lfs pull`, copy onto the device (`adb push` as in the [README](../REA
 ## Kotlin API copy
 
 `app/src/main/java/com/k2fsa/sherpa/onnx/` is the upstream Sherpa-ONNX Android
-API (Xiaomi / k2-fsa, Apache-2.0). Xiaomi copyright lines are kept; SPDX and
-the Apache 2.0 notice were added so each file states the license.
+API (Xiaomi / k2-fsa, Apache-2.0). This is not ViDroidCall code: keep Xiaomi
+copyright, do not re-license as the team's work. SPDX and the Apache 2.0
+notice were added as comments only so each file states the license; no API
+or JNI behavior was changed.

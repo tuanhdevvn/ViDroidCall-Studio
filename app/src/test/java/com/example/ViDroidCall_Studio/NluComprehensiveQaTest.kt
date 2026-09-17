@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// SPDX-License-Identifier: Apache-2.0
-
 package com.example.ViDroidCall_Studio
 
 import com.example.ViDroidCall_Studio.data.model.NluIntent
