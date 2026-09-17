@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Docs
+
+- SPDX, copyright và bản thông báo Apache 2.0 trên từng tệp mã nguồn
+
 ### Fixed
 
 - Không văng process lần nạp GGUF đầu sau cài mới / xóa dữ liệu (không chồng Sherpa, không load GGUF trùng)

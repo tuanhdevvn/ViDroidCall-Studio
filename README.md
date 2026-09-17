@@ -270,12 +270,14 @@ GitHub Actions: phụ thuộc Gradle, `compileDebugKotlin`, `testDebugUnitTest`,
 
 ## 📄 Giấy phép
 
-[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). File Kotlin của nhóm: `SPDX-License-Identifier: Apache-2.0` và `Copyright 2026 ViDroidCall Studio contributors`.
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). Mỗi tệp mã của nhóm (Kotlin, Gradle, XML, script, workflow) có `SPDX-License-Identifier: Apache-2.0`, dòng copyright, và bản thông báo Apache 2.0. File vendored `com.k2fsa.sherpa.onnx` giữ copyright Xiaomi.
 
 ```text
+SPDX-License-Identifier: Apache-2.0
 Copyright 2026 ViDroidCall Studio contributors
 
-Licensed under the Apache License, Version 2.0
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
 http://www.apache.org/licenses/LICENSE-2.0
 ```
 
