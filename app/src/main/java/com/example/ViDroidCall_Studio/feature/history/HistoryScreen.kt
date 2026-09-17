@@ -67,14 +67,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ViDroidCall_Studio.data.local.habit.HabitQuickAction
-import com.example.ViDroidCall_Studio.data.local.habit.HabitRules
 import com.example.ViDroidCall_Studio.data.local.habit.NativeActionCodec
 import com.example.ViDroidCall_Studio.domain.model.NativeAction
 import com.example.ViDroidCall_Studio.feature.history.model.CommandHistoryItem
 import com.example.ViDroidCall_Studio.ui.component.ActionConfirmationDialog
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
-import java.util.Calendar
 
 /**
  * Màn hình Lịch sử câu lệnh
@@ -269,11 +267,6 @@ private fun QuickActionsSection(
     actions: List<HabitQuickAction>,
     onClick: (HabitQuickAction) -> Unit
 ) {
-    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    val periodLabel = HabitRules.bucketTitle(HabitRules.bucketForHour(hour))
-        .removePrefix("Hay dùng ")
-        .replaceFirstChar { it.uppercase() }
-
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -307,22 +300,15 @@ private fun QuickActionsSection(
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Câu lệnh hay dùng",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = periodLabel,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = "Câu lệnh hay dùng",
+                    modifier = Modifier.weight(1f),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
             }
             actions.forEach { action ->
                 Box(
