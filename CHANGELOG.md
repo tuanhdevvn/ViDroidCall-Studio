@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- Trọng số NLU Git LFS: `models/qwen3-nlu-Q4_K_M.gguf` (thay `qwen3-nlu-run-Q4_K_M.gguf`)
+
 ## [1.1.2] - 2026-09-17
 
 Patch: giấy phép trên từng tệp mã (OLP PoF), CI, lịch sử / câu lệnh hay dùng.

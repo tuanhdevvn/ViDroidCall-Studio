@@ -65,7 +65,7 @@ Overlay: xác nhận mọi thao tác native (ẩn số điện thoại)
 NluActionDispatcher → Intent Android
 ```
 
-Micro **trên tab Home** chỉ chạy khi `NluModelState.Ready` (đã nạp `.gguf` trên máy). File GGUF chuẩn: `qwen3-nlu-run-Q4_K_M.gguf` trong thư mục Download.
+Micro **trên tab Home** chỉ chạy khi `NluModelState.Ready` (đã nạp `.gguf` trên máy). File GGUF chuẩn: `qwen3-nlu-Q4_K_M.gguf` trong thư mục Download.
 
 Wake word Trợ lý nổi dùng Sherpa (không cần GGUF). Câu sau wake word: Fast-Path không gọi LLM; không khớp Fast-Path thì **cần** GGUF Ready.
 
@@ -155,7 +155,7 @@ Sau LLM: nếu mô hình trả `call_contact` nhưng câu kiểu “X là ai / l
 | `ModelNotFound` | Không có `.gguf` trong thư mục quét |
 | `Error(message)` | Lỗi nạp |
 
-Thư mục quét (ưu tiên tên `qwen3-nlu-run-Q4_K_M.gguf`, rồi bất kỳ `*.gguf`): filesDir ngoài / Download app / filesDir / Download công khai / `/sdcard/Download`.
+Thư mục quét (ưu tiên tên `qwen3-nlu-Q4_K_M.gguf`, rồi bất kỳ `*.gguf`): filesDir ngoài / Download app / filesDir / Download công khai / `/sdcard/Download`.
 
 ---
 
@@ -252,4 +252,4 @@ Wake word **tạm dừng** khi: overlay đang mở, màn hình tắt, hoặc key
 | Zipformer + VAD | `assets/sherpa-onnx-vi/*.onnx`, `tokens.txt`, `bpe.model` |
 | `libsherpa-onnx-jni.so`, `libonnxruntime.so` | `jniLibs/<abi>/` |
 | Fast-Path rules | `assets/fast_path_rules.json` |
-| GGUF NLU | Download trên máy; bản nguồn: `models/qwen3-nlu-run-Q4_K_M.gguf` |
+| GGUF NLU | Download trên máy; bản nguồn: `models/qwen3-nlu-Q4_K_M.gguf` |

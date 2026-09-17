@@ -43,7 +43,7 @@ class NluModelLoadGateTest {
 
     @Test
     fun skipsWhenReadyUnlessForce() {
-        val ready = NluModelState.Ready("qwen3-nlu-run-Q4_K_M.gguf")
+        val ready = NluModelState.Ready("qwen3-nlu-Q4_K_M.gguf")
         assertFalse(NluModelLoadGate.shouldStartLoad(ready, force = false, isReady = true))
         assertTrue(NluModelLoadGate.shouldStartLoad(ready, force = true, isReady = true))
     }

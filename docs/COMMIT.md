@@ -123,7 +123,7 @@ CI chạy trên push của `feature/**` và `bugfix/**`. PR nhắm `main`.
 Không commit:
 
 * `local.properties`, `.idea/`, khóa máy, `.env`
-* `.gguf` ngoài `models/` (Git LFS); không đổi tên `qwen3-nlu-run-Q4_K_M.gguf`
+* `.gguf` ngoài `models/` (Git LFS); không đổi tên `qwen3-nlu-Q4_K_M.gguf`
 * `.bin` linh tinh, `.so` / ONNX chưa ghi nguồn — xem [THIRD_PARTY_BINARIES.md](THIRD_PARTY_BINARIES.md)
 * Trailer Cursor: `Co-authored-by: Cursor`, `Made-with: Cursor` (hook `.githooks/commit-msg` gỡ nếu đã cài)
 

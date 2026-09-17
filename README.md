@@ -237,12 +237,12 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ### Nạp Qwen3 GGUF
 
-Trọng số nằm trong repo: [`models/qwen3-nlu-run-Q4_K_M.gguf`](models/qwen3-nlu-run-Q4_K_M.gguf) (~397 MB, **Git LFS**). Chi tiết: [`models/README.md`](models/README.md). Cần `git lfs pull` khi clone.
+Trọng số nằm trong repo: [`models/qwen3-nlu-Q4_K_M.gguf`](models/qwen3-nlu-Q4_K_M.gguf) (~378 MB, **Git LFS**). Chi tiết: [`models/README.md`](models/README.md). Cần `git lfs pull` khi clone.
 
 Ứng dụng đọc GGUF từ thư mục **Download trên điện thoại**, không đọc từ thư mục clone:
 
 ```bash
-adb push models/qwen3-nlu-run-Q4_K_M.gguf /sdcard/Download/
+adb push models/qwen3-nlu-Q4_K_M.gguf /sdcard/Download/
 ```
 
 Cấp quyền tệp nếu hệ thống hỏi. Huy hiệu xanh → micro Home bắt đầu nghe.
