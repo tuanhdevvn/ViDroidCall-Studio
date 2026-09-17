@@ -31,8 +31,8 @@ Package Kotlin của nhóm:
 | `data/model` | `NluResult`, enum intent / status / risk, parser JSON |
 | `data/nlu` | Fast-Path, Llama.cpp, `NluEngineManager`, dispatcher |
 | `data/local` | DataStore (theme, font, onboarding, Trợ lý nổi) |
-| `data/local/history` | SQLite lịch sử lệnh (10 câu STT mới nhất) |
-| `data/local/habit` | SQLite lệnh hay dùng (`habit_actions` + events; không lấy từ history) |
+| `data/local/history` | SQLite chung lịch sử + câu lệnh nhanh (`vidroidcall_commands.db`) |
+| `data/local/habit` | Codec NativeAction, top 5 lối tắt (3 ngày, làm mới 1 lần/ngày) |
 | `data/local/feedback` | JSONL phản hồi NLU (nếu bật) |
 | `domain/model` | `NativeAction` (thao tác Android) |
 | `feature/assistant` | Màn Home, helper khóa màn hình |
@@ -163,9 +163,11 @@ Thư mục quét (ưu tiên tên `qwen3-nlu-run-Q4_K_M.gguf`, rồi bất kỳ `
 
 Không dùng Room.
 
-### SQLite — `vidroidcall_history.db`
+### SQLite — `vidroidcall_commands.db`
 
-Bảng `command_history`, tối đa **10** dòng mới nhất.
+Một bảng sự kiện `command_events`. **Không** còn `vidroidcall_history.db` / `vidroidcall_habit.db` (xóa khi mở helper mới).
+
+Mỗi lần NLU ghi một dòng (câu STT). Khi user thực thi việc đủ điều kiện, `slot_key` / `action_json` gắn vào dòng STT mới nhất chưa có slot (hoặc thêm dòng nếu bấm lối tắt).
 
 | Cột | Kiểu |
 | :--- | :--- |
@@ -175,16 +177,16 @@ Bảng `command_history`, tối đa **10** dòng mới nhất.
 | `status` | TEXT NOT NULL (mặc định `"Thành công"`) |
 | `time_formatted` | TEXT NOT NULL |
 | `timestamp` | INTEGER NOT NULL |
+| `slot_key` | TEXT (nullable; `intent\|slot`) |
+| `intent` | TEXT |
+| `label` | TEXT |
+| `action_json` | TEXT |
 
-UI: `CommandHistoryItem(id, commandText, time, status, category, timestamp)`.
+`command_meta.last_purge_day`: mỗi ngày lịch mới, `DELETE` dòng `timestamp < now - 3 ngày`. `snapshot_day` / `snapshot_keys`: top 5 lối tắt, làm mới 1 lần/ngày.
 
-### SQLite — `vidroidcall_habit.db`
+UI lịch sử: `ORDER BY timestamp DESC LIMIT 10`. Câu lệnh nhanh: đếm `slot_key` trong **3 ngày**, `COUNT DESC LIMIT 5`, **đóng băng đến hết ngày**. Greeting / goodbye / clarify / unsupported không có slot. Xóa hết lịch sử xóa cả log tần suất và snapshot.
 
-Bảng `habit_actions` / `habit_events` / `habit_meta`. **Không** nới `command_history` để tính tần suất.
-
-Ghi khi user đã thực thi (`NativeAction` đủ điều kiện: không `greeting` / `goodbye` / `clarify` / `unsupported`). Unique `intent|slot`. Nhãn kiểu `Gọi Mai`, JSON đủ `executeNativeAction`.
-
-Top 5: `hits ≥ 2` trong 24 giờ; loại `last_used` > 3 ngày; snapshot 1 lần / 3 ngày (`habit_meta`). Dòng không event 7 ngày thì xóa. DB trống thì gieo 5 lệnh mẫu một lần (`demo_seeded`). UI: khối trên tab Lịch sử.
+UI: `CommandHistoryItem`; lối tắt `HabitQuickAction` trên tab Lịch sử.
 
 ### DataStore Preferences
 

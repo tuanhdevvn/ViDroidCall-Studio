@@ -146,7 +146,7 @@ fun HomeScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 val granted = StoragePermissionHelper.hasStoragePermission(context)
                 hasStoragePermission = granted
-                if (granted && !nluEngineManager.isModelReady()) {
+                if (granted && !nluEngineManager.isModelReady() && !nluEngineManager.isModelLoading()) {
                     nluEngineManager.autoDetectAndLoadModel()
                 }
                 if (consumeOpenSettingsTab()) {
@@ -315,8 +315,18 @@ fun HomeScreen(
         },
         onPermissionDenied = {
             showMicroPermissionDialog = true
-        }
+        },
+        preloadOnInit = false
     ).also { speechToTextRef = it }
+
+    LaunchedEffect(modelState) {
+        when (modelState) {
+            is NluModelState.Ready,
+            is NluModelState.Error,
+            NluModelState.ModelNotFound -> speechToText.preload()
+            else -> Unit
+        }
+    }
 
     var lastMicToggleTime by remember { mutableStateOf(0L) }
     val clickDebounceThreshold = 350L

@@ -9,12 +9,12 @@ import com.example.ViDroidCall_Studio.feature.history.model.CommandHistoryItem
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Repository quản lý dữ liệu lịch sử câu lệnh của ứng dụng
+ * Lịch sử câu lệnh: 10 dòng mới nhất từ SQLite chung `vidroidcall_commands.db`.
  */
 class CommandHistoryRepository(context: Context) {
-    private val dbHelper = CommandHistoryDatabaseHelper(context.applicationContext)
+    private val dbHelper = CommandEventDatabaseHelper.get(context)
 
-    val historyFlow: Flow<List<CommandHistoryItem>> = dbHelper.getAllHistoryFlow()
+    val historyFlow: Flow<List<CommandHistoryItem>> = dbHelper.historyFlow()
 
     suspend fun addCommand(
         commandText: String,
@@ -22,7 +22,7 @@ class CommandHistoryRepository(context: Context) {
         status: String = "Thành công"
     ): Long {
         if (commandText.isBlank()) return -1L
-        return dbHelper.insertCommand(commandText.trim(), category, status)
+        return dbHelper.insertHistory(commandText.trim(), category, status)
     }
 
     suspend fun addFromNluResult(query: String, nluResult: NluResult?) {

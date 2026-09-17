@@ -32,7 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class SpeechToTextManager(
     private val context: Context,
-    private val callbacks: Callbacks
+    private val callbacks: Callbacks,
+    preloadOnInit: Boolean = true
 ) {
     interface Callbacks {
         fun onListeningChanged(isListening: Boolean)
@@ -53,13 +54,17 @@ class SpeechToTextManager(
     private var isModelInitialized = false
     private var isInitializingModel = false
     private var lastActionTimestamp = 0L
+    private val pendingInitCallbacks = mutableListOf<() -> Unit>()
 
     init {
-        // Khởi tạo trước mô hình trên background thread để giảm thiểu độ trễ lần đầu bấm mic
-        initModelAsync()
+        if (preloadOnInit) {
+            initModelAsync()
+        }
     }
 
-    private val pendingInitCallbacks = mutableListOf<() -> Unit>()
+    fun preload() {
+        initModelAsync()
+    }
 
     private fun initModelAsync(onComplete: (() -> Unit)? = null) {
         if (isDestroyed.get() || executor.isShutdown) return
@@ -119,8 +124,8 @@ class SpeechToTextManager(
 
                 isModelInitialized = true
                 Log.i(TAG, "Sherpa-ONNX & Silero VAD đã sẵn sàng 100% Offline!")
-            } catch (e: Exception) {
-                Log.e(TAG, "Lỗi khi khởi tạo Sherpa-ONNX: ${e.message}", e)
+            } catch (t: Throwable) {
+                Log.e(TAG, "Lỗi khi khởi tạo Sherpa-ONNX: ${t.message}", t)
             } finally {
                 isInitializingModel = false
                 mainHandler.post {
