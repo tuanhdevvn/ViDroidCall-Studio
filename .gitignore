@@ -23,4 +23,6 @@ local.properties
 .agents/
 .agent/
 .githooks/
+__pycache__/
+*.pyc
 
