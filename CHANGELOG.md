@@ -7,33 +7,40 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
-### Fixed
-
-- Lần nạp GGUF đầu sau xóa dữ liệu / cài mới: mmap file thay vì copy ~378 MB vào RAM (LlamaHelper tắt mmap)
-
 ## [1.1.2] - 2026-09-17
 
-Bản sau **1.1.1**: lịch sử / câu lệnh hay dùng, ổn định NLU, giấy phép OLP PoF, trọng số Qwen3 mới.
+Bản phát hành sau **1.1.1**. **Mã nguồn Apache License 2.0** (`LICENSE`, `NOTICE`).
+
+### License
+
+- Mã nguồn ViDroidCall Studio: **[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)** — OSI-approved
+- SPDX (`SPDX-License-Identifier: Apache-2.0`), copyright và bản thông báo Apache 2.0 trên từng tệp mã (Kotlin, Gradle, XML, script, CI)
+- File vendored `com.k2fsa.sherpa.onnx` giữ copyright Xiaomi (Apache-2.0)
+- Thư viện / mô hình bên thứ ba: [`OPEN_SOURCE_LICENSES.md`](OPEN_SOURCE_LICENSES.md)
+- Binary `.so` và trọng số STT không sửa: [`docs/THIRD_PARTY_BINARIES.md`](docs/THIRD_PARTY_BINARIES.md)
+- Trọng số Zipformer tiếng Việt trong APK: **CC BY-NC-ND 4.0** (không OSI; không dùng thương mại)
+- GGUF NLU (`models/qwen3-nlu-Q4_K_M.gguf`, Git LFS): Apache-2.0, fine-tune trên Qwen3 (Alibaba)
 
 ### Added
 
-- Tab Lịch sử: khối **Câu lệnh hay dùng** — 5 lối tắt theo tần suất 3 ngày, đóng băng đến hết ngày, chạm là chạy `NativeAction` (không qua NLU)
+- Tab Lịch sử: khối **Câu lệnh hay dùng** — 5 lối tắt theo tần suất 3 ngày, đóng băng đến hết ngày, chạm chạy `NativeAction` (không qua NLU)
 - Script gieo 100 câu demo người già vào SQLite trên máy (`scripts/seed_elderly_demo.py`)
 - Bộ ~50 câu test đủ 13 intent trên thiết bị (`docs/NLU_TEST_UTTERANCES.md`)
+- Báo cáo fine-tune NLU run-017 (`docs/BaoCaoTrain.md`)
 
 ### Changed
 
 - Một SQLite (`vidroidcall_commands.db`) cho 10 câu lịch sử mới nhất và 5 lệnh hay dùng (làm mới snapshot 1 lần/ngày)
-- Lịch sử: icon/nhãn cho chào hỏi, tạm biệt, hỏi lại, `search_web` / `search_video` / `play_music`; `unsupported` không dùng nhóm Hệ thống
+- Lịch sử: icon/nhãn chào hỏi, tạm biệt, hỏi lại, `search_web` / `search_video` / `play_music`; `unsupported` không dùng nhóm Hệ thống
 - Khối hay dùng: ẩn nhãn buổi sáng/chiều/tối, bỏ nền thẻ trắng loãng
 - Home: hiện lại dòng *AI đang phân tích* dưới câu lệnh; tắt sóng pulse trên logo menu bar
-- STT: chờ im lặng 1,4 giây trước khi tắt mic (trước đây 0,7 giây) để còn kịp nghĩ giữa câu
-- Trọng số NLU Git LFS: `models/qwen3-nlu-Q4_K_M.gguf` (thay `qwen3-nlu-run-Q4_K_M.gguf`); app ưu tiên đúng tên file này
-- SPDX, copyright và bản thông báo Apache 2.0 trên từng tệp mã nguồn (Kotlin, Gradle, XML, script, CI)
+- STT: chờ im lặng 1,4 giây trước khi tắt mic (trước đây 0,7 giây)
+- Trọng số NLU Git LFS: `models/qwen3-nlu-Q4_K_M.gguf` (thay `qwen3-nlu-run-Q4_K_M.gguf`)
+- Nạp GGUF bằng mmap file (không copy ~378 MB vào RAM như `LlamaHelper` mặc định)
 
 ### Fixed
 
-- Không văng process lần nạp GGUF đầu sau cài mới / xóa dữ liệu (không chồng Sherpa, không load GGUF trùng)
+- Giảm chồng Sherpa + GGUF khi vừa cài / xóa dữ liệu (cổng nạp, không load trùng)
 - Đặt báo thức vẫn chạy khi GGUF gán `status: invalid` (kể cả “báo thức 5 giờ”)
 - CI biên dịch lại được: `backup_rules.xml` / `data_extraction_rules.xml` không còn comment Apache lồng comment mẫu
 
@@ -100,7 +107,7 @@ Bản sau **1.1.1**: lịch sử / câu lệnh hay dùng, ổn định NLU, gi�
 
 ## [1.0.0] - 2026-09-05
 
-First public open-source release (Apache License 2.0).
+First public open-source release (**Apache License 2.0**).
 
 ### Added
 
