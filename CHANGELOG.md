@@ -10,6 +10,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### Docs
 
 - SPDX, copyright và bản thông báo Apache 2.0 trên từng tệp mã nguồn
+- Làm rõ `THIRD_PARTY_BINARIES.md`: `.so`/weights không sửa; Kotlin Sherpa chỉ thêm notice; GGUF nằm trong `models/` (Git LFS)
 
 ### Fixed
 
