@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-09-17
+
+Patch: giấy phép trên từng tệp mã (OLP PoF), CI, lịch sử / câu lệnh hay dùng.
+
 ### Docs
 
 - SPDX, copyright và bản thông báo Apache 2.0 trên từng tệp mã nguồn
