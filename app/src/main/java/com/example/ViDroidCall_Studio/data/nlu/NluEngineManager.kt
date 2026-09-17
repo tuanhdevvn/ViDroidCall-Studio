@@ -16,16 +16,15 @@
 package com.example.ViDroidCall_Studio.data.nlu
 
 import android.content.Context
-import android.net.Uri
 import android.os.Environment
 import android.util.Log
-import androidx.core.content.FileProvider
 import com.example.ViDroidCall_Studio.data.model.NluJsonParser
 import com.example.ViDroidCall_Studio.data.model.NluResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -69,7 +68,7 @@ class NluEngineManager(
     val currentQuery: StateFlow<String> = _currentQuery.asStateFlow()
 
     private val fastPathMatcher = FastPathMatcher(context.applicationContext)
-    private var llamaHelper: LlamaHelper? = null
+    private var llamaEngine: GgufLlamaEngine? = null
     private val llmEventFlow = MutableSharedFlow<LlamaHelper.LLMEvent>(extraBufferCapacity = 64)
     private var isNativeReady = false
     private var streamingResponseBuilder = StringBuilder()
@@ -139,7 +138,7 @@ class NluEngineManager(
 
     fun isModelReady(): Boolean {
         return isNativeReady &&
-            llamaHelper != null &&
+            llamaEngine != null &&
             _modelState.value is NluModelState.Ready
     }
 
@@ -165,7 +164,7 @@ class NluEngineManager(
                     _modelState.value = NluModelState.ModelNotFound
                 }
             } catch (t: Throwable) {
-                Log.e(TAG, "Lỗi khi nạp file GGUF qua LlamaHelper: ${t.message}", t)
+                Log.e(TAG, "Lỗi khi nạp file GGUF (mmap): ${t.message}", t)
                 _modelState.value = NluModelState.Error(
                     "Lỗi nạp GGUF: ${t.localizedMessage ?: t.javaClass.simpleName}"
                 )
@@ -230,41 +229,27 @@ class NluEngineManager(
     }
 
     private suspend fun loadNativeModel(targetFile: File) = withContext(Dispatchers.IO) {
+        delay(GgufLoadConfig.SETTLE_DELAY_MS)
+        if (_modelState.value !is NluModelState.Loading) return@withContext
+
         releaseNativeHelperLocked()
         val done = CompletableDeferred<Boolean>()
         loadFinished = done
 
-        val fileUri = try {
-            FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                targetFile
-            )
-        } catch (e: Exception) {
-            Log.w(TAG, "FileProvider error: ${e.message}, dùng Uri.fromFile")
-            Uri.fromFile(targetFile)
-        }
-        val fileUriString = fileUri.toString()
-        Log.i(TAG, "Khởi tạo LlamaHelper với URI: $fileUriString")
-
-        val helper = LlamaHelper(
-            contentResolver = context.contentResolver,
+        Log.i(TAG, "Khởi tạo GgufLlamaEngine mmap path=${targetFile.absolutePath}")
+        val engine = GgufLlamaEngine(
             scope = scope,
-            sharedFlow = llmEventFlow
+            events = llmEventFlow
         )
-        helper.load(
-            path = fileUriString,
-            contextLength = 512,
-            mmprojPath = null
-        ) { _ ->
+        engine.load(targetFile) {
             isNativeReady = true
             _modelState.value = NluModelState.Ready(
                 modelPath = targetFile.name
             )
-            Log.i(TAG, "[100% GGUF Model Loaded]: ${targetFile.name}")
+            Log.i(TAG, "[100% GGUF Model Loaded mmap]: ${targetFile.name}")
             if (!done.isCompleted) done.complete(true)
         }
-        llamaHelper = helper
+        llamaEngine = engine
 
         val finished = withTimeoutOrNull(LOAD_TIMEOUT_MS) { done.await() }
         if (finished != true && _modelState.value is NluModelState.Loading) {
@@ -274,7 +259,7 @@ class NluEngineManager(
     }
 
     /**
-     * Giải phóng native GGUF khỏi RAM (LlamaHelper.releaseContext).
+     * Giải phóng native GGUF khỏi RAM (mmap unmap / llama context).
      * Dùng khi đóng overlay / không còn cần suy luận — giữ Fast-Path nhẹ.
      */
     fun releaseModel() {
@@ -286,7 +271,7 @@ class NluEngineManager(
                 Log.i(TAG, "[GGUF_UNLOAD] Đã giải phóng mô hình GGUF khỏi RAM")
             } catch (t: Throwable) {
                 Log.w(TAG, "[GGUF_UNLOAD] Lỗi khi giải phóng GGUF: ${t.message}", t)
-                llamaHelper = null
+                llamaEngine = null
                 isNativeReady = false
                 _modelState.value = NluModelState.Uninitialized
             }
@@ -295,13 +280,13 @@ class NluEngineManager(
 
     private fun releaseNativeHelperLocked() {
         try {
-            llamaHelper?.abort()
-            llamaHelper?.stopPrediction()
-            llamaHelper?.release()
+            llamaEngine?.abort()
+            llamaEngine?.stopPrediction()
+            llamaEngine?.release()
         } catch (e: Exception) {
-            Log.w(TAG, "Lỗi release LlamaHelper: ${e.message}")
+            Log.w(TAG, "Lỗi release GgufLlamaEngine: ${e.message}")
         } finally {
-            llamaHelper = null
+            llamaEngine = null
             isNativeReady = false
         }
     }
@@ -331,7 +316,7 @@ class NluEngineManager(
             // 2. Không khớp quy tắc nhanh -> Gửi Prompt vào Native GGUF Model để suy luận
             _isGenerating.value = true
             val state = _modelState.value
-            if (state !is NluModelState.Ready || !isNativeReady || llamaHelper == null) {
+            if (state !is NluModelState.Ready || !isNativeReady || llamaEngine == null) {
                 val errResult = NluResult.fromError("Chưa có file mô hình AI (.gguf). Vui lòng đặt file vào thiết bị.")
                 _isGenerating.value = false
                 _lastResult.value = errResult
@@ -345,7 +330,7 @@ class NluEngineManager(
 
             scope.launch(Dispatchers.Default) {
                 try {
-                    llamaHelper?.predict(formattedChatMl)
+                    llamaEngine?.predict(formattedChatMl)
                 } catch (e: Exception) {
                     Log.e(TAG, "Lỗi khi thực thi Native Predict: ${e.message}", e)
                     val errResult = NluResult.fromError("Lỗi khi suy luận: ${e.localizedMessage}")

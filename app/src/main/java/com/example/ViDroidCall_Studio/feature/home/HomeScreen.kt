@@ -328,7 +328,10 @@ fun HomeScreen(
 
     LaunchedEffect(modelState) {
         when (modelState) {
-            is NluModelState.Ready,
+            is NluModelState.Ready -> {
+                delay(400)
+                speechToText.preload()
+            }
             is NluModelState.Error,
             NluModelState.ModelNotFound -> speechToText.preload()
             else -> Unit

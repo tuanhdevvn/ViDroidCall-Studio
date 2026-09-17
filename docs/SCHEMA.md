@@ -68,7 +68,7 @@ Micro **trên tab Home** chỉ chạy khi `NluModelState.Ready` (đã nạp `.gg
 
 Wake word Trợ lý nổi dùng Sherpa (không cần GGUF). Câu sau wake word: Fast-Path không gọi LLM; không khớp Fast-Path thì **cần** GGUF Ready.
 
-**GGUF không** đọc từ thư mục clone. **STT ONNX** nằm trong APK (`assets` + `jniLibs`).
+**GGUF không** đọc từ thư mục clone. **STT ONNX** nằm trong APK (`assets` + `jniLibs`). Nạp GGUF dùng mmap (`GgufLlamaEngine`); không copy cả file vào RAM.
 
 ---
 

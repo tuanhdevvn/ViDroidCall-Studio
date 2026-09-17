@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- Lần nạp GGUF đầu sau xóa dữ liệu / cài mới: mmap file thay vì copy ~378 MB vào RAM (LlamaHelper tắt mmap)
+
 ## [1.1.2] - 2026-09-17
 
 Bản sau **1.1.1**: lịch sử / câu lệnh hay dùng, ổn định NLU, giấy phép OLP PoF, trọng số Qwen3 mới.
