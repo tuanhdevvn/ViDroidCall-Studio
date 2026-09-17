@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- STT: chờ im lặng 1,4 giây trước khi tắt mic (trước đây 0,7 giây) để còn kịp nghĩ giữa câu
+
 ## [1.1.2] - 2026-09-17
 
 Bản sau **1.1.1**: lịch sử / câu lệnh hay dùng, ổn định NLU, giấy phép OLP PoF, trọng số Qwen3 mới.

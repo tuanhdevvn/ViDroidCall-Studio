@@ -122,7 +122,7 @@ class SpeechToTextManager(
                     sileroVadModelConfig = SileroVadModelConfig(
                         model = "sherpa-onnx-vi/silero_vad.onnx",
                         threshold = 0.5f,
-                        minSilenceDuration = 0.7f, // 700ms im lặng để ngắt câu lệnh dứt khoát
+                        minSilenceDuration = 1.4f, // 1.4s im lặng: đủ chờ nghĩ giữa câu trước khi tắt mic
                         minSpeechDuration = 0.2f,
                         windowSize = 512,
                         maxSpeechDuration = 15.0f
