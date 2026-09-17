@@ -4,34 +4,14 @@
 package com.example.ViDroidCall_Studio.data.local.habit
 
 /**
- * Một việc đã xác nhận (intent + slot), không phải câu STT.
- */
-data class HabitActionRecord(
-    val slotKey: String,
-    val intent: String,
-    val label: String,
-    val actionJson: String,
-    val lastUsedMs: Long
-)
-
-data class HabitEvent(
-    val slotKey: String,
-    val timestampMs: Long
-)
-
-data class HabitSnapshot(
-    val dayId: String,
-    val slotKeys: List<String>
-)
-
-/**
  * Lối tắt hiển thị trên tab Lịch sử — bấm chạy NativeAction đã lưu.
  */
 data class HabitQuickAction(
     val slotKey: String,
     val intent: String,
     val label: String,
-    val actionJson: String
+    val actionJson: String,
+    val hits: Int = 0
 )
 
 enum class HabitTimeBucket {
@@ -41,20 +21,11 @@ enum class HabitTimeBucket {
 }
 
 object HabitRules {
-    /** Cửa sổ đếm hit — rút còn 1 ngày để bảng hiện sớm khi đang thử. */
     const val WINDOW_HOURS = 24
-    const val STALE_DAYS = 3
-    const val PURGE_DAYS = 7
-    const val MIN_HITS = 2
+    const val MAX_HISTORY_ITEMS = 10
     const val MAX_QUICK_ACTIONS = 5
-    const val REPLACE_RATIO = 1.5
-    /** Làm mới danh sách lối tắt 1 lần / 3 ngày. */
-    const val SNAPSHOT_DAYS = 3
 
     const val WINDOW_MS = WINDOW_HOURS * 60L * 60L * 1000L
-    const val STALE_MS = STALE_DAYS * 24L * 60L * 60L * 1000L
-    const val PURGE_MS = PURGE_DAYS * 24L * 60L * 60L * 1000L
-    const val SNAPSHOT_MS = SNAPSHOT_DAYS * 24L * 60L * 60L * 1000L
 
     fun bucketForHour(hour: Int): HabitTimeBucket {
         return when (hour) {

@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- Một SQLite cho lịch sử (10 câu mới nhất) và câu lệnh nhanh (5 lệnh hay dùng trong 24 giờ); dọn log mỗi ngày
+
 ## [1.1.1] - 2026-09-16
 
 ### Added

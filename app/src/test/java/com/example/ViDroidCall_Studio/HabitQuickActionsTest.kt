@@ -3,14 +3,11 @@
 
 package com.example.ViDroidCall_Studio
 
-import com.example.ViDroidCall_Studio.data.local.habit.HabitActionRecord
-import com.example.ViDroidCall_Studio.data.local.habit.HabitDemoSeed
-import com.example.ViDroidCall_Studio.data.local.habit.HabitEvent
 import com.example.ViDroidCall_Studio.data.local.habit.HabitQuickActionSelector
 import com.example.ViDroidCall_Studio.data.local.habit.HabitRules
-import com.example.ViDroidCall_Studio.data.local.habit.HabitSnapshot
 import com.example.ViDroidCall_Studio.data.local.habit.HabitTimeBucket
 import com.example.ViDroidCall_Studio.data.local.habit.NativeActionCodec
+import com.example.ViDroidCall_Studio.data.local.history.CommandEventDatabaseHelper
 import com.example.ViDroidCall_Studio.domain.model.NativeAction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,14 +15,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.time.LocalDate
-import java.time.ZoneId
-import java.util.concurrent.TimeUnit
 
 class HabitQuickActionsTest {
-
-    private val zone: ZoneId = ZoneId.of("Asia/Ho_Chi_Minh")
-    private val morningMs = localTimeMs(2026, 9, 16, 7, 0)
 
     @Test
     fun bucketForHour_mapsMorningAfternoonEvening() {
@@ -84,139 +75,69 @@ class HabitQuickActionsTest {
     }
 
     @Test
-    fun rank_requiresTwoHitsInsideWindow() {
-        val mai = record("call_contact|mai", "Gọi Mai", morningMs)
+    fun topQuickActions_ranksByHitCountThenRecency() {
+        val now = 1_000_000L
         val events = listOf(
-            HabitEvent(mai.slotKey, morningMs),
-            HabitEvent(mai.slotKey, morningMs - TimeUnit.HOURS.toMillis(2))
+            event("call_contact|mai", "Gọi Mai", now),
+            event("call_contact|mai", "Gọi Mai", now - 1_000),
+            event("call_contact|mai", "Gọi Mai", now - 2_000),
+            event("open_app|zalo", "Mở Zalo", now - 100),
+            event("open_app|zalo", "Mở Zalo", now - 200),
+            event("search_web|thoi tiet", "Tìm thời tiết", now)
         )
-        val ranked = HabitQuickActionSelector.rankCandidates(listOf(mai), events, morningMs)
-        assertEquals(1, ranked.size)
-        assertEquals(2, ranked[0].hits14d)
+        val top = HabitQuickActionSelector.topQuickActions(events, limit = 5)
+        assertEquals(listOf("call_contact|mai", "open_app|zalo", "search_web|thoi tiet"), top.map { it.slotKey })
+        assertEquals(3, top[0].hits)
+        assertEquals(2, top[1].hits)
+        assertEquals(1, top[2].hits)
     }
 
     @Test
-    fun rank_ignoresSingleHitAndOldEvents() {
-        val mai = record("call_contact|mai", "Gọi Mai", morningMs)
-        val zalo = record("open_app|zalo", "Mở Zalo", morningMs)
+    fun topQuickActions_capsAtFiveAndKeepsLatestJson() {
+        val now = 1_000_000L
+        val events = (1..7).flatMap { index ->
+            listOf(
+                event("open_app|app$index", "Mở $index", now - index, json = """{"n":$index}"""),
+                event("open_app|app$index", "Mở $index mới", now + index, json = """{"n":${index + 10}}""")
+            )
+        }
+        val top = HabitQuickActionSelector.topQuickActions(events, limit = 5)
+        assertEquals(5, top.size)
+        assertTrue(top.all { it.hits == 2 })
+        val app7 = top.first { it.slotKey == "open_app|app7" }
+        assertEquals("Mở 7 mới", app7.label)
+        assertEquals("""{"n":17}""", app7.actionJson)
+    }
+
+    @Test
+    fun topQuickActions_ignoresBlankSlotOrJson() {
         val events = listOf(
-            HabitEvent(mai.slotKey, morningMs),
-            HabitEvent(zalo.slotKey, morningMs - TimeUnit.HOURS.toMillis(25)),
-            HabitEvent(zalo.slotKey, morningMs - TimeUnit.HOURS.toMillis(26))
+            event("", "Trống", 1L),
+            event("open_app|zalo", "Mở Zalo", 2L, json = "")
         )
-        val ranked = HabitQuickActionSelector.rankCandidates(listOf(mai, zalo), events, morningMs)
-        assertTrue(ranked.none { it.record.slotKey == mai.slotKey })
-        assertTrue(ranked.none { it.record.slotKey == zalo.slotKey })
+        assertTrue(HabitQuickActionSelector.topQuickActions(events).isEmpty())
     }
 
     @Test
-    fun snapshot_freezesInsideSamePeriod() {
-        val candidates = (1..6).map { index ->
-            ranked("call_contact|p$index", "Gọi $index", hits = 3 + index)
-        }
-        val first = HabitQuickActionSelector.resolveSnapshot(candidates, null, morningMs, zone)
-        assertTrue(first.second)
-        assertEquals(5, first.first.slotKeys.size)
-
-        val laterSamePeriod = morningMs + TimeUnit.DAYS.toMillis(1)
-        val second = HabitQuickActionSelector.resolveSnapshot(candidates, first.first, laterSamePeriod, zone)
-        assertFalse(second.second)
-        assertEquals(first.first.slotKeys, second.first.slotKeys)
-    }
-
-    @Test
-    fun snapshot_refreshesAfterPeriod() {
-        val candidates = (1..5).map { index ->
-            ranked("call_contact|p$index", "Gọi $index", hits = 3)
-        }
-        val first = HabitQuickActionSelector.resolveSnapshot(candidates, null, morningMs, zone)
-        val nextPeriod = morningMs + HabitRules.SNAPSHOT_MS
-        val second = HabitQuickActionSelector.resolveSnapshot(candidates, first.first, nextPeriod, zone)
-        assertTrue(second.second)
-        assertEquals(HabitQuickActionSelector.periodId(nextPeriod), second.first.dayId)
-    }
-
-    @Test
-    fun demoSeed_ranksFiveActionsInCurrentWindow() {
-        val records = HabitDemoSeed.records(morningMs)
-        val events = records.flatMap { record ->
-            HabitDemoSeed.eventTimestamps(morningMs).map { ts -> HabitEvent(record.slotKey, ts) }
-        }
-        val ranked = HabitQuickActionSelector.rankCandidates(records, events, morningMs)
-        assertEquals(5, ranked.size)
-        assertTrue(ranked.all { it.hits14d >= HabitRules.MIN_HITS })
-        val snapshot = HabitQuickActionSelector.resolveSnapshot(ranked, null, morningMs, zone)
-        assertEquals(5, snapshot.first.slotKeys.size)
-        val labels = HabitQuickActionSelector.toQuickActions(snapshot.first, records).map { it.label }
-        assertTrue(labels.contains("Mở Zalo"))
-        assertTrue(labels.contains("Mở YouTube"))
-        assertTrue(labels.contains("Báo thức 5 giờ"))
-        assertTrue(labels.contains("Gọi Mai"))
-        assertTrue(labels.contains("Video nhạc bolero"))
-    }
-
-    @Test
-    fun snapshot_replacesOnlyWhenChallengerHasClearLead() {
-        val yesterday = HabitSnapshot(
-            dayId = LocalDate.of(2026, 9, 15).toString(),
-            slotKeys = listOf("a", "b", "c", "d", "e")
+    fun dayId_usesYearMonthDayFormat() {
+        assertTrue(
+            CommandEventDatabaseHelper.dayId(1_746_460_800_000L)
+                .matches(Regex("""\d{4}-\d{2}-\d{2}"""))
         )
-        val candidates = listOf(
-            ranked("a", "A", hits = 4),
-            ranked("b", "B", hits = 4),
-            ranked("c", "C", hits = 4),
-            ranked("d", "D", hits = 4),
-            ranked("e", "E", hits = 4),
-            ranked("f", "F", hits = 10)
-        )
-        val next = HabitQuickActionSelector.resolveSnapshot(candidates, yesterday, morningMs, zone)
-        assertTrue(next.second)
-        assertTrue(next.first.slotKeys.contains("f"))
-        assertEquals(5, next.first.slotKeys.size)
     }
 
-    @Test
-    fun snapshot_keepsStableWhenLeadIsSmall() {
-        val yesterday = HabitSnapshot(
-            dayId = LocalDate.of(2026, 9, 15).toString(),
-            slotKeys = listOf("a", "b", "c", "d", "e")
-        )
-        val candidates = listOf(
-            ranked("a", "A", hits = 4),
-            ranked("b", "B", hits = 4),
-            ranked("c", "C", hits = 4),
-            ranked("d", "D", hits = 4),
-            ranked("e", "E", hits = 4),
-            ranked("f", "F", hits = 5)
-        )
-        val next = HabitQuickActionSelector.resolveSnapshot(candidates, yesterday, morningMs, zone)
-        assertEquals(yesterday.slotKeys, next.first.slotKeys)
-        assertFalse(next.first.slotKeys.contains("f"))
-    }
-
-    private fun record(key: String, label: String, lastUsed: Long): HabitActionRecord {
-        return HabitActionRecord(
-            slotKey = key,
-            intent = key.substringBefore("|"),
+    private fun event(
+        slotKey: String,
+        label: String,
+        timestampMs: Long,
+        json: String = "{}"
+    ): HabitQuickActionSelector.ActionEvent {
+        return HabitQuickActionSelector.ActionEvent(
+            slotKey = slotKey,
+            intent = slotKey.substringBefore("|"),
             label = label,
-            actionJson = "{}",
-            lastUsedMs = lastUsed
+            actionJson = json,
+            timestampMs = timestampMs
         )
-    }
-
-    private fun ranked(key: String, label: String, hits: Int): HabitQuickActionSelector.RankedCandidate {
-        return HabitQuickActionSelector.RankedCandidate(
-            record = record(key, label, morningMs),
-            hits14d = hits,
-            bucketHits = hits
-        )
-    }
-
-    private fun localTimeMs(year: Int, month: Int, day: Int, hour: Int, minute: Int): Long {
-        return LocalDate.of(year, month, day)
-            .atTime(hour, minute)
-            .atZone(zone)
-            .toInstant()
-            .toEpochMilli()
     }
 }
