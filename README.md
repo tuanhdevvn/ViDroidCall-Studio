@@ -160,7 +160,7 @@ flowchart TD
     F --> L["NluResult"]
     J --> L
     L --> UI["AssistantScreen"]
-    L --> HIS["Lịch sử SQLite tối đa 10"]
+    L --> HIS["SQLite: 10 lịch sử / 5 hay dùng"]
     UI --> DIS["NluActionDispatcher"]
 ```
 
@@ -186,7 +186,7 @@ flowchart TD
     F --> L["NluResult"]
     J --> L
     L --> OX["Xác nhận trên overlay"]
-    L --> HIS["Lịch sử SQLite tối đa 10"]
+    L --> HIS["SQLite: 10 lịch sử / 5 hay dùng"]
     OX --> DIS["NluActionDispatcher"]
 ```
 
@@ -197,7 +197,7 @@ flowchart TD
 ```text
 com.example.ViDroidCall_Studio/
 ├── MainActivity.kt
-├── data/local/          # history SQLite, theme, font, onboarding, TroLyNoiPreferences, feedback JSONL
+├── data/local/          # commands SQLite (lịch sử + hay dùng), theme, font, onboarding, TroLyNoiPreferences, feedback JSONL
 ├── data/model/          # NluIntent, NluResult, parser
 ├── data/nlu/            # FastPathMatcher, NluEngineManager, dispatcher, NluConstants
 ├── domain/model/        # NativeAction (gọi, SMS, web, …)
