@@ -21,7 +21,8 @@ data class SpeechToTextState(
     val speechText: String,
     val toggleListening: () -> Unit,
     val stopListening: () -> Unit,
-    val cancelListening: () -> Unit
+    val cancelListening: () -> Unit,
+    val preload: () -> Unit
 )
 
 /**
@@ -30,13 +31,14 @@ data class SpeechToTextState(
 @Composable
 fun rememberSpeechToText(
     onSpeechResult: (String) -> Unit = {},
-    onPermissionDenied: () -> Unit = {}
+    onPermissionDenied: () -> Unit = {},
+    preloadOnInit: Boolean = true
 ): SpeechToTextState {
     var isListeningState by remember { mutableStateOf(false) }
     var speechTextState by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    val manager = remember {
+    val manager = remember(preloadOnInit) {
         SpeechToTextManager(
             context = context,
             callbacks = object : SpeechToTextManager.Callbacks {
@@ -58,7 +60,8 @@ fun rememberSpeechToText(
                         onSpeechResult(text)
                     }
                 }
-            }
+            },
+            preloadOnInit = preloadOnInit
         )
     }
 
@@ -133,6 +136,7 @@ fun rememberSpeechToText(
         speechText = speechTextState,
         toggleListening = toggleListening,
         stopListening = stopListening,
-        cancelListening = cancelListening
+        cancelListening = cancelListening,
+        preload = { manager.preload() }
     )
 }
