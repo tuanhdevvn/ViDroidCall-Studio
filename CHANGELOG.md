@@ -14,6 +14,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Fixed
 
+- XML `backup_rules` / `data_extraction_rules` parse được sau khi gắn Apache notice (không lồng comment)
 - Không văng process lần nạp GGUF đầu sau cài mới / xóa dữ liệu (không chồng Sherpa, không load GGUF trùng)
 
 ### Changed

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><!--
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   SPDX-License-Identifier: Apache-2.0
   Copyright 2026 ViDroidCall Studio contributors
@@ -14,10 +14,10 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
--->
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+
+  Sample data extraction rules file; uncomment and customize as necessary.
+  See https://developer.android.com/about/versions/12/backup-restore#xml-changes
+  for details.
 -->
 <data-extraction-rules>
     <cloud-backup>
