@@ -7,28 +7,35 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
-### Changed
-
-- Trọng số NLU Git LFS: `models/qwen3-nlu-Q4_K_M.gguf` (thay `qwen3-nlu-run-Q4_K_M.gguf`)
-
 ## [1.1.2] - 2026-09-17
 
-Patch: giấy phép trên từng tệp mã (OLP PoF), CI, lịch sử / câu lệnh hay dùng.
+Bản sau **1.1.1**: lịch sử / câu lệnh hay dùng, ổn định NLU, giấy phép OLP PoF, trọng số Qwen3 mới.
 
-### Docs
+### Added
 
-- SPDX, copyright và bản thông báo Apache 2.0 trên từng tệp mã nguồn
-- Làm rõ `THIRD_PARTY_BINARIES.md`: `.so`/weights không sửa; Kotlin Sherpa chỉ thêm notice; GGUF nằm trong `models/` (Git LFS)
+- Tab Lịch sử: khối **Câu lệnh hay dùng** — 5 lối tắt theo tần suất 3 ngày, đóng băng đến hết ngày, chạm là chạy `NativeAction` (không qua NLU)
+- Script gieo 100 câu demo người già vào SQLite trên máy (`scripts/seed_elderly_demo.py`)
+- Bộ ~50 câu test đủ 13 intent trên thiết bị (`docs/NLU_TEST_UTTERANCES.md`)
+
+### Changed
+
+- Một SQLite (`vidroidcall_commands.db`) cho 10 câu lịch sử mới nhất và 5 lệnh hay dùng (làm mới snapshot 1 lần/ngày)
+- Lịch sử: icon/nhãn cho chào hỏi, tạm biệt, hỏi lại, `search_web` / `search_video` / `play_music`; `unsupported` không dùng nhóm Hệ thống
+- Khối hay dùng: ẩn nhãn buổi sáng/chiều/tối, bỏ nền thẻ trắng loãng
+- Home: hiện lại dòng *AI đang phân tích* dưới câu lệnh; tắt sóng pulse trên logo menu bar
+- Trọng số NLU Git LFS: `models/qwen3-nlu-Q4_K_M.gguf` (thay `qwen3-nlu-run-Q4_K_M.gguf`); app ưu tiên đúng tên file này
+- SPDX, copyright và bản thông báo Apache 2.0 trên từng tệp mã nguồn (Kotlin, Gradle, XML, script, CI)
 
 ### Fixed
 
-- XML `backup_rules` / `data_extraction_rules` parse được sau khi gắn Apache notice (không lồng comment)
 - Không văng process lần nạp GGUF đầu sau cài mới / xóa dữ liệu (không chồng Sherpa, không load GGUF trùng)
+- Đặt báo thức vẫn chạy khi GGUF gán `status: invalid` (kể cả “báo thức 5 giờ”)
+- CI biên dịch lại được: `backup_rules.xml` / `data_extraction_rules.xml` không còn comment Apache lồng comment mẫu
 
-### Changed
+### Docs
 
-- Ẩn nhãn buổi sáng/chiều/tối trên khối Câu lệnh hay dùng
-- Một SQLite cho lịch sử (10 câu mới nhất) và câu lệnh nhanh (5 lệnh hay dùng trong 3 ngày, làm mới 1 lần/ngày)
+- README: tách sơ đồ kiến trúc trong app và Trợ lý nổi
+- `THIRD_PARTY_BINARIES.md`: `.so`/weights không sửa; Kotlin Sherpa chỉ thêm notice license; GGUF nằm trong `models/` (Git LFS)
 
 ## [1.1.1] - 2026-09-16
 
