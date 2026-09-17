@@ -10,7 +10,7 @@ import com.example.ViDroidCall_Studio.domain.model.NativeAction
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Câu lệnh nhanh: top 5 `slot_key` trong 24 giờ, cùng SQLite với lịch sử.
+ * Câu lệnh nhanh: top 5 `slot_key` trong 3 ngày, làm mới 1 lần/ngày.
  */
 class HabitActionsRepository(context: Context) {
     private val dbHelper = CommandEventDatabaseHelper.get(context)

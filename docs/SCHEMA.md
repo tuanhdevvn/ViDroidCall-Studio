@@ -32,7 +32,7 @@ Package Kotlin của nhóm:
 | `data/nlu` | Fast-Path, Llama.cpp, `NluEngineManager`, dispatcher |
 | `data/local` | DataStore (theme, font, onboarding, Trợ lý nổi) |
 | `data/local/history` | SQLite chung lịch sử + câu lệnh nhanh (`vidroidcall_commands.db`) |
-| `data/local/habit` | Codec NativeAction, chọn top 5 lối tắt từ cùng DB |
+| `data/local/habit` | Codec NativeAction, top 5 lối tắt (3 ngày, làm mới 1 lần/ngày) |
 | `data/local/feedback` | JSONL phản hồi NLU (nếu bật) |
 | `domain/model` | `NativeAction` (thao tác Android) |
 | `feature/assistant` | Màn Home, helper khóa màn hình |
@@ -182,9 +182,9 @@ Mỗi lần NLU ghi một dòng (câu STT). Khi user thực thi việc đủ đi
 | `label` | TEXT |
 | `action_json` | TEXT |
 
-`command_meta.last_purge_day`: mỗi ngày lịch mới, `DELETE` dòng `timestamp < now - 24h`.
+`command_meta.last_purge_day`: mỗi ngày lịch mới, `DELETE` dòng `timestamp < now - 3 ngày`. `snapshot_day` / `snapshot_keys`: top 5 lối tắt, làm mới 1 lần/ngày.
 
-UI lịch sử: `ORDER BY timestamp DESC LIMIT 10`. Câu lệnh nhanh: `GROUP BY slot_key` trong 24 giờ, `COUNT DESC LIMIT 5`. Greeting / goodbye / clarify / unsupported không có slot. Xóa hết lịch sử xóa cả log tần suất.
+UI lịch sử: `ORDER BY timestamp DESC LIMIT 10`. Câu lệnh nhanh: đếm `slot_key` trong **3 ngày**, `COUNT DESC LIMIT 5`, **đóng băng đến hết ngày**. Greeting / goodbye / clarify / unsupported không có slot. Xóa hết lịch sử xóa cả log tần suất và snapshot.
 
 UI: `CommandHistoryItem`; lối tắt `HabitQuickAction` trên tab Lịch sử.
 

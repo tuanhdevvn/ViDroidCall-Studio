@@ -119,6 +119,44 @@ class HabitQuickActionsTest {
     }
 
     @Test
+    fun snapshot_freezesSameCalendarDay() {
+        assertFalse(
+            HabitQuickActionSelector.shouldRefreshSnapshot(
+                HabitQuickActionSelector.DailySnapshot("2026-09-17", listOf("a")),
+                todayId = "2026-09-17"
+            )
+        )
+        assertTrue(
+            HabitQuickActionSelector.shouldRefreshSnapshot(
+                HabitQuickActionSelector.DailySnapshot("2026-09-16", listOf("a")),
+                todayId = "2026-09-17"
+            )
+        )
+        assertTrue(HabitQuickActionSelector.shouldRefreshSnapshot(null, todayId = "2026-09-17"))
+    }
+
+    @Test
+    fun actionsForKeys_keepsFrozenOrder() {
+        val events = listOf(
+            event("open_app|zalo", "Mở Zalo", 3L),
+            event("open_app|zalo", "Mở Zalo", 2L),
+            event("call_contact|mai", "Gọi Mai", 1L)
+        )
+        val frozen = HabitQuickActionSelector.actionsForKeys(
+            listOf("call_contact|mai", "open_app|zalo"),
+            events
+        )
+        assertEquals(listOf("call_contact|mai", "open_app|zalo"), frozen.map { it.slotKey })
+        assertEquals(2, frozen[1].hits)
+    }
+
+    @Test
+    fun window_isThreeDays() {
+        assertEquals(3, HabitRules.WINDOW_DAYS)
+        assertEquals(3L * 24 * 60 * 60 * 1000, HabitRules.WINDOW_MS)
+    }
+
+    @Test
     fun dayId_usesYearMonthDayFormat() {
         assertTrue(
             CommandEventDatabaseHelper.dayId(1_746_460_800_000L)

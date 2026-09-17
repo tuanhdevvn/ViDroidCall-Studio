@@ -4,7 +4,7 @@
 package com.example.ViDroidCall_Studio.data.local.habit
 
 /**
- * Chọn tối đa 5 lối tắt theo số lần dùng (cùng `slot_key`) trong cửa sổ 24 giờ.
+ * Top 5 theo số lần dùng trong 3 ngày. Danh sách lối tắt đóng băng đến hết ngày lịch.
  */
 object HabitQuickActionSelector {
 
@@ -14,6 +14,11 @@ object HabitQuickActionSelector {
         val label: String,
         val actionJson: String,
         val timestampMs: Long
+    )
+
+    data class DailySnapshot(
+        val dayId: String,
+        val slotKeys: List<String>
     )
 
     fun topQuickActions(
@@ -40,5 +45,18 @@ object HabitQuickActionSelector {
             )
             .take(limit)
             .map { it.first }
+    }
+
+    fun shouldRefreshSnapshot(snapshot: DailySnapshot?, todayId: String): Boolean {
+        return snapshot == null || snapshot.dayId != todayId
+    }
+
+    fun actionsForKeys(
+        keys: List<String>,
+        events: List<ActionEvent>
+    ): List<HabitQuickAction> {
+        if (keys.isEmpty()) return emptyList()
+        val ranked = topQuickActions(events, limit = Int.MAX_VALUE).associateBy { it.slotKey }
+        return keys.mapNotNull { ranked[it] }
     }
 }

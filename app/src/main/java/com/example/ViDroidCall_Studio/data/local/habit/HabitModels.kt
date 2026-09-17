@@ -21,11 +21,11 @@ enum class HabitTimeBucket {
 }
 
 object HabitRules {
-    const val WINDOW_HOURS = 24
+    const val WINDOW_DAYS = 3
     const val MAX_HISTORY_ITEMS = 10
     const val MAX_QUICK_ACTIONS = 5
 
-    const val WINDOW_MS = WINDOW_HOURS * 60L * 60L * 1000L
+    const val WINDOW_MS = WINDOW_DAYS * 24L * 60L * 60L * 1000L
 
     fun bucketForHour(hour: Int): HabitTimeBucket {
         return when (hour) {

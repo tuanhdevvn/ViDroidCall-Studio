@@ -18,13 +18,14 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
  * Một SQLite cho lịch sử (10 câu mới nhất) và câu lệnh nhanh (top 5 theo slot_key).
- * Giữ log 24 giờ; dọn 1 lần/ngày.
+ * Giữ log 3 ngày; dọn 1 lần/ngày. Top 5 lối tắt đóng băng đến hết ngày lịch.
  */
 class CommandEventDatabaseHelper private constructor(context: Context) :
     SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -180,6 +181,36 @@ class CommandEventDatabaseHelper private constructor(context: Context) :
         nowMs: Long = System.currentTimeMillis()
     ): List<HabitQuickAction> = withContext(Dispatchers.IO) {
         purgeIfNewDay(nowMs)
+        val events = loadActionEvents(nowMs)
+        val today = dayId(nowMs)
+        val snapshot = loadSnapshot()
+        if (!HabitQuickActionSelector.shouldRefreshSnapshot(snapshot, today) && snapshot != null) {
+            HabitQuickActionSelector.actionsForKeys(snapshot.slotKeys, events)
+        } else {
+            val ranked = HabitQuickActionSelector.topQuickActions(events, HabitRules.MAX_QUICK_ACTIONS)
+            saveSnapshot(HabitQuickActionSelector.DailySnapshot(today, ranked.map { it.slotKey }))
+            ranked
+        }
+    }
+
+    fun quickActionsFlow(): Flow<List<HabitQuickAction>> = flow {
+        updateNotifier.collect { emit(getQuickActions()) }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun deleteById(id: Long): Int = withContext(Dispatchers.IO) {
+        val rows = writableDatabase.delete(TABLE_EVENTS, "$COLUMN_ID = ?", arrayOf(id.toString()))
+        notifyChanged()
+        rows
+    }
+
+    suspend fun clearAll(): Int = withContext(Dispatchers.IO) {
+        val rows = writableDatabase.delete(TABLE_EVENTS, null, null)
+        writableDatabase.delete(TABLE_META, "$COLUMN_META_KEY IN (?, ?)", arrayOf(META_SNAPSHOT_DAY, META_SNAPSHOT_KEYS))
+        notifyChanged()
+        rows
+    }
+
+    private fun loadActionEvents(nowMs: Long): List<HabitQuickActionSelector.ActionEvent> {
         val windowStart = nowMs - HabitRules.WINDOW_MS
         val events = mutableListOf<HabitQuickActionSelector.ActionEvent>()
         readableDatabase.query(
@@ -208,23 +239,26 @@ class CommandEventDatabaseHelper private constructor(context: Context) :
                 )
             }
         }
-        HabitQuickActionSelector.topQuickActions(events, HabitRules.MAX_QUICK_ACTIONS)
+        return events
     }
 
-    fun quickActionsFlow(): Flow<List<HabitQuickAction>> = flow {
-        updateNotifier.collect { emit(getQuickActions()) }
-    }.flowOn(Dispatchers.IO)
-
-    suspend fun deleteById(id: Long): Int = withContext(Dispatchers.IO) {
-        val rows = writableDatabase.delete(TABLE_EVENTS, "$COLUMN_ID = ?", arrayOf(id.toString()))
-        notifyChanged()
-        rows
+    private fun loadSnapshot(): HabitQuickActionSelector.DailySnapshot? {
+        val dayId = readMeta(META_SNAPSHOT_DAY) ?: return null
+        val rawKeys = readMeta(META_SNAPSHOT_KEYS) ?: return null
+        val keys = try {
+            val array = JSONArray(rawKeys)
+            (0 until array.length()).map { array.getString(it) }
+        } catch (_: Exception) {
+            emptyList()
+        }
+        return HabitQuickActionSelector.DailySnapshot(dayId, keys)
     }
 
-    suspend fun clearAll(): Int = withContext(Dispatchers.IO) {
-        val rows = writableDatabase.delete(TABLE_EVENTS, null, null)
-        notifyChanged()
-        rows
+    private fun saveSnapshot(snapshot: HabitQuickActionSelector.DailySnapshot) {
+        val keys = JSONArray()
+        snapshot.slotKeys.forEach { keys.put(it) }
+        writeMeta(META_SNAPSHOT_DAY, snapshot.dayId)
+        writeMeta(META_SNAPSHOT_KEYS, keys.toString())
     }
 
     internal fun purgeIfNewDay(nowMs: Long) {
@@ -299,6 +333,8 @@ class CommandEventDatabaseHelper private constructor(context: Context) :
         const val COLUMN_META_KEY = "meta_key"
         const val COLUMN_META_VALUE = "meta_value"
         const val META_LAST_PURGE_DAY = "last_purge_day"
+        const val META_SNAPSHOT_DAY = "snapshot_day"
+        const val META_SNAPSHOT_KEYS = "snapshot_keys"
 
         private val LEGACY_DATABASES = listOf("vidroidcall_history.db", "vidroidcall_habit.db")
 
