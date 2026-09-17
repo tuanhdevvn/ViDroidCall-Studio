@@ -62,5 +62,5 @@ After `git lfs pull`, copy onto the device (`adb push` as in the [README](../REA
 ## Kotlin API copy
 
 `app/src/main/java/com/k2fsa/sherpa/onnx/` is the upstream Sherpa-ONNX Android
-API (Xiaomi / k2-fsa, Apache-2.0). Copyright headers in those files are left
-intact.
+API (Xiaomi / k2-fsa, Apache-2.0). Xiaomi copyright lines are kept; SPDX and
+the Apache 2.0 notice were added so each file states the license.
