@@ -7,6 +7,15 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-09-17
+
+Bản phát hành sau **1.1.2**: APK debug trên GitHub Releases.
+
+### Added
+
+- File cài `ViDroidCall-Studio-1.1.3-debug.apk` trên [GitHub Release v1.1.3](https://github.com/tuanhdevvn/ViDroidCall-Studio/releases/tag/v1.1.3)
+- Workflow GitHub Actions build `assembleDebug` và gắn APK khi đẩy tag phiên bản `v*.*.*`
+
 ## [1.1.2] - 2026-09-17
 
 Bản phát hành sau **1.1.1**. **Mã nguồn Apache License 2.0** (`LICENSE`, `NOTICE`).
