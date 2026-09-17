@@ -7,14 +7,6 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
-### Changed
-
-- STT: chờ im lặng 1,4 giây trước khi tắt mic (trước đây 0,7 giây) để còn kịp nghĩ giữa câu
-
-### Removed
-
-- Thẻ **Kết quả phân tích AI** (JSON NLU) trên màn trợ lý, nút Lưu mẫu sai, và mục Mẫu sai NLU trong Cài đặt
-
 ## [1.1.2] - 2026-09-17
 
 Bản sau **1.1.1**: lịch sử / câu lệnh hay dùng, ổn định NLU, giấy phép OLP PoF, trọng số Qwen3 mới.
@@ -31,6 +23,7 @@ Bản sau **1.1.1**: lịch sử / câu lệnh hay dùng, ổn định NLU, gi�
 - Lịch sử: icon/nhãn cho chào hỏi, tạm biệt, hỏi lại, `search_web` / `search_video` / `play_music`; `unsupported` không dùng nhóm Hệ thống
 - Khối hay dùng: ẩn nhãn buổi sáng/chiều/tối, bỏ nền thẻ trắng loãng
 - Home: hiện lại dòng *AI đang phân tích* dưới câu lệnh; tắt sóng pulse trên logo menu bar
+- STT: chờ im lặng 1,4 giây trước khi tắt mic (trước đây 0,7 giây) để còn kịp nghĩ giữa câu
 - Trọng số NLU Git LFS: `models/qwen3-nlu-Q4_K_M.gguf` (thay `qwen3-nlu-run-Q4_K_M.gguf`); app ưu tiên đúng tên file này
 - SPDX, copyright và bản thông báo Apache 2.0 trên từng tệp mã nguồn (Kotlin, Gradle, XML, script, CI)
 
@@ -39,6 +32,10 @@ Bản sau **1.1.1**: lịch sử / câu lệnh hay dùng, ổn định NLU, gi�
 - Không văng process lần nạp GGUF đầu sau cài mới / xóa dữ liệu (không chồng Sherpa, không load GGUF trùng)
 - Đặt báo thức vẫn chạy khi GGUF gán `status: invalid` (kể cả “báo thức 5 giờ”)
 - CI biên dịch lại được: `backup_rules.xml` / `data_extraction_rules.xml` không còn comment Apache lồng comment mẫu
+
+### Removed
+
+- Thẻ **Kết quả phân tích AI** (JSON NLU) trên màn trợ lý, nút Lưu mẫu sai, và mục Mẫu sai NLU trong Cài đặt
 
 ### Docs
 
