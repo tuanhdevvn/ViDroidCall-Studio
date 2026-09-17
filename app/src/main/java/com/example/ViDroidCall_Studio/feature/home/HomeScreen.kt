@@ -46,7 +46,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.ViDroidCall_Studio.MainActivity
-import com.example.ViDroidCall_Studio.data.local.feedback.NluFeedbackLogRepository
 import com.example.ViDroidCall_Studio.data.local.habit.HabitActionsRepository
 import com.example.ViDroidCall_Studio.data.local.history.CommandHistoryRepository
 import com.example.ViDroidCall_Studio.data.nlu.NluActionDispatcher
@@ -103,16 +102,12 @@ fun HomeScreen(
     val habitRepository = remember { HabitActionsRepository(context.applicationContext) }
     val quickActions by habitRepository.quickActionsFlow.collectAsState(initial = emptyList())
 
-    // Quản lý log mẫu NLU sai (JSONL) để train lại model
-    val feedbackRepository = remember { NluFeedbackLogRepository(context.applicationContext) }
-
     // Quản lý NLU Engine
     val nluEngineManager = remember { NluEngineManager(context.applicationContext) }
     
     // Quản lý trạng thái nạp Mô hình AI & Quyền bộ nhớ
     val modelState by nluEngineManager.modelState.collectAsState()
     val isNluProcessing by nluEngineManager.isGenerating.collectAsState()
-    val nluResult by nluEngineManager.lastResult.collectAsState()
 
     var hasStoragePermission by remember {
         mutableStateOf(StoragePermissionHelper.hasStoragePermission(context))
@@ -384,38 +379,6 @@ fun HomeScreen(
         Toast.makeText(context, "Đang quét lại file mô hình GGUF...", Toast.LENGTH_SHORT).show()
     }
 
-    val handleSaveFeedback: () -> Unit = {
-        val stt = currentCommand.trim()
-        val result = nluResult
-        when {
-            stt.isBlank() || result == null -> {
-                Toast.makeText(context, "Chưa có dữ liệu để lưu", Toast.LENGTH_SHORT).show()
-            }
-            result.isFastPath -> {
-                Toast.makeText(context, "Fast-Path không phải output model GGUF", Toast.LENGTH_SHORT).show()
-            }
-            else -> {
-                scope.launch {
-                    feedbackRepository.append(stt, result)
-                        .onSuccess {
-                            Toast.makeText(
-                                context,
-                                "Đã lưu mẫu sai (${feedbackRepository.count()} mẫu)",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        .onFailure { error ->
-                            Toast.makeText(
-                                context,
-                                "Lưu thất bại: ${error.message}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                }
-            }
-        }
-    }
-
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -442,7 +405,6 @@ fun HomeScreen(
                     currentCommand = currentCommand,
                     onToggleListening = handleToggleListeningSafe,
                     onCancelListening = handleCancelListening,
-                    nluResult = nluResult,
                     isNluProcessing = isNluProcessing,
                     modelState = modelState,
                     hasStoragePermission = hasStoragePermission,
@@ -452,8 +414,7 @@ fun HomeScreen(
                     pendingAction = pendingAction,
                     showConfirmationDialog = showConfirmationDialog,
                     onConfirmAction = handleConfirmAction,
-                    onCancelAction = handleCancelAction,
-                    onSaveFeedback = handleSaveFeedback
+                    onCancelAction = handleCancelAction
                 )
 
                 NavTab.HISTORY -> HistoryScreen(
@@ -481,8 +442,7 @@ fun HomeScreen(
                 )
 
                 NavTab.SETTINGS -> SettingsScreen(
-                    modelState = modelState,
-                    feedbackRepository = feedbackRepository
+                    modelState = modelState
                 )
             }
 

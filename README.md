@@ -197,7 +197,7 @@ flowchart TD
 ```text
 com.example.ViDroidCall_Studio/
 ├── MainActivity.kt
-├── data/local/          # commands SQLite (lịch sử + hay dùng), theme, font, onboarding, TroLyNoiPreferences, feedback JSONL
+├── data/local/          # commands SQLite (lịch sử + hay dùng), theme, font, onboarding, TroLyNoiPreferences
 ├── data/model/          # NluIntent, NluResult, parser
 ├── data/nlu/            # FastPathMatcher, NluEngineManager, dispatcher, NluConstants
 ├── domain/model/        # NativeAction (gọi, SMS, web, …)

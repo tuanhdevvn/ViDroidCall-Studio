@@ -33,7 +33,6 @@ Package Kotlin của nhóm:
 | `data/local` | DataStore (theme, font, onboarding, Trợ lý nổi) |
 | `data/local/history` | SQLite chung lịch sử + câu lệnh nhanh (`vidroidcall_commands.db`) |
 | `data/local/habit` | Codec NativeAction, top 5 lối tắt (3 ngày, làm mới 1 lần/ngày) |
-| `data/local/feedback` | JSONL phản hồi NLU (nếu bật) |
 | `domain/model` | `NativeAction` (thao tác Android) |
 | `feature/assistant` | Màn Home, helper khóa màn hình |
 | `feature/overlay` | Hộp thoại nổi, wake word, foreground service |
@@ -196,14 +195,6 @@ UI: `CommandHistoryItem`; lối tắt `HabitQuickAction` trên tab Lịch sử.
 | `font_size_preferences` | `font_scale` | float | mặc định `1.0`, khoảng `0.85`–`1.35` |
 | `onboarding_preferences` | `onboarding_completed` | boolean | mặc định `false` |
 | `tro_ly_noi_preferences` | `tro_ly_noi_enabled` | boolean | mặc định `false`; UI chỉ persist `true` khi đủ mic, thông báo (API 33+), `SYSTEM_ALERT_WINDOW`. Wake word **đồng bộ** với công tắc này (không còn công tắc riêng). |
-
-### JSONL (tùy chọn)
-
-`getExternalFilesDir(null)/nlu_feedback_log.jsonl`
-
-```json
-{ "stt_text": "...", "model_output": {}, "saved_at": 0 }
-```
 
 ---
 

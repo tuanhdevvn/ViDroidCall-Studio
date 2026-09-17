@@ -35,10 +35,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -46,7 +44,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -56,16 +53,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import com.example.ViDroidCall_Studio.R
 import com.example.ViDroidCall_Studio.feature.speech.SpeechToTextManager
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.DataObject
 import androidx.compose.material.icons.rounded.FolderShared
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Memory
@@ -93,17 +85,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.verticalScroll
-import com.example.ViDroidCall_Studio.data.model.NluResult
 import com.example.ViDroidCall_Studio.data.nlu.NluModelState
 import com.example.ViDroidCall_Studio.ui.component.bounceClick
 import com.example.ViDroidCall_Studio.ui.theme.AppPrimary
@@ -122,7 +109,6 @@ fun AssistantScreen(
     currentCommand: String = "",
     onToggleListening: () -> Unit,
     onCancelListening: () -> Unit = {},
-    nluResult: NluResult?,
     isNluProcessing: Boolean,
     modelState: NluModelState,
     hasStoragePermission: Boolean = true,
@@ -133,63 +119,41 @@ fun AssistantScreen(
     pendingAction: NativeAction? = null,
     showConfirmationDialog: Boolean = false,
     onConfirmAction: () -> Unit = {},
-    onCancelAction: () -> Unit = {},
-    onSaveFeedback: () -> Unit = {}
+    onCancelAction: () -> Unit = {}
 ) {
-    // Màn chính (badge + micro) chiếm 1 viewport; thẻ JSON/mẫu sai nằm dưới, kéo xuống mới thấy.
-    BoxWithConstraints(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        val viewportHeight = maxHeight
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            ModelEngineStatusBadge(
+                modelState = modelState,
+                hasStoragePermission = hasStoragePermission,
+                onRequestStoragePermission = onRequestStoragePermission,
+                onRescanModel = onRescanModel
+            )
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(viewportHeight)
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                ModelEngineStatusBadge(
+                VoiceAssistantSection(
+                    isListening = isListening,
+                    speechText = speechText,
+                    currentCommand = currentCommand,
+                    isNluProcessing = isNluProcessing,
                     modelState = modelState,
-                    hasStoragePermission = hasStoragePermission,
-                    onRequestStoragePermission = onRequestStoragePermission,
-                    onRescanModel = onRescanModel
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    VoiceAssistantSection(
-                        isListening = isListening,
-                        speechText = speechText,
-                        currentCommand = currentCommand,
-                        isNluProcessing = isNluProcessing,
-                        modelState = modelState,
-                        isTtsSpeaking = isTtsSpeaking,
-                        onToggleListening = onToggleListening,
-                        onCancelListening = onCancelListening
-                    )
-                }
-            }
-
-            if (isNluProcessing || nluResult != null) {
-                NluJsonResultCard(
-                    nluResult = nluResult,
-                    isProcessing = isNluProcessing,
-                    onSaveFeedback = onSaveFeedback,
-                    modifier = Modifier
-                        .padding(horizontal = 20.dp)
-                        .padding(top = 4.dp, bottom = 20.dp)
+                    isTtsSpeaking = isTtsSpeaking,
+                    onToggleListening = onToggleListening,
+                    onCancelListening = onCancelListening
                 )
             }
         }
@@ -911,271 +875,6 @@ private fun AnimatedWaveformVisualizer() {
                     .background(Color.White, RoundedCornerShape(10.dp))
             )
         }
-    }
-}
-
-/**
- * Thẻ hiển thị Kết quả JSON NLU
- */
-@Composable
-private fun NluJsonResultCard(
-    nluResult: NluResult?,
-    isProcessing: Boolean,
-    onSaveFeedback: () -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
-    var justSaved by remember(nluResult?.executionId) { mutableStateOf(false) }
-    val canSaveSample = nluResult != null && !nluResult.isFastPath && !isProcessing
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(26.dp),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-            ),
-        shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            // Header Thẻ: tiêu đề và nút tách 2 hàng để tránh bị ép trên màn hẹp
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.DataObject,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Kết Quả Phân Tích AI",
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                if (nluResult != null && !isProcessing) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (canSaveSample) {
-                            val saveTint = if (justSaved) Color(0xFF059669) else Color(0xFFDC2626)
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = saveTint.copy(alpha = 0.12f),
-                                modifier = Modifier.bounceClick(scaleDown = 0.9f, onClick = {
-                                    if (!justSaved) {
-                                        onSaveFeedback()
-                                        justSaved = true
-                                    }
-                                })
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = if (justSaved) Icons.Rounded.CheckCircle else Icons.Rounded.BookmarkAdd,
-                                        contentDescription = if (justSaved) "Đã lưu mẫu sai" else "Lưu mẫu sai",
-                                        tint = saveTint,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = if (justSaved) "Đã lưu" else "Lưu mẫu sai",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = saveTint,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                            modifier = Modifier.bounceClick(scaleDown = 0.9f, onClick = {
-                                clipboardManager.setText(AnnotatedString(nluResult.rawJson))
-                                Toast.makeText(context, "Đã sao chép JSON vào bộ nhớ tạm", Toast.LENGTH_SHORT).show()
-                            })
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.ContentCopy,
-                                    contentDescription = "Copy JSON",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Copy",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    maxLines = 1
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (isProcessing) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(28.dp),
-                        strokeWidth = 3.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Text(
-                        text = "AI đang trích xuất ý định...",
-                        fontSize = 17.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            } else if (nluResult != null) {
-                // Badges thông tin: Intent, Status, Risk Level
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Badge Nguồn xử lý (Fast-Path vs On-Device AI)
-                    if (nluResult.isFastPath) {
-                        NluBadgeChip(
-                            label = "⚡ Fast-Path (Bộ dữ liệu)",
-                            containerColor = Color(0xFF8B5CF6).copy(alpha = 0.15f),
-                            contentColor = Color(0xFF7C3AED)
-                        )
-                    } else {
-                        NluBadgeChip(
-                            label = "🧠 On-Device AI (GGUF)",
-                            containerColor = Color(0xFF0284C7).copy(alpha = 0.15f),
-                            contentColor = Color(0xFF0369A1)
-                        )
-                    }
-
-                    // Badge Intent
-                    NluBadgeChip(
-                        label = "Intent: ${nluResult.intent}",
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
-
-                    // Badge Status
-                    val (statusBg, statusFg) = when (nluResult.status) {
-                        "success" -> Pair(Color(0xFF10B981).copy(alpha = 0.15f), Color(0xFF059669))
-                        "needs_clarification" -> Pair(Color(0xFFF59E0B).copy(alpha = 0.15f), Color(0xFFD97706))
-                        "invalid" -> Pair(Color(0xFFEF4444).copy(alpha = 0.15f), Color(0xFFDC2626))
-                        else -> Pair(Color(0xFF6B7280).copy(alpha = 0.15f), Color(0xFF4B5563))
-                    }
-                    NluBadgeChip(
-                        label = "Status: ${nluResult.status}",
-                        containerColor = statusBg,
-                        contentColor = statusFg
-                    )
-
-                    // Badge Risk Level
-                    val (riskBg, riskFg) = when (nluResult.riskLevel) {
-                        "high" -> Pair(Color(0xFFEF4444).copy(alpha = 0.15f), Color(0xFFDC2626))
-                        "medium" -> Pair(Color(0xFFF59E0B).copy(alpha = 0.15f), Color(0xFFD97706))
-                        else -> Pair(Color(0xFF10B981).copy(alpha = 0.15f), Color(0xFF059669))
-                    }
-                    NluBadgeChip(
-                        label = "Risk: ${nluResult.riskLevel}",
-                        containerColor = riskBg,
-                        contentColor = riskFg
-                    )
-
-                    if (nluResult.requiresConfirmation) {
-                        NluBadgeChip(
-                            label = "⚠️ Yêu cầu xác nhận",
-                            containerColor = Color(0xFFEF4444).copy(alpha = 0.12f),
-                            contentColor = Color(0xFFDC2626)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Khung JSON Code Monospace
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color(0xFF1E293B),
-                    border = BorderStroke(1.dp, Color(0xFF334155)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = nluResult.rawJson,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 14.sp,
-                        color = Color(0xFF38BDF8),
-                        lineHeight = 20.sp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 220.dp)
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun NluBadgeChip(
-    label: String,
-    containerColor: Color,
-    contentColor: Color
-) {
-    Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = containerColor,
-        border = BorderStroke(1.dp, contentColor.copy(alpha = 0.25f))
-    ) {
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = contentColor,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-        )
     }
 }
 
